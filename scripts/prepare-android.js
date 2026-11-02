@@ -52,6 +52,24 @@ function copyDir(src, dest) {
   }
 })(res);
 copyDir(path.join(root, 'resources', 'android', 'res'), res);
+
+// MainActivity: জোরে বিপসহ ক্লাস রিমাইন্ডারের notification channel
+(function replaceMainActivity() {
+  const javaRoot = path.join(main, 'java');
+  let found = null;
+  (function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(p);
+      else if (entry.name === 'MainActivity.java') found = p;
+    }
+  })(javaRoot);
+  if (!found) fail('MainActivity.java not found');
+  const text = read(found);
+  if (text.indexOf('package com.palash.classroutine;') === -1) fail('unexpected package in ' + found);
+  fs.copyFileSync(path.join(root, 'resources', 'android', 'java', 'MainActivity.java'), found);
+  console.log('MainActivity replaced');
+})();
 console.log('icons and splash copied');
 
 // ২. Android 12+ স্প্ল্যাশের পটভূমির রং
@@ -76,6 +94,14 @@ replaceOnce(
   '<uses-permission android:name="android.permission.INTERNET" />\n' + permissions
 );
 console.log('permissions added');
+
+// কিবোর্ড খুললে স্ক্রিন ছোট হয়ে লেখার ঘর দেখা যাবে
+replaceOnce(
+  path.join(main, 'AndroidManifest.xml'),
+  'android:launchMode="singleTask"',
+  'android:launchMode="singleTask"\n            android:windowSoftInputMode="adjustResize"'
+);
+console.log('keyboard mode set');
 
 // ৪. সংস্করণ নম্বর
 const gradleFile = path.join(app, 'build.gradle');

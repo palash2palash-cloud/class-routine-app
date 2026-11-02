@@ -219,7 +219,16 @@
     "about": "About",
     "version": "Version {v}",
     "privacy": "All your data stays on this phone. The app sends nothing to the internet.",
-    "fontCredit": "Font: Kalpurush by Avro Font Development Project, SIL Open Font License"
+    "fontCredit": "Font: Kalpurush by Avro Font Development Project, SIL Open Font License",
+    "saveBtn": "Save",
+    "saved": "Settings saved",
+    "saveFail": "Could not save settings, please try again",
+    "unsaved": "Changes not saved yet",
+    "allSaved": "All settings saved",
+    "leaveTitle": "Changes not saved",
+    "leaveText": "You changed some settings but did not save them. If you leave now, those changes will be lost.",
+    "leaveOk": "Discard and leave",
+    "leaveStay": "Stay"
   },
   "perm": {
     "title": "Permission status",

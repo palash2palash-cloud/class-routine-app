@@ -231,6 +231,7 @@
       state.editId = opts.id || null;
       state.presetDay = opts.day || null;
     }
+    if (view === 'settings' && state.view !== 'settings') { state.draft = null; state.dirty = false; state.leadCustomOpen = false; }
     state.view = view;
     render();
     $('#view').scrollTop = 0;
@@ -240,6 +241,10 @@
   function goBack() {
     if (state.overlays.length) { closeOverlay(); return true; }
     if (state.view === 'form') { navigate(state.prevView || 'today'); return true; }
+    if (state.view === 'settings' && state.dirty) {
+      canLeaveSettings().then(function (ok) { if (ok) navigate('today'); });
+      return true;
+    }
     if (state.view !== 'today') { navigate('today'); return true; }
     return false;
   }
@@ -868,8 +873,13 @@
 
   /* ---------------- সেটিংস ---------------- */
 
+  function cloneSettings(src) {
+    return JSON.parse(JSON.stringify(src));
+  }
+
   function renderSettings() {
-    const st = S.settings;
+    if (!state.draft) { state.draft = cloneSettings(S.settings); state.dirty = false; }
+    const st = state.draft;
     setTop(t('settings.title'), t('settings.sub'), '');
     const leadOpts = [5, 10, 15, 30];
     const leadCustom = leadOpts.indexOf(st.leadMinutes) === -1;
@@ -902,8 +912,7 @@
       '<div class="chips" id="s-lead">' +
       leadOpts.map(function (m) { return '<button type="button" class="chip-btn' + (st.leadMinutes === m ? ' on' : '') + '" data-val="' + m + '">' + esc(t('form.minN', { m: m })) + '</button>'; }).join('') +
       '<button type="button" class="chip-btn' + (leadCustom ? ' on' : '') + '" data-val="custom">' + esc(t('form.custom')) + '</button></div>' +
-      '<div class="custom-min" id="s-leadCustomWrap"' + (leadCustom ? '' : ' hidden') + '><input id="s-leadCustom" type="number" inputmode="numeric" min="0" max="720" value="' + esc(st.leadMinutes) + '"/><span>' + esc(t('form.minBefore')) + '</span>' +
-      '<button type="button" class="btn btn-small" data-action="save-lead">' + esc(t('common.save')) + '</button></div>' +
+      '<div class="custom-min" id="s-leadCustomWrap"' + (leadCustom || state.leadCustomOpen ? '' : ' hidden') + '><input id="s-leadCustom" type="number" inputmode="numeric" min="0" max="720" value="' + esc(st.leadMinutes) + '"/><span>' + esc(t('form.minBefore')) + '</span></div>' +
       '<div class="field-label">' + esc(t('settings.mutedDays')) + '</div>' +
       '<p class="group-help">' + esc(t('settings.mutedDaysHelp')) + '</p>' +
       '<div class="chips day-chips" data-daylist="mutedDays">' +
@@ -926,6 +935,10 @@
       '<span id="appVersion">' + esc(t('settings.version', { v: '1.0' })) + '</span></div></div>' +
       '<p class="group-help">' + esc(t('settings.privacy')) + '</p>' +
       '<p class="group-help small">' + esc(t('settings.fontCredit')) + '</p>');
+
+    html += '<div class="save-bar' + (state.dirty ? ' is-dirty' : '') + '">' +
+      '<span>' + esc(state.dirty ? t('settings.unsaved') : t('settings.allSaved')) + '</span>' +
+      '<button type="button" class="btn btn-primary" data-action="save-settings"' + (state.dirty ? '' : ' disabled') + '>' + ICON.check + esc(t('settings.saveBtn')) + '</button></div>';
 
     $('#view').innerHTML = html;
     bindSettings();
@@ -986,28 +999,25 @@
     el.innerHTML = html;
   }
 
+  // সেটিংসে কিছু বদলালে তা খসড়ায় থাকে; "সংরক্ষণ করুন" চাপলে তবেই কাজে লাগে
+  function changeDraft(fn) {
+    fn(state.draft);
+    state.dirty = true;
+    const y = window.scrollY;
+    renderSettings();
+    window.scrollTo(0, y);
+  }
+
   function bindSettings() {
     const view = $('#view');
     $$('.seg[data-setting]', view).forEach(function (seg) {
-      seg.addEventListener('click', async function (e) {
+      seg.addEventListener('click', function (e) {
         const b = e.target.closest('button');
         if (!b) return;
         const key = seg.getAttribute('data-setting');
         const val = b.getAttribute('data-val');
-        if (S.settings[key] === val) return;
-        S.settings[key] = val;
-        S.save();
-        if (key === 'lang') {
-          await I.setLang(val);
-          I.apply();
-          await N.createChannel();
-          N.reschedule();
-        } else if (key === 'theme') {
-          applyTheme();
-        } else if (key === 'timeFormat') {
-          N.reschedule();
-        }
-        renderSettings();
+        if (state.draft[key] === val) return;
+        changeDraft(function (d) { d[key] = val; });
       });
     });
 
@@ -1017,44 +1027,95 @@
         if (!b) return;
         const key = wrap.getAttribute('data-daylist');
         const d = b.getAttribute('data-day');
-        const arr = S.settings[key];
-        const i = arr.indexOf(d);
-        if (i === -1) arr.push(d); else arr.splice(i, 1);
-        S.save();
-        b.classList.toggle('on', i === -1);
-        b.classList.toggle(key === 'holidays' ? 'danger' : 'warn', i === -1);
-        N.reschedule();
+        changeDraft(function (dr) {
+          const i = dr[key].indexOf(d);
+          if (i === -1) dr[key].push(d); else dr[key].splice(i, 1);
+        });
       });
     });
 
-    $('#s-notif').addEventListener('change', async function (e) {
-      S.settings.notifEnabled = e.target.checked;
-      S.save();
-      if (S.settings.notifEnabled && N.isNative()) {
-        const p = await N.permission();
-        if (p !== 'granted') await N.requestPermission();
-      }
-      await N.reschedule();
-      renderSettings();
+    $('#s-notif').addEventListener('change', function (e) {
+      const on = e.target.checked;
+      changeDraft(function (d) { d.notifEnabled = on; });
     });
 
     $('#s-lead').addEventListener('click', function (e) {
       const b = e.target.closest('.chip-btn');
       if (!b) return;
-      $$('#s-lead .chip-btn').forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on');
       const v = b.getAttribute('data-val');
       if (v === 'custom') {
+        state.leadCustomOpen = true;
+        $$('#s-lead .chip-btn').forEach(function (x) { x.classList.toggle('on', x === b); });
         $('#s-leadCustomWrap').hidden = false;
         $('#s-leadCustom').focus();
         return;
       }
-      $('#s-leadCustomWrap').hidden = true;
-      S.settings.leadMinutes = parseInt(v, 10);
-      S.save();
-      N.reschedule();
-      toast(t('settings.leadSaved', { m: S.settings.leadMinutes }));
+      state.leadCustomOpen = false;
+      changeDraft(function (d) { d.leadMinutes = parseInt(v, 10); });
     });
+
+    $('#s-leadCustom').addEventListener('input', function (e) {
+      const n = parseInt(I.toAsciiDigits(e.target.value), 10);
+      if (isNaN(n) || n < 0 || n > 720) return;
+      state.draft.leadMinutes = n;
+      if (!state.dirty) {
+        state.dirty = true;
+        const bar = $('.save-bar');
+        bar.classList.add('is-dirty');
+        $('span', bar).textContent = t('settings.unsaved');
+        $('button', bar).disabled = false;
+      }
+    });
+  }
+
+  async function saveSettings() {
+    const d = state.draft;
+    if (!d) return;
+    const custom = $('#s-leadCustom');
+    if (custom && !$('#s-leadCustomWrap').hidden) {
+      const n = parseInt(I.toAsciiDigits(custom.value), 10);
+      if (isNaN(n) || n < 0 || n > 720) { toast(t('settings.leadInvalid')); custom.focus(); return; }
+      d.leadMinutes = n;
+    }
+    const prev = S.settings;
+    const next = Object.assign({}, d, {
+      profile: prev.profile,
+      mutedDates: prev.mutedDates,
+      weekMode: prev.weekMode
+    });
+    S.data.settings = next;
+    if (!S.save()) { infoDialog(t('error.title'), t('settings.saveFail')); return; }
+    if (next.lang !== prev.lang) {
+      await I.setLang(next.lang);
+      I.apply();
+      await N.createChannel();
+    }
+    applyTheme();
+    if (next.notifEnabled && !prev.notifEnabled && N.isNative()) {
+      const p = await N.permission();
+      if (p !== 'granted') await N.requestPermission();
+    }
+    N.reschedule();
+    state.draft = null;
+    state.dirty = false;
+    state.leadCustomOpen = false;
+    const y = window.scrollY;
+    renderSettings();
+    window.scrollTo(0, y);
+    toast(t('settings.saved'));
+  }
+
+  // সেটিংসে সেভ না করা পরিবর্তন থাকলে বের হওয়ার আগে জিজ্ঞেস করা
+  async function canLeaveSettings() {
+    if (state.view !== 'settings' || !state.dirty) return true;
+    const discard = await confirmDialog({
+      title: t('settings.leaveTitle'),
+      message: t('settings.leaveText'),
+      okText: t('settings.leaveOk'),
+      cancelText: t('settings.leaveStay')
+    });
+    if (discard) { state.draft = null; state.dirty = false; state.leadCustomOpen = false; }
+    return discard;
   }
 
   /* ---------------- বোতামের কাজ (event delegation) ---------------- */
@@ -1140,6 +1201,9 @@
       case 'save-pdf':
         await runExport(E.savePdf, t('settings.savePdf'));
         break;
+      case 'save-settings':
+        await saveSettings();
+        break;
       case 'edit-profile':
         openProfileSheet();
         break;
@@ -1211,10 +1275,12 @@
   /* ---------------- শুরু ---------------- */
 
   function bindGlobal() {
-    $('#bottomNav').addEventListener('click', function (e) {
+    $('#bottomNav').addEventListener('click', async function (e) {
       const b = e.target.closest('.nav-btn');
       if (!b) return;
       const v = b.getAttribute('data-nav');
+      if (v === 'settings' && state.view === 'settings') return;
+      if (!(await canLeaveSettings())) return;
       if (v === 'add') navigate('add');
       else navigate(v);
     });
@@ -1230,6 +1296,37 @@
         navigate('form', { id: card.getAttribute('data-id') });
       }
     });
+
+    // কিবোর্ড খুললে যে ঘরে লেখা হচ্ছে সেটা মাঝখানে এনে দেখানো
+    const isTextInput = function (el) {
+      if (!el) return false;
+      if (el.tagName === 'TEXTAREA') return true;
+      return el.tagName === 'INPUT' && ['text', 'search', 'number', 'tel', 'email', 'url'].indexOf(el.type) !== -1;
+    };
+    document.addEventListener('focusin', function (e) {
+      if (!isTextInput(e.target)) return;
+      document.body.classList.add('kb-open');
+      const target = e.target;
+      [150, 450].forEach(function (ms) {
+        setTimeout(function () {
+          if (document.activeElement === target) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }, ms);
+      });
+    });
+    document.addEventListener('focusout', function (e) {
+      if (!isTextInput(e.target)) return;
+      setTimeout(function () { if (!isTextInput(document.activeElement)) document.body.classList.remove('kb-open'); }, 100);
+    });
+    if (window.visualViewport) {
+      const vv = window.visualViewport;
+      const upd = function () {
+        const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        document.documentElement.style.setProperty('--kb', kb + 'px');
+        const a = document.activeElement;
+        if (kb > 0 && isTextInput(a)) a.scrollIntoView({ block: 'center' });
+      };
+      vv.addEventListener('resize', upd);
+    }
 
     $('#restoreInput').addEventListener('change', function (e) {
       handleRestoreFile(e.target.files && e.target.files[0]);

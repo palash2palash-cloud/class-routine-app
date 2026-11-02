@@ -549,3 +549,28 @@ input[type="time"] { -webkit-appearance: none; appearance: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- Keyboard & focus ---------- */
+.field input:focus, .field textarea:focus, .custom-min input:focus {
+  border-color: var(--primary); border-width: 2px; background: var(--surface);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), .18);
+}
+.field:focus-within .field-label { color: var(--primary); }
+body.kb-open .bottom-nav { display: none; }
+body.kb-open .save-bar { bottom: 12px; }
+.overlay-sheet { padding-bottom: var(--kb, 0px); transition: padding-bottom .15s; }
+.sheet { max-height: calc(100vh - var(--kb, 0px) - 16px); }
+.sheet .field input, .sheet .field textarea { scroll-margin: 90px; }
+
+/* ---------- Settings save bar ---------- */
+.save-bar {
+  position: sticky; bottom: calc(var(--nav-h) + 12px + var(--safe-bottom)); z-index: 15;
+  display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 10px 10px 10px 16px;
+  background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+}
+.save-bar span { flex: 1; font-size: .9rem; color: var(--text-3); }
+.save-bar.is-dirty { border-color: var(--warning); }
+.save-bar.is-dirty span { color: var(--warning); font-weight: 600; }
+.save-bar .btn { min-height: 46px; }
+.save-bar .btn:disabled { opacity: .45; box-shadow: none; }
+body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }

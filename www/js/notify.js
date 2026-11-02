@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  const CHANNEL_ID = 'class-reminders';
+  const CHANNEL_ID = 'class-alarm-v1'; // MainActivity.java এ তৈরি হয় (জোরে বিপ)
   const WINDOW_DAYS = 28;
   const MAX_NOTIFS = 400; // Android একটি অ্যাপকে প্রায় ৫০০ alarm পর্যন্ত রাখতে দেয়
   const t = function (k, p) { return window.I18N.t(k, p); };
@@ -30,23 +30,10 @@
     return queue;
   }
 
+  // channel টি নেটিভ কোডে (MainActivity.java) জোরে বিপসহ তৈরি হয়।
+  // এখানে আবার তৈরি করলে শব্দ ছাড়া channel বানানোর ঝুঁকি থাকে, তাই কিছু করা হয় না।
   async function createChannel() {
-    const ln = LN();
-    if (!isNative() || !ln || !ln.createChannel) return;
-    try {
-      await ln.createChannel({
-        id: CHANNEL_ID,
-        name: t('notif.channelName'),
-        description: t('notif.channelDesc'),
-        importance: 5,
-        visibility: 1,
-        vibration: true,
-        lights: true,
-        lightColor: '#4F46E5'
-      });
-    } catch (e) {
-      console.warn('channel', e);
-    }
+    return;
   }
 
   // সাধারণ অনুমতি (Android 13+ এ লাগে): 'granted' | 'denied' | 'prompt'
@@ -158,7 +145,8 @@
           channelId: CHANNEL_ID,
           smallIcon: 'ic_stat_class',
           iconColor: c.color,
-          autoCancel: true,
+          autoCancel: true, // চাপ দিলে তবেই সরবে
+          ongoing: true, // নিজে থেকে বা ভুল করে সোয়াইপে সরে যাবে না
           schedule: { at: at, allowWhileIdle: true },
           extra: { classId: c.id }
         });
@@ -205,6 +193,8 @@
         channelId: CHANNEL_ID,
         smallIcon: 'ic_stat_class',
         iconColor: '#4F46E5',
+        autoCancel: true,
+        ongoing: true,
         schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }
       }]
     });
