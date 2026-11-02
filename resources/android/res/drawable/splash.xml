@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Splash screen for Android 11 and older: indigo background with the logo in the middle -->
+<!-- Splash screen for Android 11 and older: white background with the logo in the middle -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/routine_splash_bg"/>
     <item>

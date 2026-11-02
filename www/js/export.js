@@ -141,6 +141,39 @@
     } catch (e) { /* ফন্ট না পেলে সাধারণ ফন্টে আঁকবে */ }
   }
 
+  /* রুটিনের কলামগুলো সাজানো: ক্লাসের সময়গুলো, মাঝে বড় ফাঁক থাকলে খালি পিরিয়ড,
+     আর সেটিংসে চালু থাকলে টিফিন বিরতি। */
+  function buildColumns(slots, S) {
+    const st = S.settings;
+    const cols = slots.map(function (sl) { return { kind: 'class', start: sl.start, end: sl.end }; });
+    const lens = slots.map(function (sl) { return S.toMin(sl.end) - S.toMin(sl.start); }).sort(function (a, b) { return a - b; });
+    const typical = lens.length ? lens[Math.floor(lens.length / 2)] : 45;
+    const brk = st.breakEnabled && slots.length ? { kind: 'break', start: st.breakStart, end: st.breakEnd } : null;
+    const bs = brk ? S.toMin(brk.start) : 0, be = brk ? S.toMin(brk.end) : 0;
+    // দুই ক্লাসের মাঝের ফাঁকা সময় (বিরতি বাদে) যদি প্রায় এক পিরিয়ডের সমান হয়, সেখানে খালি পিরিয়ড
+    const extra = [];
+    function addEmpty(a, b) {
+      if (b - a >= Math.max(25, typical * 0.66)) extra.push({ kind: 'empty', start: S.fromMin(a), end: S.fromMin(b) });
+    }
+    for (let i = 0; i + 1 < slots.length; i++) {
+      const a = S.toMin(slots[i].end), b = S.toMin(slots[i + 1].start);
+      if (b <= a) continue;
+      if (brk && bs < b && be > a) {
+        addEmpty(a, Math.min(bs, b));
+        addEmpty(Math.max(be, a), b);
+      } else {
+        addEmpty(a, b);
+      }
+    }
+    let all = cols.concat(extra);
+    if (brk) {
+      // কোনো ক্লাস যদি বিরতির সময়ের ভেতরে পড়ে, তবুও বিরতির ঘর থাকবে, সময় অনুযায়ী জায়গায়
+      all.push(brk);
+    }
+    all.sort(function (x, y) { return S.toMin(x.start) - S.toMin(y.start) || (x.kind === 'break' ? 1 : -1); });
+    return all;
+  }
+
   async function renderCanvas() {
     await ensureFonts();
     const S = window.Store;
@@ -152,12 +185,16 @@
     }).filter(function (r) { return !r.holiday || r.classes.length; });
 
     const slots = S.timeSlots(rows.map(function (r) { return r.classes; }));
-    const maxCols = Math.max(1, slots.length);
+    const cols = buildColumns(slots, S);
     const slotIndex = {};
-    slots.forEach(function (sl, i) { slotIndex[sl.start] = i; });
+    cols.forEach(function (col, i) { if (col.kind === 'class') slotIndex[col.start] = i; });
     const scale = 2;
-    const M = 32, dayW = 180, cellW = 210, cellH = 128, gap = 10, headH = 110, colH = 54;
-    const width = Math.max(900, M * 2 + dayW + maxCols * (cellW + gap));
+    const M = 32, dayW = 180, cellW = 210, breakW = 110, cellH = 128, gap = 10, headH = 110, colH = 54;
+    // প্রতিটি কলামের x অবস্থান (বিরতির কলাম সরু)
+    const colX = [];
+    let cx = M + dayW;
+    cols.forEach(function (col) { colX.push(cx); col.w = col.kind === 'break' ? breakW : cellW; cx += col.w + gap; });
+    const width = Math.max(900, cx - gap + M);
     const height = M * 2 + headH + colH + Math.max(1, rows.length) * (cellH + gap) + 30;
 
     const canvas = document.createElement('canvas');
@@ -217,17 +254,55 @@
     ctx.textAlign = 'left';
 
     let y = M + headH;
-    // কলামের মাথায় পিরিয়ড আর সময়
-    slots.forEach(function (sl, i) {
-      const hx = M + dayW + i * (cellW + gap) + 12;
-      ctx.fillStyle = '#1E1B4B';
+    // কলামের মাথায় পিরিয়ড আর সময় (বিরতির কলাম পিরিয়ড হিসেবে গোনা হয় না)
+    let pn = 0;
+    cols.forEach(function (col, i) {
+      const hx = colX[i] + 12;
+      const isBreak = col.kind === 'break';
+      if (!isBreak) pn++;
+      ctx.fillStyle = isBreak ? '#B45309' : '#1E1B4B';
       ctx.font = '700 17px ' + FONT;
-      ctx.fillText(t('week.period', { n: i + 1 }), hx, y + 20);
+      ctx.fillText(fitText(ctx, isBreak ? t('export.break') : t('week.period', { n: pn }), col.w - 16), hx, y + 20);
       ctx.fillStyle = '#64748B';
-      ctx.font = '400 15px ' + FONT;
-      ctx.fillText(fitText(ctx, I.formatTime(sl.start, fmt) + ' – ' + I.formatTime(sl.end, fmt), cellW - 16), hx, y + 42);
+      ctx.font = '400 ' + (isBreak ? 12 : 15) + 'px ' + FONT;
+      if (isBreak) {
+        ctx.fillText(fitText(ctx, I.formatTime(col.start, fmt), col.w - 16), hx, y + 35);
+        ctx.fillText(fitText(ctx, I.formatTime(col.end, fmt), col.w - 16), hx, y + 48);
+      } else {
+        ctx.fillText(fitText(ctx, I.formatTime(col.start, fmt) + ' – ' + I.formatTime(col.end, fmt), col.w - 16), hx, y + 42);
+      }
     });
     y += colH;
+
+    // বিরতির ঘর: সব দিনের সারি জুড়ে একটা লম্বা ফাঁকা ঘর, মাঝখানে "বিরতি" / "TIFFIN"
+    if (rows.length) {
+      const allH = rows.length * (cellH + gap) - gap;
+      cols.forEach(function (col, i) {
+        if (col.kind !== 'break') return;
+        ctx.fillStyle = '#FEF3C7';
+        roundRect(ctx, colX[i], y, col.w, allH, 14);
+        ctx.fill();
+        ctx.strokeStyle = '#F59E0B';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 5]);
+        roundRect(ctx, colX[i] + 1, y + 1, col.w - 2, allH - 2, 13);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.save();
+        ctx.fillStyle = '#B45309';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const label = t('export.break');
+        let size = 28;
+        ctx.font = '700 ' + size + 'px ' + FONT;
+        while (size > 14 && ctx.measureText(label).width > col.w - 16) {
+          size -= 1;
+          ctx.font = '700 ' + size + 'px ' + FONT;
+        }
+        ctx.fillText(label, colX[i] + col.w / 2, y + allH / 2);
+        ctx.restore();
+      });
+    }
     if (!rows.length) {
       ctx.fillStyle = '#64748B';
       ctx.font = '500 22px ' + FONT;
@@ -257,7 +332,7 @@
         const si = slotIndex[c.start];
         if (used[si]) return; // একই সময়ে দুটি ক্লাস থাকলে প্রথমটিই দেখানো হয়
         used[si] = true;
-        const x = M + dayW + si * (cellW + gap);
+        const x = colX[si];
         ctx.fillStyle = tint(c.color, 0.16);
         roundRect(ctx, x, y, cellW, cellH, 14);
         ctx.fill();
@@ -368,6 +443,7 @@
     parseBackup: parseBackup,
     saveImage: saveImage,
     savePdf: savePdf,
-    share: share
+    share: share,
+    renderCanvas: renderCanvas
   };
 })();

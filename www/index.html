@@ -12,20 +12,14 @@
   <!-- প্রথমবার লোড হওয়ার সময় দেখানো স্ক্রিন -->
   <div id="boot" class="boot">
     <div class="boot-logo">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect x="10" y="12" width="44" height="42" rx="8" fill="#fff"/>
-        <rect x="10" y="12" width="44" height="12" rx="6" fill="#C7D2FE"/>
-        <rect x="18" y="30" width="28" height="5" rx="2.5" fill="#4F46E5"/>
-        <rect x="18" y="39" width="20" height="5" rx="2.5" fill="#14B8A6"/>
-        <circle cx="48" cy="48" r="10" fill="#F59E0B"/>
-        <path d="M48 42v6l4 3" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-      </svg>
+      <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g transform="translate(256 256) scale(1.5393) translate(-256 -256)"><path d="M103 169A66 66 0 0 1 169 103H200V200H103Z" fill="#FFBE5D"/><path d="M228 103H343A66 66 0 0 1 409 169V200H228Z" fill="#FF9160"/><path d="M103 228H200V409H169A66 66 0 0 1 103 343Z" fill="#59D1C9"/><path d="M228 228H409V343A66 66 0 0 1 343 409H228Z" fill="#70A8FF"/><path d="M277.3 309.8L306.6 339.6L362.4 283.3" fill="none" stroke="#FFFFFF" stroke-width="22.8" stroke-linecap="butt" stroke-linejoin="miter"/></g></svg>
     </div>
     <div class="boot-spinner" aria-label="Loading"></div>
   </div>
 
   <div id="app" class="app" hidden>
     <header class="topbar" id="topbar">
+      <img class="top-logo" id="topLogo" src="img/logo.svg" alt="" hidden/>
       <div class="topbar-text">
         <h1 id="topTitle"></h1>
         <p id="topSub"></p>

@@ -89,17 +89,17 @@ svg { fill: currentColor; }
 .boot {
   position: fixed; inset: 0; z-index: 100;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
-  background: #4F46E5;
+  background: #FFFFFF;
   transition: opacity .35s ease;
 }
 .boot.hide { opacity: 0; pointer-events: none; }
-.boot-logo svg { width: 96px; height: 96px; }
+.boot-logo svg { width: 120px; height: 120px; display: block; }
 .boot-spinner {
   width: 28px; height: 28px; border-radius: 50%;
-  border: 3px solid rgba(255,255,255,.3); border-top-color: #fff;
+  border: 3px solid rgba(112,168,255,.3); border-top-color: #70A8FF;
   animation: spin .8s linear infinite;
 }
-.boot-error { color: #fff; text-align: center; padding: 24px; }
+.boot-error { color: #334155; text-align: center; padding: 24px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---------- Layout ---------- */
@@ -114,6 +114,11 @@ svg { fill: currentColor; }
   -webkit-backdrop-filter: saturate(1.4) blur(12px);
 }
 .topbar-text { flex: 1; min-width: 0; }
+/* হোমপেজে অ্যাপের লোগো (Palash-এর দেওয়া নকশা) */
+.top-logo {
+  width: 46px; height: 46px; flex: none; padding: 4px; border-radius: 14px;
+  background: #FFFFFF; box-shadow: var(--shadow);
+}
 .topbar h1 { margin: 0; font-size: 1.45rem; font-weight: 700; line-height: 1.25; letter-spacing: -.01em; }
 .topbar p { margin: 2px 0 0; color: var(--text-2); font-size: .92rem; }
 .topbar-actions { display: flex; gap: 6px; align-items: center; }
@@ -497,7 +502,7 @@ input[type="time"] { -webkit-appearance: none; appearance: none; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
 .about { display: flex; align-items: center; gap: 14px; padding: 14px 0 6px; }
-.about-logo { width: 52px; height: 52px; border-radius: 16px; background: url('../img/logo.svg') center/cover no-repeat, var(--primary); flex: none; }
+.about-logo { width: 52px; height: 52px; border-radius: 16px; background: url('../img/logo.svg') center/84% no-repeat, #FFFFFF; box-shadow: var(--shadow); flex: none; }
 .about strong { display: block; }
 .about span { color: var(--text-3); font-size: .86rem; }
 
@@ -588,3 +593,4 @@ body.kb-open .save-bar { bottom: 12px; }
 .save-bar .btn { min-height: 46px; }
 .save-bar .btn:disabled { opacity: .45; box-shadow: none; }
 body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
+.break-times { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

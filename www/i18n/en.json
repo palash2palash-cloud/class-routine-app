@@ -228,7 +228,10 @@
     "leaveTitle": "Changes not saved",
     "leaveText": "You changed some settings but did not save them. If you leave now, those changes will be lost.",
     "leaveOk": "Discard and leave",
-    "leaveStay": "Stay"
+    "leaveStay": "Stay",
+    "break": "Tiffin break",
+    "breakOn": "Show a break column",
+    "breakHelp": "The PDF and image routine get an empty column marked \"TIFFIN\" at this time."
   },
   "perm": {
     "title": "Permission status",
@@ -267,7 +270,8 @@
     "savedCache": "File ready, choose where to keep it",
     "downloaded": "File downloaded",
     "share": "Share",
-    "failed": "Could not save the file. Please try again."
+    "failed": "Could not save the file. Please try again.",
+    "break": "TIFFIN"
   },
   "restore": {
     "title": "Restore from backup?",

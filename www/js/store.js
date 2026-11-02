@@ -23,6 +23,9 @@
     mutedDays: [], // যে বারগুলোতে রিমাইন্ডার বন্ধ
     mutedDates: [], // নির্দিষ্ট তারিখে বন্ধ, যেমন "2026-11-02"
     weekMode: 'list', // list | grid
+    breakEnabled: true, // পিডিএফ/ছবির রুটিনে টিফিন বিরতির ঘর
+    breakStart: '11:05',
+    breakEnd: '11:40',
     profile: {
       photo: '', // পাসপোর্ট সাইজ ছবি (JPEG data URL)
       bn: { name: '', designation: '', subject: '', institution: '', city: '' },
@@ -90,6 +93,11 @@
     if (Array.isArray(s.mutedDays)) out.mutedDays = s.mutedDays.filter(function (d) { return DAYS.indexOf(d) !== -1; });
     if (Array.isArray(s.mutedDates)) out.mutedDates = s.mutedDates.filter(function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); });
     if (s.weekMode === 'grid' || s.weekMode === 'list') out.weekMode = s.weekMode;
+    if (typeof s.breakEnabled === 'boolean') out.breakEnabled = s.breakEnabled;
+    if (isTime(s.breakStart) && isTime(s.breakEnd) && toMin(s.breakEnd) > toMin(s.breakStart)) {
+      out.breakStart = s.breakStart;
+      out.breakEnd = s.breakEnd;
+    }
     out.profile = cleanProfile(s.profile);
     return out;
   }
@@ -173,6 +181,10 @@
   function toMin(hhmm) {
     const p = hhmm.split(':');
     return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+  }
+
+  function fromMin(m) {
+    return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
   }
 
   function byTime(a, b) {
@@ -347,6 +359,7 @@
     sanitize: sanitize,
     isoDate: isoDate,
     toMin: toMin,
+    fromMin: fromMin,
     byTime: byTime,
     dayKeyOf: dayKeyOf,
     classesForDay: classesForDay,

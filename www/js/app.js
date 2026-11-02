@@ -218,6 +218,7 @@
       backBtn.remove();
     }
     $('#topActions').innerHTML = actionsHtml || '';
+    $('#topLogo').hidden = state.view !== 'today';
   }
 
   function navigate(view, opts) {
@@ -909,6 +910,14 @@
       '<div class="chips day-chips" data-daylist="holidays">' +
       S.DAYS.map(function (d) { return '<button type="button" class="chip-btn' + (st.holidays.indexOf(d) !== -1 ? ' on danger' : '') + '" data-day="' + d + '">' + esc(I.dayShort(d)) + '</button>'; }).join('') + '</div>');
 
+    html += group(t('settings.break'),
+      row(t('settings.breakOn'), t('settings.breakHelp'),
+        '<label class="switch"><input type="checkbox" id="s-break"' + (st.breakEnabled ? ' checked' : '') + '/><span></span></label>') +
+      '<div class="sub-block break-times' + (st.breakEnabled ? '' : ' is-disabled') + '">' +
+      '<label class="field"><span class="field-label">' + esc(t('form.start')) + '</span><input id="s-breakStart" type="time" value="' + esc(st.breakStart) + '"/></label>' +
+      '<label class="field"><span class="field-label">' + esc(t('form.end')) + '</span><input id="s-breakEnd" type="time" value="' + esc(st.breakEnd) + '"/></label>' +
+      '</div>');
+
     html += group(t('settings.reminders'),
       row(t('settings.notifEnabled'), t('settings.notifEnabledHelp'),
         '<label class="switch"><input type="checkbox" id="s-notif"' + (st.notifEnabled ? ' checked' : '') + '/><span></span></label>') +
@@ -1042,6 +1051,19 @@
     $('#s-notif').addEventListener('change', function (e) {
       const on = e.target.checked;
       changeDraft(function (d) { d.notifEnabled = on; });
+    });
+
+    $('#s-break').addEventListener('change', function (e) {
+      const on = e.target.checked;
+      changeDraft(function (d) { d.breakEnabled = on; });
+    });
+    ['#s-breakStart', '#s-breakEnd'].forEach(function (sel) {
+      $(sel).addEventListener('change', function () {
+        const a = $('#s-breakStart').value, b = $('#s-breakEnd').value;
+        if (!a || !b) return;
+        if (S.toMin(b) <= S.toMin(a)) { toast(t('form.endBeforeStart')); return; }
+        changeDraft(function (d) { d.breakStart = a; d.breakEnd = b; });
+      });
     });
 
     $('#s-lead').addEventListener('click', function (e) {
