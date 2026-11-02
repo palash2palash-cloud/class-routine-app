@@ -164,6 +164,27 @@
 
   /* ---------------- ক্লাস কার্ড ---------------- */
 
+  /* চলমান ক্লাসের বালুঘড়ি: উপরের বালি কমে, নিচে জমে, মাঝে বালির সরু ধারা পড়ে।
+     কতটা বালি নেমেছে তা ক্লাসের কতটা সময় পার হয়েছে তার সমান (updateLive হালনাগাদ করে)। */
+  function hourglassHtml(id) {
+    const k = 'hg' + String(id).replace(/[^a-zA-Z0-9_-]/g, '');
+    const glass = 'M9 7H31C31 19 23.5 25.5 21.2 32C23.5 38.5 31 45 31 57H9C9 45 16.5 38.5 18.8 32C16.5 25.5 9 19 9 7Z';
+    return '<span class="hourglass" aria-hidden="true">' +
+      '<svg viewBox="0 0 40 64">' +
+      '<defs><clipPath id="' + k + '"><path d="' + glass + '"/></clipPath>' +
+      '<linearGradient id="' + k + 's" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCD34D"/><stop offset="1" stop-color="#F59E0B"/></linearGradient></defs>' +
+      '<path class="hg-glass" d="' + glass + '"/>' +
+      '<g clip-path="url(#' + k + ')">' +
+      '<rect class="hg-top" x="0" y="8" width="40" height="24" fill="url(#' + k + 's)"/>' +
+      '<line class="hg-stream" x1="20" y1="31" x2="20" y2="57"/>' +
+      '<path class="hg-bottom" d="M0 57V48Q20 34 40 48V57Z" fill="url(#' + k + 's)"/>' +
+      '</g>' +
+      '<path class="hg-shine" d="M12.5 10C13 17 16 22 18 26"/>' +
+      '<rect class="hg-cap" x="5" y="2" width="30" height="5" rx="2.5"/>' +
+      '<rect class="hg-cap" x="5" y="57" width="30" height="5" rx="2.5"/>' +
+      '</svg></span>';
+  }
+
   function cardHtml(c, opts) {
     opts = opts || {};
     const cs = classSec(c);
@@ -178,6 +199,7 @@
       '<div class="card-time">' +
       '<span class="t-start">' + esc(fmtTime(c.start)) + '</span>' +
       '<span class="t-line"></span>' +
+      (opts.live ? hourglassHtml(c.id) : '') +
       '<span class="t-end">' + esc(fmtTime(c.end)) + '</span>' +
       '</div>' +
       '<div class="card-body">' +
@@ -370,6 +392,12 @@
       if (prog) {
         prog.hidden = !isNow;
         if (isNow) $('span', prog).style.width = Math.min(100, Math.max(0, ((m - s) / (e - s)) * 100)).toFixed(1) + '%';
+      }
+      const hg = $('.hourglass', el);
+      if (hg && isNow) {
+        const p = Math.min(1, Math.max(0, (m - s) / (e - s)));
+        hg.style.setProperty('--top', (1 - p).toFixed(3));
+        hg.style.setProperty('--bottom', (0.12 + p * 0.88).toFixed(3));
       }
     });
 
