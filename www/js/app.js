@@ -44,6 +44,7 @@
     copy: '<svg viewBox="0 0 24 24"><path d="M8 3h11a2 2 0 0 1 2 2v11h-2V5H8V3ZM5 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/></svg>',
     trash: '<svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>',
     check: '<svg viewBox="0 0 24 24"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z"/></svg>',
+    pdf: '<svg viewBox="0 0 24 24"><path d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V9h5.5L13 3.5ZM11 11v5.2l-2.1-2.1-1.4 1.4L12 20l4.5-4.5-1.4-1.4-2.1 2.1V11h-2Z"/></svg>',
     palette: '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3Zm-5 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm4 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>'
   };
 
@@ -386,6 +387,7 @@
   function renderWeek() {
     const mode = S.settings.weekMode;
     setTop(t('week.title'), t('week.sub', { n: S.data.classes.length }),
+      (S.data.classes.length ? '<button type="button" class="icon-btn" data-action="save-pdf" aria-label="' + esc(t('settings.savePdf')) + '">' + ICON.pdf + '</button>' : '') +
       '<div class="seg seg-icons">' +
       '<button type="button" class="' + (mode === 'list' ? 'on' : '') + '" data-action="week-mode" data-mode="list" aria-label="' + esc(t('week.listView')) + '">' + ICON.list + '</button>' +
       '<button type="button" class="' + (mode === 'grid' ? 'on' : '') + '" data-action="week-mode" data-mode="grid" aria-label="' + esc(t('week.gridView')) + '">' + ICON.grid + '</button>' +

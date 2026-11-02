@@ -30,7 +30,7 @@ https://github.com/palash2palash-cloud/class-routine-app/releases/latest/downloa
 | @capacitor/share | 7.0.4 |
 | @capacitor/app | 7.1.2 |
 | SortableJS (www/lib) | 1.15.7 |
-| ফন্ট: Hind Siliguri (www/fonts) | Google Fonts, SIL OFL 1.1 |
+| ফন্ট: Kalpurush (www/fonts) | Avro Font Development Project, SIL OFL; ফাইল @hixbe/kalpurush 5.2.5 থেকে |
 | Android | minSdk 23 (Android 6), targetSdk 35 |
 | Build | Node 22, Java 21, GitHub Actions |
 

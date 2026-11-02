@@ -128,15 +128,15 @@
     return s + '…';
   }
 
-  const FONT = '"Hind Siliguri", "Noto Sans Bengali", sans-serif';
+  const FONT = '"Kalpurush", "Noto Sans Bengali", sans-serif';
 
   async function ensureFonts() {
     if (!document.fonts || !document.fonts.load) return;
     try {
       await Promise.all([
-        document.fonts.load('400 24px "Hind Siliguri"', 'অআ Aa'),
-        document.fonts.load('600 24px "Hind Siliguri"', 'অআ Aa'),
-        document.fonts.load('700 24px "Hind Siliguri"', 'অআ Aa')
+        document.fonts.load('400 24px \"Kalpurush\"', 'অআ Aa'),
+        document.fonts.load('600 24px \"Kalpurush\"', 'অআ Aa'),
+        document.fonts.load('700 24px \"Kalpurush\"', 'অআ Aa')
       ]);
     } catch (e) { /* ফন্ট না পেলে সাধারণ ফন্টে আঁকবে */ }
   }
