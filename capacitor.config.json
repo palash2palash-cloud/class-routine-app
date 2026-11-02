@@ -1,0 +1,14 @@
+{
+  "appId": "com.palash.classroutine",
+  "appName": "ক্লাস রুটিন",
+  "webDir": "www",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_class",
+      "iconColor": "#4F46E5"
+    }
+  }
+}

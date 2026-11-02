@@ -1,0 +1,78 @@
+# GitHub-এ কোড push হলেই এই workflow APK বানায় এবং Release-এ রেখে দেয়।
+# স্থায়ী ডাউনলোড লিংক:
+#   https://github.com/<owner>/<repo>/releases/latest/download/ClassRoutine.apk
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Create Android project
+        run: npx cap add android
+
+      - name: Add icons, splash, permissions, version and signing
+        run: node scripts/prepare-android.js ${{ github.run_number }}
+
+      - name: Copy web files into Android project
+        run: npx cap sync android
+
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ClassRoutine.apk
+
+      - name: Upload APK (backup copy)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClassRoutine-${{ github.run_number }}
+          path: ClassRoutine.apk
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Class Routine 1.0.${{ github.run_number }}
+          body: |
+            ক্লাস রুটিন অ্যাপ, সংস্করণ 1.0.${{ github.run_number }}
+            ডাউনলোড করুন: ClassRoutine.apk
+            সবসময় নতুন সংস্করণের লিংক: https://github.com/${{ github.repository }}/releases/latest/download/ClassRoutine.apk
+          files: ClassRoutine.apk
+          make_latest: true
