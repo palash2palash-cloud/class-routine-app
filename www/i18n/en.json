@@ -1,15 +1,67 @@
 {
-  "app": { "name": "Class Routine" },
-  "nav": { "today": "Today", "week": "Week", "add": "Add", "settings": "Settings" },
-  "common": { "cancel": "Cancel", "ok": "OK", "back": "Back", "save": "Save" },
-
-  "days": { "sat": "Saturday", "sun": "Sunday", "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday", "thu": "Thursday", "fri": "Friday" },
-  "daysShort": { "sat": "Sat", "sun": "Sun", "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri" },
-  "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-  "date": { "full": "{day}, {date} {month} {year}" },
-  "time": { "dawn": "", "morning": "", "noon": "", "afternoon": "", "evening": "", "night": "" },
-  "dur": { "min": "{m} min", "hour": "{h} hr", "hourMin": "{h} hr {m} min" },
-
+  "app": {
+    "name": "Class Routine"
+  },
+  "nav": {
+    "today": "Today",
+    "week": "Week",
+    "add": "Add",
+    "settings": "Settings"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "ok": "OK",
+    "back": "Back",
+    "save": "Save"
+  },
+  "days": {
+    "sat": "Saturday",
+    "sun": "Sunday",
+    "mon": "Monday",
+    "tue": "Tuesday",
+    "wed": "Wednesday",
+    "thu": "Thursday",
+    "fri": "Friday"
+  },
+  "daysShort": {
+    "sat": "Sat",
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri"
+  },
+  "months": [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ],
+  "date": {
+    "full": "{day}, {date} {month} {year}"
+  },
+  "time": {
+    "dawn": "",
+    "morning": "",
+    "noon": "",
+    "afternoon": "",
+    "evening": "",
+    "night": ""
+  },
+  "dur": {
+    "min": "{m} min",
+    "hour": "{h} hr",
+    "hourMin": "{h} hr {m} min"
+  },
   "today": {
     "goodMorning": "Good morning",
     "goodAfternoon": "Good afternoon",
@@ -36,7 +88,6 @@
     "mutedOff": "Today's reminders are on again",
     "mutedByDay": "Reminders for this weekday are turned off in Settings"
   },
-
   "week": {
     "title": "Weekly routine",
     "sub": "Total classes: {n}",
@@ -62,9 +113,12 @@
     "period": "Period {n}",
     "gridHint": "Swipe sideways to see the whole week. Tap any cell to edit."
   },
-
-  "card": { "class": "Class", "room": "Room", "remindOff": "Reminder off", "remindMin": "{m} min before" },
-
+  "card": {
+    "class": "Class",
+    "room": "Room",
+    "remindOff": "Reminder off",
+    "remindMin": "{m} min before"
+  },
   "form": {
     "addTitle": "New class",
     "addSub": "Enter the class details",
@@ -110,23 +164,25 @@
     "addedMany": "Class added on {n} day(s)",
     "updated": "Changes saved"
   },
-
   "copy": {
     "title": "Copy to other days",
     "sub": "{subject}, {time}. Which days should have this class at the same time?",
     "do": "Copy",
     "done": "Copied to {n} day(s)"
   },
-
-  "color": { "title": "Make your own colour", "hue": "Hue", "sat": "Saturation", "light": "Lightness", "use": "Use this colour" },
-
+  "color": {
+    "title": "Make your own colour",
+    "hue": "Hue",
+    "sat": "Saturation",
+    "light": "Lightness",
+    "use": "Use this colour"
+  },
   "delete": {
     "title": "Delete this class?",
     "text": "\"{subject}\" on {day} at {time} will be deleted. This cannot be undone.",
     "ok": "Yes, delete",
     "done": "Class deleted"
   },
-
   "settings": {
     "title": "Settings",
     "sub": "Make the app work your way",
@@ -165,7 +221,6 @@
     "privacy": "All your data stays on this phone. The app sends nothing to the internet.",
     "fontCredit": "Font: Kalpurush by Avro Font Development Project, SIL Open Font License"
   },
-
   "perm": {
     "title": "Permission status",
     "on": "On",
@@ -185,7 +240,6 @@
     "testSent": "A test notification will arrive in 5 seconds",
     "webOnly": "Notifications work only in the phone app."
   },
-
   "notif": {
     "channelName": "Class reminders",
     "channelDesc": "Reminds you before each class starts",
@@ -197,7 +251,6 @@
     "testTitle": "Class Routine",
     "testBody": "Notifications are working."
   },
-
   "export": {
     "title": "Weekly Class Routine",
     "working": "Preparing the file…",
@@ -207,7 +260,6 @@
     "share": "Share",
     "failed": "Could not save the file. Please try again."
   },
-
   "restore": {
     "title": "Restore from backup?",
     "text": "Classes in this backup: {n}. Your current routine and settings will be replaced.",
@@ -216,17 +268,39 @@
     "invalid": "This is not a Class Routine backup file, or the file is damaged.",
     "readFail": "Could not read the file."
   },
-
   "clear": {
     "title": "Delete all classes?",
     "text": "Every class in the routine will be deleted. It is a good idea to take a backup first.",
     "ok": "Yes, delete all",
     "done": "All classes deleted"
   },
-
   "error": {
     "title": "Something went wrong",
     "loadTitle": "Could not read your saved routine",
     "loadText": "The saved data has a problem. If you have a backup file, you can restore it."
+  },
+  "profile": {
+    "title": "Teacher profile",
+    "sub": "This shows at the top of the Today screen.",
+    "edit": "Edit profile",
+    "name": "Name",
+    "namePh": "e.g. MD. PALASH MIA",
+    "designation": "Designation",
+    "designationPh": "e.g. Lecturer",
+    "subject": "Subject",
+    "subjectPh": "e.g. Economics",
+    "institution": "Institution",
+    "institutionPh": "Name of the institution",
+    "pickPhoto": "Choose photo",
+    "changePhoto": "Change photo",
+    "removePhoto": "Remove photo",
+    "photoHelp": "Cropped to passport size (35×45) automatically",
+    "photoFail": "Could not open that image, try another one",
+    "saved": "Profile saved",
+    "saveFail": "Could not save, try a smaller photo",
+    "addPrompt": "Add teacher profile",
+    "addPromptHelp": "Photo, name, designation and institution",
+    "settingsRow": "Profile and photo",
+    "settingsHelp": "Name, designation, subject, institution and passport-size photo"
   }
 }

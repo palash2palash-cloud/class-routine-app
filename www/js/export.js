@@ -181,6 +181,35 @@
     ctx.font = '400 18px ' + FONT;
     ctx.fillText(I.formatDate(new Date()), M + 24, M + 74);
 
+    // শিক্ষকের নাম, পদবী ও প্রতিষ্ঠান (শিরোনামের ডান পাশে)
+    const prof = S.settings.profile || {};
+    let px = width - M - 24;
+    if (prof.photo) {
+      const img = await new Promise(function (res) {
+        const im = new Image();
+        im.onload = function () { res(im); };
+        im.onerror = function () { res(null); };
+        im.src = prof.photo;
+      });
+      if (img) {
+        ctx.save();
+        roundRect(ctx, px - 56, M + 9, 56, 72, 8);
+        ctx.clip();
+        ctx.drawImage(img, px - 56, M + 9, 56, 72);
+        ctx.restore();
+        px -= 72;
+      }
+    }
+    ctx.textAlign = 'right';
+    const role = [prof.designation, prof.subject].filter(Boolean).join(', ');
+    const lines = [[prof.name, '700 20px '], [role, '400 16px '], [prof.institution, '400 15px ']].filter(function (l) { return l[0]; });
+    lines.forEach(function (l, i) {
+      ctx.font = l[1] + FONT;
+      ctx.fillStyle = i === 0 ? '#FFFFFF' : 'rgba(255,255,255,.88)';
+      ctx.fillText(fitText(ctx, l[0], 520), px, M + 28 + i * 22);
+    });
+    ctx.textAlign = 'left';
+
     let y = M + headH;
     // কলামের মাথায় পিরিয়ড আর সময়
     slots.forEach(function (sl, i) {

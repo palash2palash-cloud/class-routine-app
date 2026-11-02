@@ -306,6 +306,7 @@
       html += '<div class="banner banner-error"><strong>' + esc(t('error.loadTitle')) + '</strong><span>' + esc(t('error.loadText')) + '</span>' +
         '<button type="button" class="btn btn-small" data-action="restore">' + esc(t('settings.restore')) + '</button></div>';
     }
+    html += profileCardHtml();
 
     if (info.holiday) {
       html += emptyHtml('holiday', t('today.holidayTitle'), info.classes.length ? t('today.holidayHasClasses') : t('today.holidayText'));
@@ -909,6 +910,9 @@
       '</div>' +
       '<div id="permBlock" class="perm-block">' + (N.isNative() ? '<div class="loading-line"></div>' : '<p class="group-help">' + esc(t('perm.webOnly')) + '</p>') + '</div>');
 
+    html += group(t('profile.title'),
+      actionRow('edit-profile', t('profile.settingsRow'), t('profile.settingsHelp')));
+
     html += group(t('settings.data'),
       actionRow('backup', t('settings.backup'), t('settings.backupHelp')) +
       actionRow('restore', t('settings.restore'), t('settings.restoreHelp')) +
@@ -1135,6 +1139,9 @@
       case 'save-pdf':
         await runExport(E.savePdf, t('settings.savePdf'));
         break;
+      case 'edit-profile':
+        openProfileSheet();
+        break;
       case 'restore':
         $('#restoreInput').value = '';
         $('#restoreInput').click();
@@ -1264,6 +1271,104 @@
     // সামনের দিনগুলোর রিমাইন্ডার আবার এগিয়ে নেওয়া
     N.reschedule();
     if (state.view === 'settings') fillPermBlock();
+  }
+
+  /* ---------------- শিক্ষকের প্রোফাইল ---------------- */
+
+  function profileCardHtml() {
+    const p = S.settings.profile;
+    const has = p.photo || p.name || p.designation || p.subject || p.institution;
+    if (!has) {
+      return '<button type="button" class="profile-card profile-empty" data-action="edit-profile">' +
+        '<span class="profile-photo placeholder">' + ICON.people + '</span>' +
+        '<span class="profile-text"><strong>' + esc(t('profile.addPrompt')) + '</strong><small>' + esc(t('profile.addPromptHelp')) + '</small></span></button>';
+    }
+    const line2 = [p.designation, p.subject].filter(Boolean).join(', ');
+    return '<button type="button" class="profile-card" data-action="edit-profile" aria-label="' + esc(t('profile.edit')) + '">' +
+      (p.photo ? '<img class="profile-photo" src="' + esc(p.photo) + '" alt="' + esc(p.name) + '"/>' :
+        '<span class="profile-photo placeholder">' + ICON.people + '</span>') +
+      '<span class="profile-text">' +
+      (p.name ? '<strong>' + esc(p.name) + '</strong>' : '') +
+      (line2 ? '<span class="profile-role">' + esc(line2) + '</span>' : '') +
+      (p.institution ? '<small>' + esc(p.institution) + '</small>' : '') +
+      '</span></button>';
+  }
+
+  // ছবি কেটে পাসপোর্ট মাপে (৩৫×৪৫ অনুপাত) ছোট JPEG বানানো
+  function makePassportPhoto(file) {
+    return new Promise(function (resolve, reject) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () {
+        const W = 350, H = 450, ratio = W / H;
+        let sw = img.naturalWidth, sh = img.naturalHeight, sx = 0, sy = 0;
+        if (sw / sh > ratio) { const nw = sh * ratio; sx = (sw - nw) / 2; sw = nw; }
+        else { const nh = sw / ratio; sy = Math.max(0, (sh - nh) * 0.3); sh = nh; }
+        const c = document.createElement('canvas');
+        c.width = W; c.height = H;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, W, H);
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('image')); };
+      img.src = url;
+    });
+  }
+
+  function openProfileSheet() {
+    const p = S.settings.profile;
+    let photo = p.photo;
+    const entry = openOverlay('sheet',
+      '<div class="sheet-handle"></div><h2 class="sheet-title">' + esc(t('profile.title')) + '</h2>' +
+      '<p class="sheet-sub">' + esc(t('profile.sub')) + '</p>' +
+      '<div class="profile-edit-photo">' +
+      '<div class="profile-photo big" id="pfPreview"></div>' +
+      '<div class="profile-photo-btns">' +
+      '<button type="button" class="btn btn-tonal" id="pfPick">' + esc(t('profile.pickPhoto')) + '</button>' +
+      '<button type="button" class="btn btn-text" id="pfRemove">' + esc(t('profile.removePhoto')) + '</button>' +
+      '<small>' + esc(t('profile.photoHelp')) + '</small></div>' +
+      '<input type="file" id="pfFile" accept="image/*" hidden/></div>' +
+      '<label class="field"><span class="field-label">' + esc(t('profile.name')) + '</span><input id="pfName" maxlength="120" value="' + esc(p.name) + '" placeholder="' + esc(t('profile.namePh')) + '"/></label>' +
+      '<div class="row-2">' +
+      '<label class="field"><span class="field-label">' + esc(t('profile.designation')) + '</span><input id="pfDesig" maxlength="120" value="' + esc(p.designation) + '" placeholder="' + esc(t('profile.designationPh')) + '"/></label>' +
+      '<label class="field"><span class="field-label">' + esc(t('profile.subject')) + '</span><input id="pfSubject" maxlength="120" value="' + esc(p.subject) + '" placeholder="' + esc(t('profile.subjectPh')) + '"/></label>' +
+      '</div>' +
+      '<label class="field"><span class="field-label">' + esc(t('profile.institution')) + '</span><input id="pfInst" maxlength="120" value="' + esc(p.institution) + '" placeholder="' + esc(t('profile.institutionPh')) + '"/></label>' +
+      '<div class="sheet-actions"><button type="button" class="btn btn-text" data-act="cancel">' + esc(t('common.cancel')) + '</button>' +
+      '<button type="button" class="btn btn-primary" data-act="ok">' + esc(t('common.save')) + '</button></div>');
+    const el = entry.el;
+    function paint() {
+      $('#pfPreview', el).innerHTML = photo ? '<img src="' + esc(photo) + '" alt=""/>' : ICON.people;
+      $('#pfPreview', el).classList.toggle('placeholder', !photo);
+      $('#pfRemove', el).hidden = !photo;
+      $('#pfPick', el).textContent = photo ? t('profile.changePhoto') : t('profile.pickPhoto');
+    }
+    paint();
+    $('#pfPick', el).onclick = function () { $('#pfFile', el).value = ''; $('#pfFile', el).click(); };
+    $('#pfFile', el).addEventListener('change', async function (e) {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      try { photo = await makePassportPhoto(f); paint(); }
+      catch (err) { toast(t('profile.photoFail')); }
+    });
+    $('#pfRemove', el).onclick = function () { photo = ''; paint(); };
+    $('[data-act="cancel"]', el).onclick = function () { closeOverlay(entry, true); };
+    $('[data-act="ok"]', el).onclick = function () {
+      S.settings.profile = {
+        photo: photo || '',
+        name: $('#pfName', el).value.trim(),
+        designation: $('#pfDesig', el).value.trim(),
+        subject: $('#pfSubject', el).value.trim(),
+        institution: $('#pfInst', el).value.trim()
+      };
+      if (!S.save()) { toast(t('profile.saveFail')); return; }
+      closeOverlay(entry, true);
+      toast(t('profile.saved'));
+      if (state.view === 'today') renderToday();
+    };
   }
 
   /* প্রথমবার অ্যাপ খুললে আপনার রুটিন (www/data/default-routine.json) নিজে থেকে বসে যায়।

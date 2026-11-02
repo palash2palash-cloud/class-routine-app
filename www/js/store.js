@@ -22,7 +22,14 @@
     leadMinutes: 10,
     mutedDays: [], // যে বারগুলোতে রিমাইন্ডার বন্ধ
     mutedDates: [], // নির্দিষ্ট তারিখে বন্ধ, যেমন "2026-11-02"
-    weekMode: 'list' // list | grid
+    weekMode: 'list', // list | grid
+    profile: {
+      photo: '', // পাসপোর্ট সাইজ ছবি (JPEG data URL)
+      name: 'MD. PALASH MIA',
+      designation: '',
+      subject: 'Economics',
+      institution: 'Ispahani Cantonment Public School & College'
+    }
   };
 
   let data = null;
@@ -85,6 +92,14 @@
     if (Array.isArray(s.mutedDays)) out.mutedDays = s.mutedDays.filter(function (d) { return DAYS.indexOf(d) !== -1; });
     if (Array.isArray(s.mutedDates)) out.mutedDates = s.mutedDates.filter(function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); });
     if (s.weekMode === 'grid' || s.weekMode === 'list') out.weekMode = s.weekMode;
+    out.profile = Object.assign({}, DEFAULT_SETTINGS.profile);
+    if (s.profile && typeof s.profile === 'object') {
+      ['name', 'designation', 'subject', 'institution'].forEach(function (k) {
+        if (typeof s.profile[k] === 'string') out.profile[k] = cleanText(s.profile[k], 120);
+      });
+      const ph = s.profile.photo;
+      out.profile.photo = typeof ph === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(ph) && ph.length < 600000 ? ph : '';
+    }
     return out;
   }
 
