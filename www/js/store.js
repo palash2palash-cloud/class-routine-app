@@ -25,10 +25,8 @@
     weekMode: 'list', // list | grid
     profile: {
       photo: '', // পাসপোর্ট সাইজ ছবি (JPEG data URL)
-      name: 'MD. PALASH MIA',
-      designation: '',
-      subject: 'Economics',
-      institution: 'Ispahani Cantonment Public School & College'
+      bn: { name: '', designation: '', subject: '', institution: '', city: '' },
+      en: { name: '', designation: '', subject: '', institution: '', city: '' }
     }
   };
 
@@ -92,14 +90,37 @@
     if (Array.isArray(s.mutedDays)) out.mutedDays = s.mutedDays.filter(function (d) { return DAYS.indexOf(d) !== -1; });
     if (Array.isArray(s.mutedDates)) out.mutedDates = s.mutedDates.filter(function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); });
     if (s.weekMode === 'grid' || s.weekMode === 'list') out.weekMode = s.weekMode;
-    out.profile = Object.assign({}, DEFAULT_SETTINGS.profile);
-    if (s.profile && typeof s.profile === 'object') {
-      ['name', 'designation', 'subject', 'institution'].forEach(function (k) {
-        if (typeof s.profile[k] === 'string') out.profile[k] = cleanText(s.profile[k], 120);
+    out.profile = cleanProfile(s.profile);
+    return out;
+  }
+
+  const PROFILE_FIELDS = ['name', 'designation', 'subject', 'institution', 'city'];
+  // আগের সংস্করণে আগে থেকে বসানো লেখা, এগুলো আর রাখা হবে না
+  const OLD_DEFAULTS = ['MD. PALASH MIA', 'Economics', 'Ispahani Cantonment Public School & College'];
+
+  function emptyLangProfile() {
+    return { name: '', designation: '', subject: '', institution: '', city: '' };
+  }
+
+  function cleanProfile(p) {
+    const out = { photo: '', bn: emptyLangProfile(), en: emptyLangProfile() };
+    if (!p || typeof p !== 'object') return out;
+    const ph = p.photo;
+    out.photo = typeof ph === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(ph) && ph.length < 600000 ? ph : '';
+    ['bn', 'en'].forEach(function (lg) {
+      const src = p[lg];
+      if (!src || typeof src !== 'object') return;
+      PROFILE_FIELDS.forEach(function (k) {
+        if (typeof src[k] === 'string') out[lg][k] = cleanText(src[k], 120);
       });
-      const ph = s.profile.photo;
-      out.profile.photo = typeof ph === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(ph) && ph.length < 600000 ? ph : '';
-    }
+    });
+    // পুরোনো (এক ভাষার) প্রোফাইল থাকলে: বাংলা অক্ষর থাকলে বাংলায়, না হলে ইংরেজিতে রাখা
+    PROFILE_FIELDS.forEach(function (k) {
+      const v = typeof p[k] === 'string' ? cleanText(p[k], 120) : '';
+      if (!v || OLD_DEFAULTS.indexOf(v) !== -1) return;
+      const lg = /[\u0980-\u09FF]/.test(v) ? 'bn' : 'en';
+      if (!out[lg][k]) out[lg][k] = v;
+    });
     return out;
   }
 

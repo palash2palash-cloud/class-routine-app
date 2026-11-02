@@ -215,7 +215,11 @@ svg { fill: currentColor; }
 .profile-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .profile-text strong { font-size: 1.15rem; line-height: 1.3; overflow-wrap: anywhere; }
 .profile-role { color: var(--primary); font-weight: 600; font-size: .95rem; overflow-wrap: anywhere; }
-.profile-text small { color: var(--text-2); font-size: .88rem; line-height: 1.35; overflow-wrap: anywhere; }
+.profile-text small { color: var(--text-3); font-size: .85rem; line-height: 1.35; overflow-wrap: anywhere; }
+.profile-inst { color: var(--text-2); font-size: .9rem; line-height: 1.35; }
+.one-line { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.seg-wide { display: flex; width: 100%; margin-top: 14px; }
+.seg-wide button { flex: 1; }
 .profile-empty { border: 2px dashed var(--border); box-shadow: none; background: transparent; }
 .profile-edit-photo { display: flex; gap: 16px; align-items: center; margin: 8px 0 6px; }
 .profile-photo-btns { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }

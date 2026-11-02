@@ -324,6 +324,7 @@
       html += '<div class="card-list">' + info.classes.map(function (c, i) { return cardHtml(c, { live: true, index: i }); }).join('') + '</div>';
     }
     $('#view').innerHTML = html;
+    fitOneLine($('#view'));
     updateLive();
   }
 
@@ -1275,9 +1276,21 @@
 
   /* ---------------- শিক্ষকের প্রোফাইল ---------------- */
 
-  function profileCardHtml() {
+  // বর্তমান ভাষার প্রোফাইল; কোনো ঘর ফাঁকা থাকলে অন্য ভাষার লেখা দেখায়
+  function profileFor(lang) {
     const p = S.settings.profile;
-    const has = p.photo || p.name || p.designation || p.subject || p.institution;
+    const main = p[lang === 'en' ? 'en' : 'bn'];
+    const other = p[lang === 'en' ? 'bn' : 'en'];
+    const out = { photo: p.photo };
+    ['name', 'designation', 'subject', 'institution', 'city'].forEach(function (k) {
+      out[k] = main[k] || other[k] || '';
+    });
+    return out;
+  }
+
+  function profileCardHtml() {
+    const p = profileFor(I.getLang());
+    const has = p.photo || p.name || p.designation || p.subject || p.institution || p.city;
     if (!has) {
       return '<button type="button" class="profile-card profile-empty" data-action="edit-profile">' +
         '<span class="profile-photo placeholder">' + ICON.people + '</span>' +
@@ -1290,8 +1303,21 @@
       '<span class="profile-text">' +
       (p.name ? '<strong>' + esc(p.name) + '</strong>' : '') +
       (line2 ? '<span class="profile-role">' + esc(line2) + '</span>' : '') +
-      (p.institution ? '<small>' + esc(p.institution) + '</small>' : '') +
+      (p.institution ? '<span class="profile-inst one-line">' + esc(p.institution) + '</span>' : '') +
+      (p.city ? '<small>' + esc(p.city) + '</small>' : '') +
       '</span></button>';
+  }
+
+  // প্রতিষ্ঠানের নাম এক লাইনে রাখতে লেখা ছোট করে আনা
+  function fitOneLine(root) {
+    $$('.one-line', root).forEach(function (el) {
+      el.style.fontSize = '';
+      let size = parseFloat(getComputedStyle(el).fontSize);
+      while (el.scrollWidth > el.clientWidth + 1 && size > 10) {
+        size -= 0.5;
+        el.style.fontSize = size + 'px';
+      }
+    });
   }
 
   // ছবি কেটে পাসপোর্ট মাপে (৩৫×৪৫ অনুপাত) ছোট JPEG বানানো
@@ -1321,6 +1347,15 @@
   function openProfileSheet() {
     const p = S.settings.profile;
     let photo = p.photo;
+    let tab = I.getLang() === 'en' ? 'en' : 'bn';
+    const draft = { bn: Object.assign({}, p.bn), en: Object.assign({}, p.en) };
+    const fields = [
+      ['name', 'profile.name', 'profile.namePh'],
+      ['designation', 'profile.designation', 'profile.designationPh'],
+      ['subject', 'profile.subject', 'profile.subjectPh'],
+      ['institution', 'profile.institution', 'profile.institutionPh'],
+      ['city', 'profile.city', 'profile.cityPh']
+    ];
     const entry = openOverlay('sheet',
       '<div class="sheet-handle"></div><h2 class="sheet-title">' + esc(t('profile.title')) + '</h2>' +
       '<p class="sheet-sub">' + esc(t('profile.sub')) + '</p>' +
@@ -1331,15 +1366,38 @@
       '<button type="button" class="btn btn-text" id="pfRemove">' + esc(t('profile.removePhoto')) + '</button>' +
       '<small>' + esc(t('profile.photoHelp')) + '</small></div>' +
       '<input type="file" id="pfFile" accept="image/*" hidden/></div>' +
-      '<label class="field"><span class="field-label">' + esc(t('profile.name')) + '</span><input id="pfName" maxlength="120" value="' + esc(p.name) + '" placeholder="' + esc(t('profile.namePh')) + '"/></label>' +
-      '<div class="row-2">' +
-      '<label class="field"><span class="field-label">' + esc(t('profile.designation')) + '</span><input id="pfDesig" maxlength="120" value="' + esc(p.designation) + '" placeholder="' + esc(t('profile.designationPh')) + '"/></label>' +
-      '<label class="field"><span class="field-label">' + esc(t('profile.subject')) + '</span><input id="pfSubject" maxlength="120" value="' + esc(p.subject) + '" placeholder="' + esc(t('profile.subjectPh')) + '"/></label>' +
-      '</div>' +
-      '<label class="field"><span class="field-label">' + esc(t('profile.institution')) + '</span><input id="pfInst" maxlength="120" value="' + esc(p.institution) + '" placeholder="' + esc(t('profile.institutionPh')) + '"/></label>' +
+      '<div class="seg seg-wide" id="pfTabs"><button type="button" data-val="bn">বাংলায় তথ্য</button><button type="button" data-val="en">In English</button></div>' +
+      '<p class="field-help" id="pfTabHelp"></p>' +
+      '<div id="pfFields">' + fields.map(function (f) {
+        return '<label class="field"><span class="field-label">' + esc(t(f[1])) + '</span><input data-k="' + f[0] + '" maxlength="120"/></label>';
+      }).join('') + '</div>' +
       '<div class="sheet-actions"><button type="button" class="btn btn-text" data-act="cancel">' + esc(t('common.cancel')) + '</button>' +
       '<button type="button" class="btn btn-primary" data-act="ok">' + esc(t('common.save')) + '</button></div>');
     const el = entry.el;
+    const phByLang = {
+      bn: { name: 'যেমন: মোঃ পলাশ মিয়া', designation: 'যেমন: প্রভাষক', subject: 'যেমন: অর্থনীতি', institution: 'প্রতিষ্ঠানের পূর্ণ নাম', city: 'যেমন: ঢাকা' },
+      en: { name: 'e.g. MD. PALASH MIA', designation: 'e.g. Lecturer', subject: 'e.g. Economics', institution: 'Full name of the institution', city: 'e.g. Dhaka' }
+    };
+    function readFields() {
+      $$('#pfFields input', el).forEach(function (inp) { draft[tab][inp.getAttribute('data-k')] = inp.value.trim(); });
+    }
+    function showTab() {
+      $$('#pfTabs button', el).forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-val') === tab); });
+      $$('#pfFields input', el).forEach(function (inp) {
+        const k = inp.getAttribute('data-k');
+        inp.value = draft[tab][k] || '';
+        inp.placeholder = phByLang[tab][k];
+        inp.lang = tab;
+      });
+      $('#pfTabHelp', el).textContent = t(tab === 'bn' ? 'profile.tabHelpBn' : 'profile.tabHelpEn');
+    }
+    $('#pfTabs', el).addEventListener('click', function (e) {
+      const b = e.target.closest('button');
+      if (!b) return;
+      readFields();
+      tab = b.getAttribute('data-val');
+      showTab();
+    });
     function paint() {
       $('#pfPreview', el).innerHTML = photo ? '<img src="' + esc(photo) + '" alt=""/>' : ICON.people;
       $('#pfPreview', el).classList.toggle('placeholder', !photo);
@@ -1347,6 +1405,7 @@
       $('#pfPick', el).textContent = photo ? t('profile.changePhoto') : t('profile.pickPhoto');
     }
     paint();
+    showTab();
     $('#pfPick', el).onclick = function () { $('#pfFile', el).value = ''; $('#pfFile', el).click(); };
     $('#pfFile', el).addEventListener('change', async function (e) {
       const f = e.target.files && e.target.files[0];
@@ -1357,13 +1416,8 @@
     $('#pfRemove', el).onclick = function () { photo = ''; paint(); };
     $('[data-act="cancel"]', el).onclick = function () { closeOverlay(entry, true); };
     $('[data-act="ok"]', el).onclick = function () {
-      S.settings.profile = {
-        photo: photo || '',
-        name: $('#pfName', el).value.trim(),
-        designation: $('#pfDesig', el).value.trim(),
-        subject: $('#pfSubject', el).value.trim(),
-        institution: $('#pfInst', el).value.trim()
-      };
+      readFields();
+      S.settings.profile = { photo: photo || '', bn: draft.bn, en: draft.en };
       if (!S.save()) { toast(t('profile.saveFail')); return; }
       closeOverlay(entry, true);
       toast(t('profile.saved'));
