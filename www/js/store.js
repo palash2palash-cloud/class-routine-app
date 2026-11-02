@@ -23,6 +23,7 @@
     mutedDays: [], // যে বারগুলোতে রিমাইন্ডার বন্ধ
     mutedDates: [], // নির্দিষ্ট তারিখে বন্ধ, যেমন "2026-11-02"
     weekMode: 'list', // list | grid
+    hgStyle: 'classic', // চলমান ক্লাসের বালুঘড়ির নকশা
     breakEnabled: true, // পিডিএফ/ছবির রুটিনে টিফিন বিরতির ঘর
     breakStart: '11:05',
     breakEnd: '11:40',
@@ -93,6 +94,7 @@
     if (Array.isArray(s.mutedDays)) out.mutedDays = s.mutedDays.filter(function (d) { return DAYS.indexOf(d) !== -1; });
     if (Array.isArray(s.mutedDates)) out.mutedDates = s.mutedDates.filter(function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); });
     if (s.weekMode === 'grid' || s.weekMode === 'list') out.weekMode = s.weekMode;
+    if (['classic', 'wood', 'crystal', 'rose', 'classColor', 'minimal', 'off'].indexOf(s.hgStyle) !== -1) out.hgStyle = s.hgStyle;
     if (typeof s.breakEnabled === 'boolean') out.breakEnabled = s.breakEnabled;
     if (isTime(s.breakStart) && isTime(s.breakEnd) && toMin(s.breakEnd) > toMin(s.breakStart)) {
       out.breakStart = s.breakStart;

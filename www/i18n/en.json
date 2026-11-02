@@ -319,5 +319,16 @@
     "cityPh": "e.g. Dhaka",
     "tabHelpBn": "Shown when the app language is Bangla.",
     "tabHelpEn": "Shown when the app language is English. Any empty box falls back to the other language."
+  },
+  "hg": {
+    "title": "Hourglass style",
+    "help": "Pick the hourglass shown on the card of the class running now, then tap Save.",
+    "classic": "Classic",
+    "wood": "Wooden",
+    "crystal": "Blue crystal",
+    "rose": "Rose",
+    "classColor": "Class colour",
+    "minimal": "Minimal",
+    "off": "Off"
   }
 }

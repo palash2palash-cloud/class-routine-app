@@ -166,13 +166,18 @@
 
   /* চলমান ক্লাসের বালুঘড়ি: উপরের বালি কমে, নিচে জমে, মাঝে বালির সরু ধারা পড়ে।
      কতটা বালি নেমেছে তা ক্লাসের কতটা সময় পার হয়েছে তার সমান (updateLive হালনাগাদ করে)। */
-  function hourglassHtml(id) {
+  // বালুঘড়ির নকশাগুলো (সেটিংস থেকে বাছাই করা যায়); রংগুলো CSS-এ .hg-<নাম> ক্লাসে
+  const HG_STYLES = ['classic', 'wood', 'crystal', 'rose', 'classColor', 'minimal', 'off'];
+
+  function hourglassHtml(id, style) {
+    style = style || S.settings.hgStyle || 'classic';
+    if (style === 'off') return '';
     const k = 'hg' + String(id).replace(/[^a-zA-Z0-9_-]/g, '');
     const glass = 'M11 9.5H43C43 21 31.5 26 29.2 31C31.5 36 43 41 43 52.5H11C11 41 22.5 36 24.8 31C22.5 26 11 21 11 9.5Z';
-    return '<span class="hourglass" aria-hidden="true">' +
+    return '<span class="hourglass hg-' + style + '" aria-hidden="true">' +
       '<svg viewBox="0 0 54 62">' +
       '<defs><clipPath id="' + k + '"><path d="' + glass + '"/></clipPath>' +
-      '<linearGradient id="' + k + 's" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FDE68A"/><stop offset=".55" stop-color="#FBBF24"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>' +
+      '<linearGradient id="' + k + 's" x1="0" y1="0" x2="0" y2="1"><stop class="hg-s1" offset="0"/><stop class="hg-s2" offset=".55"/><stop class="hg-s3" offset="1"/></linearGradient>' +
       '<linearGradient id="' + k + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".30"/><stop offset=".45" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#fff" stop-opacity=".18"/></linearGradient>' +
       '<linearGradient id="' + k + 'c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>' +
       '<rect class="hg-post" x="5" y="7" width="3" height="48" rx="1.5"/>' +
@@ -182,16 +187,17 @@
       '<rect class="hg-top" x="0" y="11" width="54" height="20" fill="url(#' + k + 's)"/>' +
       '<line class="hg-stream" x1="27" y1="30" x2="27" y2="53"/>' +
       '<path class="hg-bottom" d="M0 53V45Q27 31 54 45V53Z" fill="url(#' + k + 's)"/>' +
-      '<rect x="0" y="0" width="54" height="62" fill="url(#' + k + 'g)"/>' +
+      '<rect class="hg-gloss" x="0" y="0" width="54" height="62" fill="url(#' + k + 'g)"/>' +
       '</g>' +
       '<path class="hg-glass-line" d="' + glass + '"/>' +
       '<path class="hg-shine" d="M14.5 12.5C15 19 19 23.5 22 26.5"/>' +
       '<rect class="hg-cap" x="2" y="2" width="50" height="7.5" rx="3.75"/>' +
-      '<rect x="4" y="3" width="46" height="3" rx="1.5" fill="url(#' + k + 'c)"/>' +
+      '<rect class="hg-cap-hi" x="4" y="3" width="46" height="3" rx="1.5" fill="url(#' + k + 'c)"/>' +
       '<rect class="hg-cap" x="2" y="52.5" width="50" height="7.5" rx="3.75"/>' +
-      '<rect x="4" y="53.5" width="46" height="3" rx="1.5" fill="url(#' + k + 'c)"/>' +
+      '<rect class="hg-cap-hi" x="4" y="53.5" width="46" height="3" rx="1.5" fill="url(#' + k + 'c)"/>' +
       '</svg></span>';
   }
+
 
 
   function cardHtml(c, opts) {
@@ -205,7 +211,7 @@
       (lead === null || !S.settings.notifEnabled ? ICON.bellOff : ICON.bell) + esc(reminderLabel(c)) + '</span>');
 
     return '<article class="class-card" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + (opts.index !== undefined ? '--i:' + opts.index + ';' : '') + '">' +
-      '<div class="card-time">' +
+      '<div class="card-time' + (opts.live && S.settings.hgStyle !== 'off' ? ' has-hg' : '') + '">' +
       '<span class="t-start">' + esc(fmtTime(c.start)) + '</span>' +
       '<span class="t-line"></span>' +
       (opts.live ? hourglassHtml(c.id) : '') +
@@ -963,6 +969,15 @@
       '<label class="field"><span class="field-label">' + esc(t('form.end')) + '</span><input id="s-breakEnd" type="time" value="' + esc(st.breakEnd) + '"/></label>' +
       '</div>');
 
+    html += group(t('hg.title'),
+      '<p class="group-help">' + esc(t('hg.help')) + '</p>' +
+      '<div class="hg-options" id="s-hg">' +
+      HG_STYLES.map(function (k) {
+        return '<button type="button" class="hg-option' + (st.hgStyle === k ? ' on' : '') + '" data-val="' + k + '" style="' + colorVars('#0D9488') + '">' +
+          '<span class="hg-preview">' + (k === 'off' ? '<span class="hg-off-line"></span>' : hourglassHtml('pv-' + k, k)) + '</span>' +
+          '<span class="hg-name">' + esc(t('hg.' + k)) + '</span></button>';
+      }).join('') + '</div>');
+
     html += group(t('settings.reminders'),
       row(t('settings.notifEnabled'), t('settings.notifEnabledHelp'),
         '<label class="switch"><input type="checkbox" id="s-notif"' + (st.notifEnabled ? ' checked' : '') + '/><span></span></label>') +
@@ -1096,6 +1111,14 @@
     $('#s-notif').addEventListener('change', function (e) {
       const on = e.target.checked;
       changeDraft(function (d) { d.notifEnabled = on; });
+    });
+
+    $('#s-hg').addEventListener('click', function (e) {
+      const b = e.target.closest('.hg-option');
+      if (!b) return;
+      const v = b.getAttribute('data-val');
+      if (state.draft.hgStyle === v) return;
+      changeDraft(function (d) { d.hgStyle = v; });
     });
 
     $('#s-break').addEventListener('change', function (e) {
