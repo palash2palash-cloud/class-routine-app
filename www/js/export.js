@@ -128,12 +128,16 @@
     return s + '…';
   }
 
-  const FONT = '"Kalpurush", "Noto Sans Bengali", sans-serif';
+  const FONT = '"Montserrat", "Kalpurush", "Noto Sans Bengali", sans-serif';
 
   async function ensureFonts() {
     if (!document.fonts || !document.fonts.load) return;
     try {
       await Promise.all([
+        document.fonts.load('400 24px \"Montserrat\"', 'Aa1'),
+        document.fonts.load('500 24px \"Montserrat\"', 'Aa1'),
+        document.fonts.load('600 24px \"Montserrat\"', 'Aa1'),
+        document.fonts.load('700 24px \"Montserrat\"', 'Aa1'),
         document.fonts.load('400 24px \"Kalpurush\"', 'অআ Aa'),
         document.fonts.load('600 24px \"Kalpurush\"', 'অআ Aa'),
         document.fonts.load('700 24px \"Kalpurush\"', 'অআ Aa')
