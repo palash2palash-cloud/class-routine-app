@@ -1327,6 +1327,16 @@
       };
       vv.addEventListener('resize', upd);
     }
+    // কিবোর্ড খুললে (Android 15+ এ নেটিভ কোড WebView ছোট করে দেয়) পেজের আকার বদলায়;
+    // তখন আবার লেখার ঘরটাকে দৃশ্যমান জায়গার মাঝখানে আনা হয়
+    let resizeTimer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        const a = document.activeElement;
+        if (isTextInput(a)) a.scrollIntoView({ block: 'center' });
+      }, 60);
+    });
 
     $('#restoreInput').addEventListener('change', function (e) {
       handleRestoreFile(e.target.files && e.target.files[0]);
