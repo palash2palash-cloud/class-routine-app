@@ -308,7 +308,7 @@
     "saved": "Profile saved",
     "saveFail": "Could not save, try a smaller photo",
     "addPrompt": "Add teacher profile",
-    "addPromptHelp": "Photo, name, designation, institution and district",
+    "addPromptHelp": "Add photo, name and details from Settings > Teacher profile",
     "settingsRow": "Profile and photo",
     "settingsHelp": "Name, designation, subject, institution, district and passport-size photo, in Bangla and English",
     "city": "District / City",

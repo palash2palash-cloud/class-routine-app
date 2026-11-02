@@ -1389,12 +1389,13 @@
     const p = profileFor(I.getLang());
     const has = p.photo || p.name || p.designation || p.subject || p.institution || p.city;
     if (!has) {
-      return '<button type="button" class="profile-card profile-empty" data-action="edit-profile">' +
+      return '<div class="profile-card profile-empty">' +
         '<span class="profile-photo placeholder">' + ICON.people + '</span>' +
-        '<span class="profile-text"><strong>' + esc(t('profile.addPrompt')) + '</strong><small>' + esc(t('profile.addPromptHelp')) + '</small></span></button>';
+        '<span class="profile-text"><strong>' + esc(t('profile.addPrompt')) + '</strong><small>' + esc(t('profile.addPromptHelp')) + '</small></span></div>';
     }
     const line2 = [p.designation, p.subject].filter(Boolean).join(', ');
-    return '<button type="button" class="profile-card" data-action="edit-profile" aria-label="' + esc(t('profile.edit')) + '">' +
+    // শুধু দেখার জন্য; সম্পাদনা কেবল সেটিংস থেকে
+    return '<div class="profile-card">' +
       (p.photo ? '<img class="profile-photo" src="' + esc(p.photo) + '" alt="' + esc(p.name) + '"/>' :
         '<span class="profile-photo placeholder">' + ICON.people + '</span>') +
       '<span class="profile-text">' +
@@ -1402,7 +1403,7 @@
       (line2 ? '<span class="profile-role">' + esc(line2) + '</span>' : '') +
       (p.institution ? '<span class="profile-inst one-line">' + esc(p.institution) + '</span>' : '') +
       (p.city ? '<small>' + esc(p.city) + '</small>' : '') +
-      '</span></button>';
+      '</span></div>';
   }
 
   // প্রতিষ্ঠানের নাম এক লাইনে রাখতে লেখা ছোট করে আনা
