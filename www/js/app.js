@@ -356,7 +356,12 @@
       const s = S.toMin(c.start);
       const e = S.toMin(c.end);
       const isNow = current && current.id === c.id;
+      const wasNow = el.classList.contains('is-now');
       el.classList.toggle('is-now', !!isNow);
+      // নতুন ক্লাস শুরু হলে সেই কার্ডটা স্ক্রিনে এনে দেখানো
+      if (isNow && !wasNow && !document.body.classList.contains('kb-open')) {
+        setTimeout(function () { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 300);
+      }
       el.classList.toggle('is-past', m >= e);
       const badge = $('.live-badge', el);
       const prog = $('.card-progress', el);
@@ -1571,6 +1576,12 @@
     $('#app').hidden = false;
     boot.classList.add('hide');
     setTimeout(function () { boot.remove(); }, 400);
+    // প্রতি মিনিটের শুরুতে হালনাগাদ, যাতে ক্লাস শুরু/শেষের সাথে সাথেই হাইলাইট বদলায়
+    const tickMinute = function () {
+      updateLive();
+      setTimeout(tickMinute, 60000 - (Date.now() % 60000) + 200);
+    };
+    setTimeout(tickMinute, 60000 - (Date.now() % 60000) + 200);
     setInterval(updateLive, 15000);
     try {
       await N.init();

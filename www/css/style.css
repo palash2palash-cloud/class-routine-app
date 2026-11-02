@@ -273,7 +273,20 @@ svg { fill: currentColor; }
 .class-card:active { transform: scale(.985); }
 @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
-.class-card.is-now { box-shadow: 0 0 0 2px var(--c), 0 10px 30px rgba(var(--c-rgb), .28); }
+/* এখন যে ক্লাস চলছে: রঙিন পটভূমি, মোটা বর্ডার আর হালকা জ্বলজ্বলে আভা, ক্লাস শেষ না হওয়া পর্যন্ত */
+.class-card.is-now {
+  background: linear-gradient(135deg, rgba(var(--c-rgb), .22), rgba(var(--c-rgb), .08)), var(--surface);
+  box-shadow: 0 0 0 3px var(--c), 0 10px 30px rgba(var(--c-rgb), .35);
+  animation: cardIn .35s ease both, nowGlow 2.4s ease-in-out .4s infinite;
+}
+.class-card.is-now::before { width: 10px; }
+.class-card.is-now .t-start, .class-card.is-now .card-head h3 { color: var(--c); }
+.class-card.is-now .t-line { background: var(--c); }
+@keyframes nowGlow {
+  0%, 100% { box-shadow: 0 0 0 3px var(--c), 0 10px 30px rgba(var(--c-rgb), .35); }
+  50% { box-shadow: 0 0 0 3px var(--c), 0 0 0 9px rgba(var(--c-rgb), .18), 0 10px 34px rgba(var(--c-rgb), .45); }
+}
+@media (prefers-reduced-motion: reduce) { .class-card.is-now { animation: none; } }
 .class-card.is-past { opacity: .55; }
 .class-card.is-past.is-now { opacity: 1; }
 
