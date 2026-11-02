@@ -599,19 +599,29 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .hourglass { display: none; }
 .class-card.is-now .t-line { display: none; }
 .class-card.is-now .hourglass {
-  display: flex; flex: 1; align-items: center; justify-content: flex-start;
-  min-height: 58px; margin: 6px 0; padding-left: 0;
+  display: flex; flex: 1; align-items: center; justify-content: center;
+  min-height: 62px; margin: 6px 0;
 }
-.hourglass svg { width: 34px; height: 54px; overflow: visible; filter: drop-shadow(0 2px 4px rgba(var(--c-rgb), .35)); }
-.hg-glass { fill: rgba(var(--c-rgb), .10); stroke: var(--c); stroke-width: 1.6; stroke-linejoin: round; }
+.hourglass svg {
+  width: 46px; height: 53px; overflow: visible; flex: none;
+  filter: drop-shadow(0 3px 6px rgba(var(--c-rgb), .40));
+  animation: hgGlow 3s ease-in-out infinite;
+}
+.hg-glass { fill: rgba(var(--c-rgb), .14); }
+.hg-glass-line { fill: none; stroke: var(--c); stroke-width: 1.7; stroke-linejoin: round; }
 .hg-cap { fill: var(--c); }
-.hg-shine { fill: none; stroke: rgba(255, 255, 255, .55); stroke-width: 1.4; stroke-linecap: round; }
+.hg-post { fill: var(--c); opacity: .75; }
+.hg-shine { fill: none; stroke: rgba(255, 255, 255, .7); stroke-width: 1.6; stroke-linecap: round; }
 .hg-top, .hg-bottom { transform-box: view-box; transition: transform 1.2s ease; }
-.hg-top { transform-origin: 20px 32px; transform: scaleY(var(--top, 1)); }
-.hg-bottom { transform-origin: 20px 57px; transform: scaleY(var(--bottom, .12)); }
+.hg-top { transform-origin: 27px 31px; transform: scaleY(var(--top, 1)); }
+.hg-bottom { transform-origin: 27px 53px; transform: scaleY(var(--bottom, .12)); }
 .hg-stream {
-  stroke: #F59E0B; stroke-width: 1.6; stroke-linecap: round;
+  stroke: #F59E0B; stroke-width: 1.8; stroke-linecap: round;
   stroke-dasharray: 2 3; animation: hgFall .6s linear infinite;
 }
+@keyframes hgGlow {
+  0%, 100% { filter: drop-shadow(0 3px 6px rgba(var(--c-rgb), .35)); }
+  50% { filter: drop-shadow(0 3px 10px rgba(251, 191, 36, .55)); }
+}
 @keyframes hgFall { to { stroke-dashoffset: -5; } }
-@media (prefers-reduced-motion: reduce) { .hg-stream { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .hg-stream, .hourglass svg { animation: none; } }

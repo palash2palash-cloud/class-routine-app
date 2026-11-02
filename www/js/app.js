@@ -168,22 +168,31 @@
      কতটা বালি নেমেছে তা ক্লাসের কতটা সময় পার হয়েছে তার সমান (updateLive হালনাগাদ করে)। */
   function hourglassHtml(id) {
     const k = 'hg' + String(id).replace(/[^a-zA-Z0-9_-]/g, '');
-    const glass = 'M9 7H31C31 19 23.5 25.5 21.2 32C23.5 38.5 31 45 31 57H9C9 45 16.5 38.5 18.8 32C16.5 25.5 9 19 9 7Z';
+    const glass = 'M11 9.5H43C43 21 31.5 26 29.2 31C31.5 36 43 41 43 52.5H11C11 41 22.5 36 24.8 31C22.5 26 11 21 11 9.5Z';
     return '<span class="hourglass" aria-hidden="true">' +
-      '<svg viewBox="0 0 40 64">' +
+      '<svg viewBox="0 0 54 62">' +
       '<defs><clipPath id="' + k + '"><path d="' + glass + '"/></clipPath>' +
-      '<linearGradient id="' + k + 's" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCD34D"/><stop offset="1" stop-color="#F59E0B"/></linearGradient></defs>' +
+      '<linearGradient id="' + k + 's" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FDE68A"/><stop offset=".55" stop-color="#FBBF24"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>' +
+      '<linearGradient id="' + k + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".30"/><stop offset=".45" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#fff" stop-opacity=".18"/></linearGradient>' +
+      '<linearGradient id="' + k + 'c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>' +
+      '<rect class="hg-post" x="5" y="7" width="3" height="48" rx="1.5"/>' +
+      '<rect class="hg-post" x="46" y="7" width="3" height="48" rx="1.5"/>' +
       '<path class="hg-glass" d="' + glass + '"/>' +
       '<g clip-path="url(#' + k + ')">' +
-      '<rect class="hg-top" x="0" y="8" width="40" height="24" fill="url(#' + k + 's)"/>' +
-      '<line class="hg-stream" x1="20" y1="31" x2="20" y2="57"/>' +
-      '<path class="hg-bottom" d="M0 57V48Q20 34 40 48V57Z" fill="url(#' + k + 's)"/>' +
+      '<rect class="hg-top" x="0" y="11" width="54" height="20" fill="url(#' + k + 's)"/>' +
+      '<line class="hg-stream" x1="27" y1="30" x2="27" y2="53"/>' +
+      '<path class="hg-bottom" d="M0 53V45Q27 31 54 45V53Z" fill="url(#' + k + 's)"/>' +
+      '<rect x="0" y="0" width="54" height="62" fill="url(#' + k + 'g)"/>' +
       '</g>' +
-      '<path class="hg-shine" d="M12.5 10C13 17 16 22 18 26"/>' +
-      '<rect class="hg-cap" x="5" y="2" width="30" height="5" rx="2.5"/>' +
-      '<rect class="hg-cap" x="5" y="57" width="30" height="5" rx="2.5"/>' +
+      '<path class="hg-glass-line" d="' + glass + '"/>' +
+      '<path class="hg-shine" d="M14.5 12.5C15 19 19 23.5 22 26.5"/>' +
+      '<rect class="hg-cap" x="2" y="2" width="50" height="7.5" rx="3.75"/>' +
+      '<rect x="4" y="3" width="46" height="3" rx="1.5" fill="url(#' + k + 'c)"/>' +
+      '<rect class="hg-cap" x="2" y="52.5" width="50" height="7.5" rx="3.75"/>' +
+      '<rect x="4" y="53.5" width="46" height="3" rx="1.5" fill="url(#' + k + 'c)"/>' +
       '</svg></span>';
   }
+
 
   function cardHtml(c, opts) {
     opts = opts || {};
@@ -395,6 +404,14 @@
       }
       const hg = $('.hourglass', el);
       if (hg && isNow) {
+        // বালুঘড়ি দুই সময়ের লেখার মাঝ বরাবর থাকবে
+        const tw = Math.max($('.t-start', el).offsetWidth, $('.t-end', el).offsetWidth);
+        if (tw) hg.style.width = tw + 'px';
+        else if (!state.hgRetry) {
+          // পেজ তখনও দেখা যাচ্ছে না, একটু পরে আবার মাপা হবে
+          state.hgRetry = true;
+          setTimeout(function () { state.hgRetry = false; updateLive(); }, 400);
+        }
         const p = Math.min(1, Math.max(0, (m - s) / (e - s)));
         hg.style.setProperty('--top', (1 - p).toFixed(3));
         hg.style.setProperty('--bottom', (0.12 + p * 0.88).toFixed(3));
@@ -1633,6 +1650,7 @@
     };
     setTimeout(tickMinute, 60000 - (Date.now() % 60000) + 200);
     setInterval(updateLive, 15000);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { updateLive(); });
     try {
       await N.init();
     } catch (e) {
