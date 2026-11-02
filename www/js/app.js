@@ -1264,9 +1264,29 @@
     if (state.view === 'settings') fillPermBlock();
   }
 
+  /* প্রথমবার অ্যাপ খুললে আপনার রুটিন (www/data/default-routine.json) নিজে থেকে বসে যায়।
+     একবার বসানোর পর আর কখনো আসবে না, তাই সব ক্লাস মুছে ফেললেও আবার ফিরে আসবে না। */
+  const SEED_FLAG = 'classRoutine.defaultSeeded';
+  async function seedDefaultRoutine() {
+    try {
+      if (localStorage.getItem(SEED_FLAG)) return;
+      if (S.data.classes.length) { localStorage.setItem(SEED_FLAG, '1'); return; }
+      const r = await fetch('data/default-routine.json', { cache: 'no-cache' });
+      if (!r.ok) return;
+      const parsed = S.sanitize(await r.json());
+      if (!parsed || !parsed.classes.length) return;
+      const settings = Object.assign({}, S.settings, { holidays: parsed.settings.holidays });
+      S.replaceAll({ version: 1, classes: parsed.classes, settings: settings });
+      localStorage.setItem(SEED_FLAG, '1');
+    } catch (e) {
+      console.warn('default routine not loaded', e);
+    }
+  }
+
   async function boot() {
     const res = S.load();
     state.loadError = !res.ok;
+    if (res.ok) await seedDefaultRoutine();
     try {
       await I.init(S.settings.lang);
     } catch (e) {
