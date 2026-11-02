@@ -117,8 +117,8 @@
       : t('notif.titleNow', { subject: subject });
     const bits = [];
     const cls = classLabel(c);
-    if (cls) bits.push(t('notif.section', { section: I.digits(cls) }));
-    if (c.room) bits.push(t('notif.room', { room: I.digits(c.room) }));
+    if (cls) bits.push(t('notif.section', { section: cls }));
+    if (c.room) bits.push(t('notif.room', { room: c.room }));
     bits.push(t('notif.starts', { time: I.formatTime(c.start, window.Store.settings.timeFormat) }));
     let body = bits.join(' · ');
     const large = c.note ? body + '\n' + c.note : body;

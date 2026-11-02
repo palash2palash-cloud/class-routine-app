@@ -242,6 +242,23 @@
     save();
   }
 
+  // কয়েকটি দিনের ক্লাস থেকে আলাদা আলাদা শুরুর সময় (গ্রিড ও ছবির কলামের জন্য)
+  function timeSlots(lists) {
+    const seen = {};
+    const out = [];
+    lists.forEach(function (list) {
+      list.forEach(function (c) {
+        if (seen[c.start]) {
+          if (toMin(c.end) > toMin(seen[c.start].end)) seen[c.start].end = c.end;
+          return;
+        }
+        seen[c.start] = { start: c.start, end: c.end };
+        out.push(seen[c.start]);
+      });
+    });
+    return out.sort(byTime);
+  }
+
   function subjects() {
     const set = {};
     data.classes.forEach(function (c) { if (c.subject) set[c.subject] = true; });
@@ -308,6 +325,7 @@
     reorderDay: reorderDay,
     moveToDay: moveToDay,
     subjects: subjects,
+    timeSlots: timeSlots,
     collator: collator,
     normalize: normalize,
     matches: matches,

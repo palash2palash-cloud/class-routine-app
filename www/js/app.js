@@ -168,8 +168,8 @@
     const cs = classSec(c);
     const lead = N.leadFor(c, S.settings);
     const meta = [];
-    if (cs) meta.push('<span class="chip">' + ICON.people + esc(I.digits(cs)) + '</span>');
-    if (c.room) meta.push('<span class="chip">' + ICON.room + esc(t('card.room')) + ' ' + esc(I.digits(c.room)) + '</span>');
+    if (cs) meta.push('<span class="chip">' + ICON.people + esc(cs) + '</span>');
+    if (c.room) meta.push('<span class="chip">' + ICON.room + esc(t('card.room')) + ' ' + esc(c.room) + '</span>');
     meta.push('<span class="chip chip-soft' + (lead === null || !S.settings.notifEnabled ? ' is-off' : '') + '">' +
       (lead === null || !S.settings.notifEnabled ? ICON.bellOff : ICON.bell) + esc(reminderLabel(c)) + '</span>');
 
@@ -373,7 +373,7 @@
       html += '<div class="status-row status-next">' +
         '<div class="countdown"><b>' + esc(I.num(wait >= 60 ? Math.floor(wait / 60) : wait)) + '</b><small>' + esc(wait >= 60 ? t('today.hourShort') : t('today.minShort')) + '</small></div>' +
         '<div><small>' + esc(t('today.nextClass')) + '</small><strong>' + esc(next.subject || t('form.untitled')) + '</strong>' +
-        '<span>' + esc(t('today.startsIn', { d: I.duration(wait) })) + (where ? ' · ' + esc(I.digits(where)) : '') + '</span></div></div>';
+        '<span>' + esc(t('today.startsIn', { d: I.duration(wait) })) + (where ? ' · ' + esc(where) : '') + '</span></div></div>';
     }
     if (!current && !next) {
       html += '<div class="status-row status-done"><div class="done-icon">' + ICON.check + '</div><div><strong>' + esc(t('today.allDone')) + '</strong><span>' + esc(t('today.allDoneText')) + '</span></div></div>';
@@ -484,24 +484,30 @@
       return { day: d, holiday: S.settings.holidays.indexOf(d) !== -1, list: S.classesForDay(d).filter(function (c) { return S.matches(c, q); }) };
     }).filter(function (r) { return !q || r.list.length; });
     if (!rows.length) return emptyHtml('search', t('week.noResultTitle'), t('week.noResultText'));
-    const cols = Math.max(1, rows.reduce(function (m, r) { return Math.max(m, r.list.length); }, 0));
+    // কলাম = সপ্তাহের সব আলাদা শুরুর সময়, যাতে একই পিরিয়ড একই কলামে থাকে
+    const slots = S.timeSlots(rows.map(function (r) { return r.list; }));
     let html = '<div class="grid-scroll"><table class="week-grid"><thead><tr><th>' + esc(t('week.day')) + '</th>';
-    for (let i = 1; i <= cols; i++) html += '<th>' + esc(t('week.period', { n: i })) + '</th>';
+    slots.forEach(function (sl, i) {
+      html += '<th>' + esc(t('week.period', { n: i + 1 })) + '<small>' + esc(fmtTime(sl.start)) + '</small></th>';
+    });
+    if (!slots.length) html += '<th></th>';
     html += '</tr></thead><tbody>';
     rows.forEach(function (r) {
       html += '<tr class="' + (r.holiday ? 'is-holiday' : '') + '"><th>' + esc(I.dayShort(r.day)) + '</th>';
-      for (let i = 0; i < cols; i++) {
-        const c = r.list[i];
-        if (!c) {
-          html += '<td class="empty-cell">' + (i === 0 && r.holiday ? esc(t('week.holiday')) : '') + '</td>';
-          continue;
+      (slots.length ? slots : [{ start: null }]).forEach(function (sl, i) {
+        const here = r.list.filter(function (c) { return c.start === sl.start; });
+        if (!here.length) {
+          html += '<td class="empty-cell">' + (i === 0 && r.holiday && !r.list.length ? esc(t('week.holiday')) : '') + '</td>';
+          return;
         }
-        html += '<td><button type="button" class="grid-cell" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + '">' +
-          '<b>' + esc(c.subject || t('form.untitled')) + '</b>' +
-          '<span>' + esc(fmtTime(c.start)) + '</span>' +
-          '<span>' + esc(I.digits([classSec(c), c.room ? t('card.room') + ' ' + c.room : ''].filter(Boolean).join(' · '))) + '</span>' +
-          '</button></td>';
-      }
+        html += '<td>' + here.map(function (c) {
+          return '<button type="button" class="grid-cell" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + '">' +
+            '<b>' + esc(c.subject || t('form.untitled')) + '</b>' +
+            '<span>' + esc(classSec(c)) + '</span>' +
+            (c.room ? '<span>' + esc(t('card.room') + ' ' + c.room) + '</span>' : '') +
+            '</button>';
+        }).join('') + '</td>';
+      });
       html += '</tr>';
     });
     html += '</tbody></table></div><p class="hint">' + esc(t('week.gridHint')) + '</p>';

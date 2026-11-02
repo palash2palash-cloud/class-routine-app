@@ -151,11 +151,14 @@
       return { day: d, holiday: S.settings.holidays.indexOf(d) !== -1, classes: S.classesForDay(d) };
     }).filter(function (r) { return !r.holiday || r.classes.length; });
 
-    const maxCols = Math.max(1, rows.reduce(function (m, r) { return Math.max(m, r.classes.length); }, 0));
+    const slots = S.timeSlots(rows.map(function (r) { return r.classes; }));
+    const maxCols = Math.max(1, slots.length);
+    const slotIndex = {};
+    slots.forEach(function (sl, i) { slotIndex[sl.start] = i; });
     const scale = 2;
-    const M = 32, dayW = 180, cellW = 230, cellH = 128, gap = 10, headH = 110;
+    const M = 32, dayW = 180, cellW = 210, cellH = 128, gap = 10, headH = 110, colH = 54;
     const width = Math.max(900, M * 2 + dayW + maxCols * (cellW + gap));
-    const height = M * 2 + headH + Math.max(1, rows.length) * (cellH + gap) + 30;
+    const height = M * 2 + headH + colH + Math.max(1, rows.length) * (cellH + gap) + 30;
 
     const canvas = document.createElement('canvas');
     canvas.width = width * scale;
@@ -179,6 +182,17 @@
     ctx.fillText(I.formatDate(new Date()), M + 24, M + 74);
 
     let y = M + headH;
+    // কলামের মাথায় পিরিয়ড আর সময়
+    slots.forEach(function (sl, i) {
+      const hx = M + dayW + i * (cellW + gap) + 12;
+      ctx.fillStyle = '#1E1B4B';
+      ctx.font = '700 17px ' + FONT;
+      ctx.fillText(t('week.period', { n: i + 1 }), hx, y + 20);
+      ctx.fillStyle = '#64748B';
+      ctx.font = '400 15px ' + FONT;
+      ctx.fillText(fitText(ctx, I.formatTime(sl.start, fmt) + ' – ' + I.formatTime(sl.end, fmt), cellW - 16), hx, y + 42);
+    });
+    y += colH;
     if (!rows.length) {
       ctx.fillStyle = '#64748B';
       ctx.font = '500 22px ' + FONT;
@@ -197,13 +211,18 @@
       ctx.fillStyle = r.holiday ? '#DC2626' : '#64748B';
       ctx.fillText(r.holiday ? t('week.holiday') : t('week.count', { n: r.classes.length }), M + 14, y + 80);
 
-      let x = M + dayW;
+      const x0 = M + dayW;
       if (!r.classes.length) {
         ctx.fillStyle = '#94A3B8';
         ctx.font = '400 18px ' + FONT;
-        ctx.fillText(r.holiday ? t('week.holiday') : t('week.noClass'), x + 12, y + 70);
+        ctx.fillText(r.holiday ? t('week.holiday') : t('week.noClass'), x0 + 12, y + 70);
       }
+      const used = {};
       r.classes.forEach(function (c) {
+        const si = slotIndex[c.start];
+        if (used[si]) return; // একই সময়ে দুটি ক্লাস থাকলে প্রথমটিই দেখানো হয়
+        used[si] = true;
+        const x = M + dayW + si * (cellW + gap);
         ctx.fillStyle = tint(c.color, 0.16);
         roundRect(ctx, x, y, cellW, cellH, 14);
         ctx.fill();
@@ -220,13 +239,12 @@
         const cls = [c.grade, c.section].filter(Boolean).join('-');
         const line3 = [cls ? t('card.class') + ' ' + cls : '', c.room ? t('card.room') + ' ' + c.room : ''].filter(Boolean).join(' · ');
         ctx.font = '400 16px ' + FONT;
-        ctx.fillText(fitText(ctx, I.digits(line3), tw), tx, y + 88);
+        ctx.fillText(fitText(ctx, line3, tw), tx, y + 88);
         if (c.note) {
           ctx.fillStyle = '#64748B';
           ctx.font = '400 14px ' + FONT;
           ctx.fillText(fitText(ctx, c.note, tw), tx, y + 112);
         }
-        x += cellW + gap;
       });
       y += cellH + gap;
     });
