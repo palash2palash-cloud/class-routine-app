@@ -342,7 +342,7 @@
     if (S.settings.notifEnabled && !info.holiday && info.classes.length) {
       actions = '<button type="button" class="icon-btn' + (muted ? ' is-muted' : '') + '" data-action="toggle-mute-today" aria-label="' + esc(t('today.muteToday')) + '">' + (muted ? ICON.bellOff : ICON.bell) + '</button>';
     }
-    setTop(greeting(), I.formatDate(info.now), actions);
+    setTop(t('today.appTitle'), I.formatDate(info.now), actions);
 
     let html = '';
     if (state.loadError) {

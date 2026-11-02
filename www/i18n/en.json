@@ -74,7 +74,7 @@
     "hourShort": "hr",
     "minShort": "min",
     "allDone": "All classes done for today",
-    "allDoneText": "That's it for today. See you tomorrow.",
+    "allDoneText": "Get properly prepared for the next day",
     "classesCount": "Classes today: {n}",
     "emptyTitle": "No classes today",
     "emptyText": "You haven't added any classes for today yet.",
@@ -86,7 +86,8 @@
     "mutedBanner": "Reminders are muted for today.",
     "mutedOn": "Today's reminders are muted",
     "mutedOff": "Today's reminders are on again",
-    "mutedByDay": "Reminders for this weekday are turned off in Settings"
+    "mutedByDay": "Reminders for this weekday are turned off in Settings",
+    "appTitle": "Class Routine (Teacher)"
   },
   "week": {
     "title": "Weekly routine",
