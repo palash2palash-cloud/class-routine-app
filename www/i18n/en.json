@@ -334,5 +334,25 @@
     "classColor": "Class colour",
     "minimal": "Minimal",
     "off": "Off"
+  },
+  "prep": {
+    "title": "Prep for next class",
+    "help": "Write how far you got with each section or what to do next time. The note shows on that section's next class card.",
+    "next": "Next class: {day}, {time}",
+    "noNext": "No class in the coming week",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "empty": "Tap to write a note",
+    "sheetTitle": "{section}: prep for next class",
+    "sheetSub": "This note shows on the next class card of this section.",
+    "field": "Note",
+    "placeholder": "e.g. Finish elasticity of demand, check homework",
+    "clear": "Delete",
+    "clearTitle": "Delete this note?",
+    "clearText": "The prep note for {section} will be deleted.",
+    "clearOk": "Yes, delete",
+    "saved": "Note saved",
+    "cleared": "Note deleted",
+    "cardLabel": "Prep:"
   }
 }

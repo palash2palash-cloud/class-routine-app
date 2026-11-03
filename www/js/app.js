@@ -30,6 +30,7 @@
   }
 
   const ICON = {
+    edit: '<svg viewBox="0 0 24 24"><path d="M15.2 3.6a2 2 0 0 1 2.8 0l2.4 2.4a2 2 0 0 1 0 2.8L9.6 19.6 4 21l1.4-5.6L15.2 3.6Zm1.4 1.4-1.6 1.6 2.4 2.4 1.6-1.6-2.4-2.4Zm-3 3L6.9 14.7l-.7 2.9 2.9-.7 6.7-6.7-2.2-2.2Z"/></svg>',
     room: '<svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7Zm0 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg>',
     people: '<svg viewBox="0 0 24 24"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 20c0-3.3 3.1-6 7-6s7 2.7 7 6v1H2v-1Zm15.5 1v-1c0-2-.8-3.8-2.2-5.1 3.5-.5 6.7 1.7 6.7 5.1v1h-4.5Z"/></svg>',
     bell: '<svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 0 0-6 6v3.6L4.3 15A1 1 0 0 0 5.2 16.5h13.6a1 1 0 0 0 .9-1.5L18 11.6V8a6 6 0 0 0-6-6Zm-2.5 16a2.5 2.5 0 0 0 5 0h-5Z"/></svg>',
@@ -222,6 +223,7 @@
       (opts.live ? '<span class="live-badge" hidden>' + esc(t('today.now')) + '</span>' : '') + '</div>' +
       '<div class="card-meta">' + meta.join('') + '</div>' +
       (c.note ? '<p class="card-note">' + ICON.note + '<span>' + esc(c.note) + '</span></p>' : '') +
+      (opts.live && S.getNote(S.sectionKey(c)) ? '<p class="card-prep">' + ICON.edit + '<span><b>' + esc(t('prep.cardLabel')) + '</b> ' + esc(S.getNote(S.sectionKey(c))) + '</span></p>' : '') +
       (opts.live ? '<div class="card-progress" hidden><span></span></div>' : '') +
       '</div>' +
       (opts.drag ? '<button type="button" class="drag-handle" aria-label="' + esc(t('week.drag')) + '">' + ICON.drag + '</button>' : '') +
@@ -371,9 +373,101 @@
         html += '<div class="card-list">' + left.map(function (c, i) { return cardHtml(c, { live: true, index: i }); }).join('') + '</div>';
       }
     }
+    html += prepPanelHtml(info);
     $('#view').innerHTML = html;
     fitOneLine($('#view'));
     updateLive();
+  }
+
+  /* পরের ক্লাসের প্রস্তুতি নোট: রুটিনের প্রতিটি সেকশনের জন্য একটি ঘর,
+     সেকশনের পরের ক্লাস যেটা আগে, সেটা উপরে। */
+  function nextClassOfSection(key, from) {
+    const base = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    const nm = from.getHours() * 60 + from.getMinutes();
+    for (let d = 0; d < 8; d++) {
+      const date = new Date(base.getFullYear(), base.getMonth(), base.getDate() + d);
+      const dk = S.dayKeyOf(date);
+      if (S.settings.holidays.indexOf(dk) !== -1) continue;
+      const list = S.classesForDay(dk).filter(function (c) {
+        return S.sectionKey(c) === key && (d > 0 || S.toMin(c.start) > nm);
+      });
+      if (list.length) return { date: date, c: list[0], when: date.getTime() + S.toMin(list[0].start) * 60000 };
+    }
+    return null;
+  }
+
+  function prepSections() {
+    const seen = {};
+    const out = [];
+    const now = new Date();
+    S.data.classes.forEach(function (c) {
+      const key = S.sectionKey(c);
+      if (!key || seen[key]) return;
+      seen[key] = true;
+      const nx = nextClassOfSection(key, now);
+      out.push({ key: key, label: S.sectionLabel(c), color: (nx ? nx.c.color : c.color), next: nx });
+    });
+    out.sort(function (a, b) {
+      return (a.next ? a.next.when : Infinity) - (b.next ? b.next.when : Infinity) || S.collator().compare(a.label, b.label);
+    });
+    return out;
+  }
+
+  function prepPanelHtml(info) {
+    if (!S.data.classes.length) return '';
+    const secs = prepSections();
+    if (!secs.length) return '';
+    const todayIso = info.iso;
+    let html = '<section class="prep-panel">' +
+      '<div class="prep-head"><h2>' + ICON.edit + esc(t('prep.title')) + '</h2>' +
+      '<p>' + esc(t('prep.help')) + '</p></div><div class="prep-list">';
+    secs.forEach(function (sc) {
+      const note = S.getNote(sc.key);
+      let when = t('prep.noNext');
+      if (sc.next) {
+        const iso = S.isoDate(sc.next.date);
+        const tomorrow = new Date(info.now.getFullYear(), info.now.getMonth(), info.now.getDate() + 1);
+        const dayTxt = iso === todayIso ? t('prep.today') : (iso === S.isoDate(tomorrow) ? t('prep.tomorrow') : I.dayName(S.dayKeyOf(sc.next.date)));
+        when = t('prep.next', { day: dayTxt, time: fmtTime(sc.next.c.start) });
+      }
+      html += '<button type="button" class="prep-item' + (note ? ' has-note' : '') + '" data-prep="' + esc(sc.key) + '" data-label="' + esc(sc.label) + '" style="' + colorVars(sc.color) + '">' +
+        '<span class="prep-top"><span class="prep-sec">' + esc(sc.label) + '</span><span class="prep-when">' + esc(when) + '</span></span>' +
+        '<span class="prep-note">' + (note ? esc(note) : '<i>' + esc(t('prep.empty')) + '</i>') + '</span>' +
+        '</button>';
+    });
+    return html + '</div></section>';
+  }
+
+  function openPrepSheet(key, label) {
+    const cur = S.getNote(key);
+    const entry = openOverlay('sheet',
+      '<div class="sheet-handle"></div><h2 class="sheet-title">' + esc(t('prep.sheetTitle', { section: label })) + '</h2>' +
+      '<p class="sheet-sub">' + esc(t('prep.sheetSub')) + '</p>' +
+      '<label class="field"><span class="field-label">' + esc(t('prep.field')) + '</span>' +
+      '<textarea id="prepText" maxlength="400" rows="4" placeholder="' + esc(t('prep.placeholder')) + '"></textarea></label>' +
+      '<div class="sheet-actions">' +
+      (cur ? '<button type="button" class="btn btn-text danger-text" data-act="clear">' + esc(t('prep.clear')) + '</button><span class="flex-1"></span>' : '') +
+      '<button type="button" class="btn btn-text" data-act="cancel">' + esc(t('common.cancel')) + '</button>' +
+      '<button type="button" class="btn btn-primary" data-act="ok">' + esc(t('common.save')) + '</button></div>');
+    const el = entry.el;
+    const ta = $('#prepText', el);
+    ta.value = cur;
+    $('[data-act="cancel"]', el).onclick = function () { closeOverlay(entry, true); };
+    $('[data-act="ok"]', el).onclick = function () {
+      if (!S.setNote(key, ta.value)) { toast(t('settings.saveFail')); return; }
+      closeOverlay(entry, true);
+      toast(ta.value.trim() ? t('prep.saved') : t('prep.cleared'));
+      if (state.view === 'today') renderToday();
+    };
+    const clr = $('[data-act="clear"]', el);
+    if (clr) clr.onclick = async function () {
+      const ok = await confirmDialog({ title: t('prep.clearTitle'), message: t('prep.clearText', { section: label }), okText: t('prep.clearOk'), danger: true });
+      if (!ok) return;
+      S.setNote(key, '');
+      closeOverlay(entry, true);
+      toast(t('prep.cleared'));
+      if (state.view === 'today') renderToday();
+    };
   }
 
   // প্রতি কয়েক সেকেন্ডে চলমান ক্লাস আর কাউন্টডাউন হালনাগাদ
@@ -1406,6 +1500,11 @@
       const a = e.target.closest('[data-action]');
       if (a && !a.closest('.seg[data-setting]')) {
         handleAction(a.getAttribute('data-action'), a);
+        return;
+      }
+      const prep = e.target.closest('[data-prep]');
+      if (prep) {
+        openPrepSheet(prep.getAttribute('data-prep'), prep.getAttribute('data-label'));
         return;
       }
       const card = e.target.closest('.class-card, .grid-cell');

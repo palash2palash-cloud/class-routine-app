@@ -41,7 +41,7 @@
   }
 
   function emptyData() {
-    return { version: 1, classes: [], settings: Object.assign({}, DEFAULT_SETTINGS) };
+    return { version: 1, classes: [], settings: Object.assign({}, DEFAULT_SETTINGS), prepNotes: {} };
   }
 
   function isTime(s) {
@@ -134,13 +134,50 @@
     return out;
   }
 
+  /* পরের ক্লাসের প্রস্তুতি নোট: প্রতিটি সেকশনের (যেমন Twelve-H2) জন্য একটি করে লেখা।
+     key = সেকশনের নাম ছোট হাতের অক্ষরে, যাতে "twelve-h2" আর "Twelve-H2" একই ধরা হয়। */
+  function sectionLabel(c) {
+    const parts = [c.grade, c.section].filter(Boolean);
+    return parts.length ? parts.join('-') : (c.subject || '');
+  }
+
+  function sectionKey(c) {
+    return normalize(sectionLabel(c)).replace(/\s+/g, ' ');
+  }
+
+  function cleanNotes(n) {
+    const out = {};
+    if (!n || typeof n !== 'object') return out;
+    Object.keys(n).forEach(function (k) {
+      const v = n[k];
+      if (!v || typeof v !== 'object') return;
+      const text = cleanText(v.text, 400);
+      if (!text) return;
+      out[String(k).slice(0, 120)] = { text: text, at: typeof v.at === 'number' ? v.at : Date.now() };
+    });
+    return out;
+  }
+
+  function getNote(key) {
+    const n = data.prepNotes && data.prepNotes[key];
+    return n ? n.text : '';
+  }
+
+  function setNote(key, text) {
+    if (!data.prepNotes) data.prepNotes = {};
+    text = cleanText(text, 400);
+    if (text) data.prepNotes[key] = { text: text, at: Date.now() };
+    else delete data.prepNotes[key];
+    return save();
+  }
+
   // বাইরের (backup) ডেটা যাচাই করে পরিষ্কার করা। ভুল হলে null দেয়।
   function sanitize(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const src = raw.data && raw.data.classes ? raw.data : raw;
     if (!Array.isArray(src.classes)) return null;
     const classes = src.classes.map(cleanClass).filter(Boolean);
-    return { version: 1, classes: classes, settings: cleanSettings(src.settings) };
+    return { version: 1, classes: classes, settings: cleanSettings(src.settings), prepNotes: cleanNotes(src.prepNotes) };
   }
 
   function load() {
@@ -381,6 +418,10 @@
     normalize: normalize,
     matches: matches,
     replaceAll: replaceAll,
+    sectionLabel: sectionLabel,
+    sectionKey: sectionKey,
+    getNote: getNote,
+    setNote: setNote,
     clearAll: clearAll,
     isColor: isColor
   };
