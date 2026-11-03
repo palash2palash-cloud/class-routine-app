@@ -168,7 +168,57 @@
   /* চলমান ক্লাসের বালুঘড়ি: উপরের বালি কমে, নিচে জমে, মাঝে বালির সরু ধারা পড়ে।
      কতটা বালি নেমেছে তা ক্লাসের কতটা সময় পার হয়েছে তার সমান (updateLive হালনাগাদ করে)। */
   // বালুঘড়ির নকশাগুলো (সেটিংস থেকে বাছাই করা যায়); রংগুলো CSS-এ .hg-<নাম> ক্লাসে
-  const HG_STYLES = ['classic', 'wood', 'crystal', 'rose', 'classColor', 'minimal', 'off'];
+  const HG_STYLES = ['classic', 'wood', 'crystal', 'rose', 'night', 'classColor', 'minimal', 'off'];
+  const DAYEND_STYLES = ['classic', 'wood', 'crystal', 'rose', 'night', 'emerald', 'minimal'];
+
+  /* দিনশেষের বড় বালুঘড়ি: শেষ ক্লাস থেকে রাত ১২টা পর্যন্ত বালি ঝরে।
+     নকশা (রং) আসে CSS-এর .hg-<নাম> থেকে, ছোট বালুঘড়ির মতোই। হোমপেজে এটি লক: চাপলে কিছু হয় না। */
+  function bigHourglassHtml(style, uid) {
+    const k = 'bhg' + uid;
+    const glass = 'M52 38H148C148 94 112 120 103.5 140C112 160 148 186 148 242H52C52 186 88 160 96.5 140C88 120 52 94 52 38Z';
+    const grains = [0, 1, 2, 3, 4].map(function (i) {
+      return '<circle class="bhg-grain" cx="' + (100 + (i % 2 ? 0.8 : -0.8)) + '" cy="142" r="1.5" style="animation-delay:' + (i * 0.22).toFixed(2) + 's"/>';
+    }).join('');
+    return '<div class="big-hg hourglass hg-' + style + '" aria-hidden="true" style="' + colorVars('#4F46E5') + '">' +
+      '<svg viewBox="0 0 200 284" preserveAspectRatio="xMidYMid meet">' +
+      '<defs>' +
+      '<clipPath id="' + k + 'c"><path d="' + glass + '"/></clipPath>' +
+      '<linearGradient id="' + k + 's" x1="0" y1="0" x2="0" y2="1"><stop class="hg-s1" offset="0"/><stop class="hg-s2" offset=".55"/><stop class="hg-s3" offset="1"/></linearGradient>' +
+      '<linearGradient id="' + k + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset=".22" stop-color="#fff" stop-opacity=".06"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".2"/></linearGradient>' +
+      '<linearGradient id="' + k + 'f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>' +
+      '<linearGradient id="' + k + 'p" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".25"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity=".25"/></linearGradient>' +
+      '<radialGradient id="' + k + 'sh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>' +
+      '</defs>' +
+      '<ellipse cx="100" cy="276" rx="88" ry="7" fill="url(#' + k + 'sh)"/>' +
+      // খুঁটি (দুই পাশে), মাঝে গোল গাঁট
+      '<g class="bhg-posts">' +
+      '<rect class="hg-post" x="27" y="30" width="9" height="224" rx="4.5"/><rect x="27" y="30" width="9" height="224" rx="4.5" fill="url(#' + k + 'p)"/>' +
+      '<rect class="hg-post" x="164" y="30" width="9" height="224" rx="4.5"/><rect x="164" y="30" width="9" height="224" rx="4.5" fill="url(#' + k + 'p)"/>' +
+      '<circle class="hg-cap" cx="31.5" cy="140" r="8"/><circle class="hg-cap" cx="168.5" cy="140" r="8"/>' +
+      '<circle cx="29.5" cy="137.5" r="3" fill="#fff" opacity=".35"/><circle cx="166.5" cy="137.5" r="3" fill="#fff" opacity=".35"/>' +
+      '</g>' +
+      // কাচ ও বালি
+      '<path class="hg-glass" d="' + glass + '"/>' +
+      '<g clip-path="url(#' + k + 'c)">' +
+      '<path class="hg-top bhg-top" d="M0 50Q100 66 200 50V140H0Z" fill="url(#' + k + 's)"/>' +
+      '<line class="hg-stream bhg-stream" x1="100" y1="138" x2="100" y2="244"/>' +
+      grains +
+      '<path class="hg-bottom bhg-bottom" d="M0 244V214Q100 160 200 214V244Z" fill="url(#' + k + 's)"/>' +
+      '<rect class="hg-gloss" x="0" y="0" width="200" height="284" fill="url(#' + k + 'g)"/>' +
+      '</g>' +
+      '<path class="hg-glass-line bhg-line" d="' + glass + '"/>' +
+      '<path class="hg-shine" d="M61 48C63 78 76 100 90 118" stroke-width="3"/>' +
+      '<path class="hg-shine" d="M61 232C63 210 72 194 84 182" stroke-width="2" opacity=".6"/>' +
+      // উপরের ও নিচের ঢাকনা
+      '<g class="bhg-caps">' +
+      '<rect class="hg-cap" x="14" y="12" width="172" height="20" rx="10"/><rect x="14" y="12" width="172" height="20" rx="10" fill="url(#' + k + 'f)"/>' +
+      '<rect class="hg-cap" x="34" y="30" width="132" height="8" rx="4" opacity=".85"/>' +
+      '<rect class="hg-cap" x="34" y="242" width="132" height="8" rx="4" opacity=".85"/>' +
+      '<rect class="hg-cap" x="14" y="248" width="172" height="20" rx="10"/><rect x="14" y="248" width="172" height="20" rx="10" fill="url(#' + k + 'f)"/>' +
+      '</g>' +
+      '</svg></div>';
+  }
+
 
   function hourglassHtml(id, style) {
     style = style || S.settings.hgStyle || 'classic';
@@ -371,12 +421,65 @@
       if (left.length) {
         html += '<div class="section-label">' + esc(t('today.remainingCount', { n: left.length })) + '</div>';
         html += '<div class="card-list">' + left.map(function (c, i) { return cardHtml(c, { live: true, index: i }); }).join('') + '</div>';
+      } else {
+        // সব ক্লাস শেষ: রাত ১২টা পর্যন্ত চলা বড় বালুঘড়ি (হোমপেজে লক করা)
+        html += '<section class="day-end" id="dayEnd">' + bigHourglassHtml(S.settings.dayEndStyle || 'classic', 'home') +
+          '<div class="day-end-text"><strong id="deLeft"></strong><span id="deNext"></span></div></section>';
       }
     }
     html += prepPanelHtml(info);
     $('#view').innerHTML = html;
     fitOneLine($('#view'));
     updateLive();
+    fitDayEnd();
+  }
+
+  // বড় বালুঘড়িকে হোমপেজের বাকি ফাঁকা জায়গার মাপে বসানো
+  function fitDayEnd() {
+    const sec = $('#dayEnd');
+    if (!sec) return;
+    const svg = $('.big-hg svg', sec);
+    const txt = $('.day-end-text', sec);
+    const nav = $('#bottomNav');
+    const top = sec.getBoundingClientRect().top + window.scrollY;
+    const navH = nav ? nav.getBoundingClientRect().height : 70;
+    const avail = window.innerHeight - top - navH - (txt ? txt.getBoundingClientRect().height : 60) - 36;
+    if (!sec.clientWidth) { setTimeout(fitDayEnd, 300); return; } // পেজ তখনও দেখা যাচ্ছে না
+    const maxW = sec.clientWidth * 0.78;
+    let h = Math.max(200, Math.min(avail, 460, maxW * 284 / 200));
+    svg.style.height = Math.round(h) + 'px';
+    svg.style.width = Math.round(h * 200 / 284) + 'px';
+  }
+
+  // দিনশেষের বালুঘড়ির বালি আর লেখা হালনাগাদ
+  function updateDayEnd(info) {
+    const sec = $('#dayEnd');
+    if (!sec) return;
+    const now = new Date();
+    const lastEnd = info.classes.reduce(function (mx, c) { return Math.max(mx, S.toMin(c.end)); }, 0);
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, lastEnd).getTime();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+    const p = Math.min(1, Math.max(0, (now.getTime() - start) / Math.max(1, end - start)));
+    const hg = $('.big-hg', sec);
+    hg.style.setProperty('--top', (1 - p).toFixed(4));
+    hg.style.setProperty('--bottom', (0.06 + p * 0.94).toFixed(4));
+    hg.classList.toggle('is-done', p >= 1);
+    const leftMin = Math.max(0, Math.ceil((end - now.getTime()) / 60000));
+    $('#deLeft', sec).textContent = t('dayEnd.left', { d: I.duration(leftMin) });
+    // পরের ক্লাস (আগামীকাল বা তার পরের কর্মদিবস)
+    let nextTxt = '';
+    for (let d = 1; d < 8; d++) {
+      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
+      const dk = S.dayKeyOf(date);
+      if (S.settings.holidays.indexOf(dk) !== -1) continue;
+      const list = S.classesForDay(dk);
+      if (!list.length) continue;
+      const c = list[0];
+      const dayTxt = d === 1 ? t('prep.tomorrow') : I.dayName(dk);
+      nextTxt = t('dayEnd.next', { day: dayTxt, time: fmtTime(c.start), n: list.length });
+      break;
+    }
+    $('#deNext', sec).textContent = nextTxt;
   }
 
   /* পরের ক্লাসের প্রস্তুতি নোট: রুটিনের প্রতিটি সেকশনের জন্য একটি ঘর,
@@ -477,6 +580,7 @@
     if (info.iso !== state.renderedDay) { renderToday(); return; }
     const card = $('#statusCard');
     if (!card) return;
+    updateDayEnd(info);
     const m = nowMin();
     let current = null;
     let next = null;
@@ -1091,6 +1195,15 @@
           '<span class="hg-name">' + esc(t('hg.' + k)) + '</span></button>';
       }).join('') + '</div>');
 
+    html += group(t('dayEnd.title'),
+      '<p class="group-help">' + esc(t('dayEnd.help')) + '</p>' +
+      '<div class="hg-options de-options" id="s-dayend">' +
+      DAYEND_STYLES.map(function (k) {
+        return '<button type="button" class="hg-option' + (st.dayEndStyle === k ? ' on' : '') + '" data-val="' + k + '">' +
+          '<span class="de-preview">' + bigHourglassHtml(k, 'pv' + k) + '</span>' +
+          '<span class="hg-name">' + esc(t('hg.' + k)) + '</span></button>';
+      }).join('') + '</div>');
+
     html += group(t('settings.reminders'),
       row(t('settings.notifEnabled'), t('settings.notifEnabledHelp'),
         '<label class="switch"><input type="checkbox" id="s-notif"' + (st.notifEnabled ? ' checked' : '') + '/><span></span></label>') +
@@ -1227,6 +1340,14 @@
     $('#s-notif').addEventListener('change', function (e) {
       const on = e.target.checked;
       changeDraft(function (d) { d.notifEnabled = on; });
+    });
+
+    $('#s-dayend').addEventListener('click', function (e) {
+      const b = e.target.closest('.hg-option');
+      if (!b) return;
+      const v = b.getAttribute('data-val');
+      if (state.draft.dayEndStyle === v) return;
+      changeDraft(function (d) { d.dayEndStyle = v; });
     });
 
     $('#s-hg').addEventListener('click', function (e) {
@@ -1547,6 +1668,7 @@
     // তখন আবার লেখার ঘরটাকে দৃশ্যমান জায়গার মাঝখানে আনা হয়
     let resizeTimer = null;
     window.addEventListener('resize', function () {
+      if (state.view === 'today') setTimeout(fitDayEnd, 80);
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
         const a = document.activeElement;
@@ -1794,7 +1916,7 @@
     };
     setTimeout(tickMinute, 60000 - (Date.now() % 60000) + 200);
     setInterval(updateLive, 15000);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { updateLive(); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { updateLive(); fitDayEnd(); });
     try {
       await N.init();
     } catch (e) {

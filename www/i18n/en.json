@@ -333,7 +333,9 @@
     "rose": "Rose",
     "classColor": "Class colour",
     "minimal": "Minimal",
-    "off": "Off"
+    "off": "Off",
+    "night": "Night sky",
+    "emerald": "Emerald"
   },
   "prep": {
     "title": "Prep for next class",
@@ -354,5 +356,11 @@
     "saved": "Note saved",
     "cleared": "Note deleted",
     "cardLabel": "Prep:"
+  },
+  "dayEnd": {
+    "title": "Day-end hourglass",
+    "help": "When all of today's classes are over, a large hourglass runs in the empty space on the home page until midnight. It is locked on the home page; change its design only here, then tap Save.",
+    "left": "{d} left in the day",
+    "next": "Next class: {day}, {time} · {n} classes"
   }
 }
