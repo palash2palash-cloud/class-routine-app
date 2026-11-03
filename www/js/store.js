@@ -95,7 +95,7 @@
     if (Array.isArray(s.mutedDays)) out.mutedDays = s.mutedDays.filter(function (d) { return DAYS.indexOf(d) !== -1; });
     if (Array.isArray(s.mutedDates)) out.mutedDates = s.mutedDates.filter(function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); });
     if (s.weekMode === 'grid' || s.weekMode === 'list') out.weekMode = s.weekMode;
-    if (['classic', 'wood', 'crystal', 'rose', 'night', 'classColor', 'minimal', 'off'].indexOf(s.hgStyle) !== -1) out.hgStyle = s.hgStyle;
+    if (['classic', 'black', 'wood', 'crystal', 'rose', 'night', 'emerald', 'minimal', 'off'].indexOf(s.hgStyle) !== -1) out.hgStyle = s.hgStyle;
     if (['classic', 'black', 'wood', 'crystal', 'rose', 'night', 'emerald', 'minimal'].indexOf(s.dayEndStyle) !== -1) out.dayEndStyle = s.dayEndStyle;
     if (typeof s.breakEnabled === 'boolean') out.breakEnabled = s.breakEnabled;
     if (isTime(s.breakStart) && isTime(s.breakEnd) && toMin(s.breakEnd) > toMin(s.breakStart)) {
