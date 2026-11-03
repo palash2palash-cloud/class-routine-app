@@ -67,8 +67,12 @@ copyDir(path.join(root, 'resources', 'android', 'res'), res);
   if (!found) fail('MainActivity.java not found');
   const text = read(found);
   if (text.indexOf('package com.palash.classroutine;') === -1) fail('unexpected package in ' + found);
-  fs.copyFileSync(path.join(root, 'resources', 'android', 'java', 'MainActivity.java'), found);
-  console.log('MainActivity replaced');
+  // MainActivity আর ক্লাস-রিমাইন্ডারের নিজস্ব Java ফাইলগুলো একই ফোল্ডারে
+  const srcDir = path.join(root, 'resources', 'android', 'java');
+  fs.readdirSync(srcDir).filter(function (f) { return f.endsWith('.java'); }).forEach(function (f) {
+    fs.copyFileSync(path.join(srcDir, f), path.join(path.dirname(found), f));
+    console.log('copied ' + f);
+  });
 })();
 console.log('icons and splash copied');
 
@@ -94,6 +98,24 @@ replaceOnce(
   '<uses-permission android:name="android.permission.INTERNET" />\n' + permissions
 );
 console.log('permissions added');
+
+// ক্লাস রিমাইন্ডারের receiver: অ্যালার্ম বাজলে, আর ফোন রিস্টার্ট/সময় বদল/অ্যাপ আপডেটের পর
+replaceOnce(
+  path.join(main, 'AndroidManifest.xml'),
+  '</application>',
+  '    <receiver android:name=".ClassAlarmReceiver" android:exported="false" />\n' +
+  '        <receiver android:name=".ClassAlarmBootReceiver" android:exported="true">\n' +
+  '            <intent-filter>\n' +
+  '                <action android:name="android.intent.action.BOOT_COMPLETED" />\n' +
+  '                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />\n' +
+  '                <action android:name="android.intent.action.TIME_SET" />\n' +
+  '                <action android:name="android.intent.action.TIMEZONE_CHANGED" />\n' +
+  '                <action android:name="android.intent.action.QUICKBOOT_POWERON" />\n' +
+  '            </intent-filter>\n' +
+  '        </receiver>\n' +
+  '    </application>'
+);
+console.log('alarm receivers added');
 
 // কিবোর্ড খুললে স্ক্রিন ছোট হয়ে লেখার ঘর দেখা যাবে
 replaceOnce(

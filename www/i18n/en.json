@@ -87,7 +87,8 @@
     "mutedOn": "Today's reminders are muted",
     "mutedOff": "Today's reminders are on again",
     "mutedByDay": "Reminders for this weekday are turned off in Settings",
-    "appTitle": "Class Routine (Teacher)"
+    "appTitle": "Class Routine (Teacher)",
+    "remainingCount": "Classes left today: {n}"
   },
   "week": {
     "title": "Weekly routine",
@@ -251,7 +252,9 @@
     "batteryTip": "Some phones (Xiaomi, Oppo, Vivo, Realme) stop apps to save battery. If that happens, set this app to \"No restrictions\" in Settings > Battery.",
     "test": "Send a test notification",
     "testSent": "A test notification will arrive in 5 seconds",
-    "webOnly": "Notifications work only in the phone app."
+    "webOnly": "Notifications work only in the phone app.",
+    "nextAlarm": "Next reminder: {date}, {time}",
+    "channelOff": "The \"Class reminders\" notification category is turned off in phone Settings. Turn it on in Settings > Apps > Class Routine > Notifications."
   },
   "notif": {
     "channelName": "Class reminders",

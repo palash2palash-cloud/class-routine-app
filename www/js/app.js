@@ -363,8 +363,13 @@
         html += '<div class="banner banner-warn">' + ICON.bellOff + '<span>' + esc(t('today.mutedBanner')) + '</span></div>';
       }
       html += '<section class="status-card" id="statusCard"></section>';
-      html += '<div class="section-label">' + esc(t('today.classesCount', { n: info.classes.length })) + '</div>';
-      html += '<div class="card-list">' + info.classes.map(function (c, i) { return cardHtml(c, { live: true, index: i }); }).join('') + '</div>';
+      // শেষ হয়ে যাওয়া ক্লাস তালিকায় আর থাকে না; সব শেষ হলে তালিকাই থাকে না
+      const nm = nowMin();
+      const left = info.classes.filter(function (c) { return S.toMin(c.end) > nm; });
+      if (left.length) {
+        html += '<div class="section-label">' + esc(t('today.remainingCount', { n: left.length })) + '</div>';
+        html += '<div class="card-list">' + left.map(function (c, i) { return cardHtml(c, { live: true, index: i }); }).join('') + '</div>';
+      }
     }
     $('#view').innerHTML = html;
     fitOneLine($('#view'));
@@ -387,6 +392,20 @@
       if (s <= m && m < e && !current) current = c;
       if (s > m && !next) next = c;
     });
+
+    // কোনো ক্লাস শেষ হলে তার কার্ড সরে যায় আর তালিকা নতুন করে আঁকা হয়
+    let ended = false;
+    $$('.class-card').forEach(function (el) {
+      const c = S.getClass(el.getAttribute('data-id'));
+      if (c && $('.card-progress', el) && m >= S.toMin(c.end)) {
+        ended = true;
+        el.classList.add('is-leaving');
+      }
+    });
+    if (ended && !state.leaving) {
+      state.leaving = true;
+      setTimeout(function () { state.leaving = false; if (state.view === 'today') renderToday(); }, 450);
+    }
 
     $$('.class-card').forEach(function (el) {
       const c = S.getClass(el.getAttribute('data-id'));
@@ -1047,11 +1066,8 @@
     if (!el) return;
     const perm = await N.permission();
     const exact = await N.exactAlarm();
-    let pending = null;
-    try {
-      const r = await window.Capacitor.Plugins.LocalNotifications.getPending();
-      pending = (r.notifications || []).length;
-    } catch (e) { /* ignore */ }
+    const st = await N.status();
+    const pending = st ? st.count : null;
     if (!$('#permBlock')) return;
 
     function statusChip(ok) {
@@ -1068,6 +1084,12 @@
       if (exact !== 'granted') html += '<button type="button" class="btn btn-tonal btn-block" data-action="ask-exact">' + esc(t('perm.openExact')) + '</button>';
     }
     if (pending !== null) html += '<p class="group-help">' + esc(t('perm.pending', { n: pending })) + '</p>';
+    if (st && st.next > 0) {
+      const nd = new Date(st.next);
+      const hm = String(nd.getHours()).padStart(2, '0') + ':' + String(nd.getMinutes()).padStart(2, '0');
+      html += '<p class="group-help next-alarm">' + ICON.bell + esc(t('perm.nextAlarm', { day: I.dayName(S.dayKeyOf(nd)), date: I.formatDate(nd), time: I.formatTime(hm, S.settings.timeFormat) })) + '</p>';
+    }
+    if (st && st.channelImportance === 0) html += '<p class="group-help warn-text">' + esc(t('perm.channelOff')) + '</p>';
     html += '<p class="group-help">' + esc(t('perm.batteryTip')) + '</p>';
     html += '<button type="button" class="btn btn-text btn-block" data-action="test-notif">' + ICON.bell + esc(t('perm.test')) + '</button>';
     el.innerHTML = html;

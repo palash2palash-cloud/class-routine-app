@@ -1,11 +1,12 @@
 /* ক্লাসের আগে রিমাইন্ডার নোটিফিকেশন।
-   @capacitor/local-notifications দিয়ে ফোনের ভেতরেই (অফলাইনে) সময় ঠিক করে রাখা হয়।
-   সামনের ২৮ দিনের প্রতিটি ক্লাসের জন্য আলাদা এককালীন নোটিফিকেশন বসানো হয়,
-   আর অ্যাপ খুললেই তালিকাটা আবার নতুন করে সামনে এগিয়ে নেওয়া হয়। */
+   সামনের ২৮ দিনের প্রতিটি ক্লাসের রিমাইন্ডারের তালিকা বানিয়ে অ্যাপের নিজস্ব নেটিভ অংশে
+   (ClassAlarm, Java) পাঠানো হয়। সেটা ফোনের অ্যালার্ম ঘড়ির মতো করে (setAlarmClock) ঠিক সময়ে
+   জোরে বিপসহ নোটিফিকেশন দেখায়, অ্যাপ বন্ধ থাকলেও। অ্যাপ খুললেই তালিকা আবার এগিয়ে নেওয়া হয়।
+   @capacitor/local-notifications এখন শুধু অনুমতি চাওয়া/দেখার কাজে লাগে। */
 (function () {
   'use strict';
 
-  const CHANNEL_ID = 'class-alarm-v1'; // MainActivity.java এ তৈরি হয় (জোরে বিপ)
+  const CHANNEL_ID = 'class-alarm-v2'; // ClassAlarmScheduler.java এ তৈরি হয় (জোরে বিপ)
   const WINDOW_DAYS = 28;
   const MAX_NOTIFS = 400; // Android একটি অ্যাপকে প্রায় ৫০০ alarm পর্যন্ত রাখতে দেয়
   const t = function (k, p) { return window.I18N.t(k, p); };
@@ -22,6 +23,21 @@
   function LN() {
     const c = cap();
     return c && c.Plugins ? c.Plugins.LocalNotifications : null;
+  }
+
+  // অ্যাপের নিজস্ব নেটিভ রিমাইন্ডার (MainActivity-তে registerPlugin করা)
+  let _alarm = null;
+  function AL() {
+    const c = cap();
+    if (!c || !isNative()) return null;
+    if (!_alarm) {
+      try {
+        _alarm = c.registerPlugin ? c.registerPlugin('ClassAlarm') : (c.Plugins && c.Plugins.ClassAlarm);
+      } catch (e) {
+        _alarm = c.Plugins && c.Plugins.ClassAlarm;
+      }
+    }
+    return _alarm || null;
   }
 
   let queue = Promise.resolve();
@@ -139,65 +155,53 @@
         const txt = buildText(c, lead);
         list.push({
           id: list.length + 1,
+          at: at.getTime(),
           title: txt.title,
-          body: txt.body,
-          largeBody: txt.largeBody,
-          channelId: CHANNEL_ID,
-          smallIcon: 'ic_stat_class',
-          iconColor: c.color,
-          autoCancel: true, // চাপ দিলে তবেই সরবে
-          ongoing: true, // নিজে থেকে বা ভুল করে সোয়াইপে সরে যাবে না
-          schedule: { at: at, allowWhileIdle: true },
-          extra: { classId: c.id }
+          body: txt.largeBody,
+          color: c.color
         });
       });
     }
     return list;
   }
 
-  async function cancelAll() {
+  // আগের সংস্করণে local-notifications দিয়ে বসানো রিমাইন্ডার থাকলে মুছে ফেলা (দুবার যেন না বাজে)
+  async function clearOldPluginAlarms() {
     const ln = LN();
-    const pending = await ln.getPending();
-    const items = ((pending && pending.notifications) || []).filter(function (n) { return n.id !== 99999; });
-    if (items.length) {
-      await ln.cancel({ notifications: items.map(function (n) { return { id: n.id }; }) });
-    }
+    if (!ln) return;
+    try {
+      const pending = await ln.getPending();
+      const items = (pending && pending.notifications) || [];
+      if (items.length) await ln.cancel({ notifications: items.map(function (n) { return { id: n.id }; }) });
+    } catch (e) { /* ignore */ }
   }
 
   // রুটিন বা সেটিংস বদলালেই এটা ডাকা হয়
   function reschedule() {
     return enqueue(async function () {
-      const ln = LN();
-      if (!isNative() || !ln) return;
+      const al = AL();
+      if (!isNative() || !al) return;
+      await clearOldPluginAlarms();
       const perm = await permission();
-      await cancelAll();
-      if (perm !== 'granted') return;
-      const list = buildList();
-      for (let i = 0; i < list.length; i += 60) {
-        await ln.schedule({ notifications: list.slice(i, i + 60) });
-      }
+      if (perm !== 'granted') { await al.cancelAll(); return; }
+      await al.schedule({ alarms: buildList() });
     });
   }
 
+  // নেটিভ অংশের অবস্থা: কতগুলো রিমাইন্ডার বসানো, পরেরটা কখন, ইত্যাদি
+  async function status() {
+    const al = AL();
+    if (!isNative() || !al) return null;
+    try { return await al.status(); } catch (e) { return null; }
+  }
+
   async function test() {
-    const ln = LN();
-    if (!isNative() || !ln) return 'unsupported';
+    const al = AL();
+    if (!isNative() || !al) return 'unsupported';
     let perm = await permission();
     if (perm !== 'granted') perm = await requestPermission();
     if (perm !== 'granted') return perm;
-    await ln.schedule({
-      notifications: [{
-        id: 99999,
-        title: t('notif.testTitle'),
-        body: t('notif.testBody'),
-        channelId: CHANNEL_ID,
-        smallIcon: 'ic_stat_class',
-        iconColor: '#4F46E5',
-        autoCancel: true,
-        ongoing: true,
-        schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }
-      }]
-    });
+    await al.test({ title: t('notif.testTitle'), body: t('notif.testBody'), delay: 5000 });
     return 'granted';
   }
 
@@ -221,6 +225,8 @@
     openExactAlarmSettings: openExactAlarmSettings,
     reschedule: reschedule,
     test: test,
+    status: status,
+    buildList: buildList,
     leadFor: leadFor
   };
 })();

@@ -707,3 +707,6 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .hg-preview .hourglass svg { width: 44px; height: 50px; }
 .hg-off-line { width: 2px; height: 44px; border-radius: 2px; background: var(--border); }
 .hg-name { font-size: .84rem; font-weight: 600; }
+.next-alarm { display: flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 600; }
+.next-alarm svg { width: 16px; height: 16px; flex: none; }
+.class-card.is-leaving { animation: none !important; opacity: 0 !important; transform: translateX(40px) scale(.97); transition: opacity .4s, transform .4s; pointer-events: none; }
