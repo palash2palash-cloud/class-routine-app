@@ -169,54 +169,84 @@
      কতটা বালি নেমেছে তা ক্লাসের কতটা সময় পার হয়েছে তার সমান (updateLive হালনাগাদ করে)। */
   // বালুঘড়ির নকশাগুলো (সেটিংস থেকে বাছাই করা যায়); রংগুলো CSS-এ .hg-<নাম> ক্লাসে
   const HG_STYLES = ['classic', 'wood', 'crystal', 'rose', 'night', 'classColor', 'minimal', 'off'];
-  const DAYEND_STYLES = ['classic', 'wood', 'crystal', 'rose', 'night', 'emerald', 'minimal'];
+  const DAYEND_STYLES = ['classic', 'black', 'wood', 'crystal', 'rose', 'night', 'emerald', 'minimal'];
 
   /* দিনশেষের বড় বালুঘড়ি: শেষ ক্লাস থেকে রাত ১২টা পর্যন্ত বালি ঝরে।
-     নকশা (রং) আসে CSS-এর .hg-<নাম> থেকে, ছোট বালুঘড়ির মতোই। হোমপেজে এটি লক: চাপলে কিছু হয় না। */
+     মাপ ও গড়ন Palash-এর দেওয়া ছবির মতো (ঢাকনা ২২২ চওড়া, পুরো উচ্চতা ৩৩৩)।
+     রং আসে CSS-এর .bh-<নাম> থেকে। হোমপেজে এটি লক: চাপলে কিছু হয় না। */
+  const BH_GLASS = 'M186 136V168C186 214 250 246 257 270C250 294 186 326 186 372V404H350V372C350 326 286 294 279 270C286 246 350 214 350 168V136Z';
   function bigHourglassHtml(style, uid) {
-    const k = 'bhg' + uid;
-    const glass = 'M52 38H148C148 94 112 120 103.5 140C112 160 148 186 148 242H52C52 186 88 160 96.5 140C88 120 52 94 52 38Z';
-    const grains = [0, 1, 2, 3, 4].map(function (i) {
-      return '<circle class="bhg-grain" cx="' + (100 + (i % 2 ? 0.8 : -0.8)) + '" cy="142" r="1.5" style="animation-delay:' + (i * 0.22).toFixed(2) + 's"/>';
+    const k = 'bh' + uid;
+    // ঝরে পড়া বালির দানা: প্রতিটির গতি, দেরি আর সামান্য এদিক-ওদিক আলাদা, তাই ধারাটা জীবন্ত দেখায়
+    const grains = [];
+    for (let i = 0; i < 26; i++) {
+      const dx = ((i * 37) % 9 - 4) * 0.55;
+      const x = 268 + ((i * 53) % 5 - 2) * 0.5;
+      const r = 0.95 + ((i * 29) % 5) * 0.22;
+      const dur = 0.6 + ((i * 17) % 6) * 0.06;
+      grains.push('<circle class="bh-grain" cx="' + x.toFixed(2) + '" cy="270" r="' + r.toFixed(2) + '" style="--dx:' + dx.toFixed(2) + 'px;animation-duration:' + dur.toFixed(2) + 's;animation-delay:-' + (i * 0.033).toFixed(3) + 's"/>');
+    }
+    // স্তূপের চূড়ায় দানা ছিটকে গড়িয়ে পড়া
+    const splash = [-7, 6, -4, 9, -10, 4].map(function (dx, i) {
+      return '<circle class="bh-splash-g" cx="268" cy="406" r="' + (i % 2 ? 1.1 : 0.9) + '" style="--dx:' + dx + 'px;animation-delay:-' + (i * 0.13).toFixed(2) + 's"/>';
     }).join('');
-    return '<div class="big-hg hourglass hg-' + style + '" aria-hidden="true" style="' + colorVars('#4F46E5') + '">' +
-      '<svg viewBox="0 0 200 284" preserveAspectRatio="xMidYMid meet">' +
+    return '<div class="big-hg bh-' + style + '" aria-hidden="true">' +
+      '<svg viewBox="116 98 304 354" preserveAspectRatio="xMidYMid meet">' +
       '<defs>' +
-      '<clipPath id="' + k + 'c"><path d="' + glass + '"/></clipPath>' +
-      '<linearGradient id="' + k + 's" x1="0" y1="0" x2="0" y2="1"><stop class="hg-s1" offset="0"/><stop class="hg-s2" offset=".55"/><stop class="hg-s3" offset="1"/></linearGradient>' +
-      '<linearGradient id="' + k + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset=".22" stop-color="#fff" stop-opacity=".06"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".2"/></linearGradient>' +
-      '<linearGradient id="' + k + 'f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>' +
-      '<linearGradient id="' + k + 'p" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".25"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity=".25"/></linearGradient>' +
-      '<radialGradient id="' + k + 'sh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>' +
+      '<clipPath id="' + k + 'c"><path d="' + BH_GLASS + '"/></clipPath>' +
+      '<linearGradient id="' + k + 's" x1="0" y1="0" x2="0" y2="1"><stop class="bh-s1" offset="0"/><stop class="bh-s2" offset=".6"/><stop class="bh-s3" offset="1"/></linearGradient>' +
+      '<linearGradient id="' + k + 'b" x1="0" y1="0" x2="0" y2="1"><stop class="bh-s2" offset="0"/><stop class="bh-s3" offset="1"/></linearGradient>' +
+      '<linearGradient id="' + k + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".3" stop-color="#fff" stop-opacity=".1"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".12"/></linearGradient>' +
+      '<linearGradient id="' + k + 'k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient>' +
       '</defs>' +
-      '<ellipse cx="100" cy="276" rx="88" ry="7" fill="url(#' + k + 'sh)"/>' +
-      // খুঁটি (দুই পাশে), মাঝে গোল গাঁট
-      '<g class="bhg-posts">' +
-      '<rect class="hg-post" x="27" y="30" width="9" height="224" rx="4.5"/><rect x="27" y="30" width="9" height="224" rx="4.5" fill="url(#' + k + 'p)"/>' +
-      '<rect class="hg-post" x="164" y="30" width="9" height="224" rx="4.5"/><rect x="164" y="30" width="9" height="224" rx="4.5" fill="url(#' + k + 'p)"/>' +
-      '<circle class="hg-cap" cx="31.5" cy="140" r="8"/><circle class="hg-cap" cx="168.5" cy="140" r="8"/>' +
-      '<circle cx="29.5" cy="137.5" r="3" fill="#fff" opacity=".35"/><circle cx="166.5" cy="137.5" r="3" fill="#fff" opacity=".35"/>' +
-      '</g>' +
-      // কাচ ও বালি
-      '<path class="hg-glass" d="' + glass + '"/>' +
+      '<ellipse class="bh-shadow" cx="268" cy="437" rx="146" ry="11"/>' +
+      // কাচের ভেতরে: কাচ, উপরের বালি, ঝরে পড়া ধারা, নিচের স্তূপ, ডান দিকের ছায়া, চকচকে আভা
+      '<path class="bh-edge" d="' + BH_GLASS + '"/>' +
+      '<path class="bh-glass" d="' + BH_GLASS + '"/>' +
       '<g clip-path="url(#' + k + 'c)">' +
-      '<path class="hg-top bhg-top" d="M0 50Q100 66 200 50V140H0Z" fill="url(#' + k + 's)"/>' +
-      '<line class="hg-stream bhg-stream" x1="100" y1="138" x2="100" y2="244"/>' +
-      grains +
-      '<path class="hg-bottom bhg-bottom" d="M0 244V214Q100 160 200 214V244Z" fill="url(#' + k + 's)"/>' +
-      '<rect class="hg-gloss" x="0" y="0" width="200" height="284" fill="url(#' + k + 'g)"/>' +
+      '<path class="bh-top" d="M118 158C168 150 222 156 254 166Q268 172 282 166C314 156 368 150 418 158V274H118Z" fill="url(#' + k + 's)"/>' +
+      '<path class="bh-top bh-top-lip" d="M118 158C168 150 222 156 254 166Q268 172 282 166C314 156 368 150 418 158" />' +
+      '<path class="bh-stream" d="M266.2 266Q267.4 300 266.9 406H269.1Q268.6 300 269.8 266Z"/>' +
+      grains.join('') +
+      '<path class="bh-bottom" d="M118 406V364C196 356 236 318 268 312C300 318 340 356 418 364V406Z" fill="url(#' + k + 'b)"/>' +
+      '<g class="bh-splash">' + splash + '</g>' +
+      '<path class="bh-shade" d="M296 130H360V410H186V394L279 278L296 254Z"/>' +
+      '<rect x="116" y="98" width="304" height="354" fill="url(#' + k + 'g)"/>' +
       '</g>' +
-      '<path class="hg-glass-line bhg-line" d="' + glass + '"/>' +
-      '<path class="hg-shine" d="M61 48C63 78 76 100 90 118" stroke-width="3"/>' +
-      '<path class="hg-shine" d="M61 232C63 210 72 194 84 182" stroke-width="2" opacity=".6"/>' +
-      // উপরের ও নিচের ঢাকনা
-      '<g class="bhg-caps">' +
-      '<rect class="hg-cap" x="14" y="12" width="172" height="20" rx="10"/><rect x="14" y="12" width="172" height="20" rx="10" fill="url(#' + k + 'f)"/>' +
-      '<rect class="hg-cap" x="34" y="30" width="132" height="8" rx="4" opacity=".85"/>' +
-      '<rect class="hg-cap" x="34" y="242" width="132" height="8" rx="4" opacity=".85"/>' +
-      '<rect class="hg-cap" x="14" y="248" width="172" height="20" rx="10"/><rect x="14" y="248" width="172" height="20" rx="10" fill="url(#' + k + 'f)"/>' +
-      '</g>' +
+      '<path class="bh-line" d="' + BH_GLASS + '"/>' +
+      '<path class="bh-gloss" d="M197 146V170C197 198 214 218 234 234" stroke-width="5"/>' +
+      '<path class="bh-gloss" d="M197 394V374C197 346 210 328 228 312" stroke-width="3.5" opacity=".55"/>' +
+      // উপরের ঢাকনা: হালকা লাল পাত, নিচে গাঢ় ঢালু অংশ
+      '<rect class="bh-cap1" x="157" y="103" width="222" height="21" rx="4.5"/>' +
+      '<rect x="157" y="103" width="222" height="21" rx="4.5" fill="url(#' + k + 'k)"/>' +
+      '<path class="bh-cap2" d="M160 123H376L363 137H173Z"/>' +
+      // নিচের ঢাকনা: উল্টো করে, ঢালু অংশ উপরে
+      '<path class="bh-cap1" d="M173 403H363L376 418H160Z"/>' +
+      '<rect class="bh-cap2" x="157" y="417" width="222" height="19" rx="4.5"/>' +
+      '<rect x="157" y="417" width="222" height="19" rx="4.5" fill="url(#' + k + 'k)" opacity=".6"/>' +
       '</svg></div>';
+  }
+
+  // ফ্লিপ ক্লকের একটি সংখ্যা: উপরের অর্ধেক ভাঁজ হয়ে নামে, তারপর নিচের অর্ধেক বসে যায়
+  function flipDigitHtml(u) {
+    return '<span class="fc" data-u="' + u + '"><span class="fc-t"><b></b></span><span class="fc-b"><b></b></span>' +
+      '<span class="fc-ft"><b></b></span><span class="fc-fb"><b></b></span></span>';
+  }
+  function setFlip(el, ch) {
+    const old = el.getAttribute('data-v');
+    if (old === ch) return;
+    el.setAttribute('data-v', ch);
+    const q = function (c) { return el.querySelector('.' + c + ' b'); };
+    q('fc-t').textContent = ch;
+    q('fc-fb').textContent = ch;
+    if (old === null || document.hidden) { q('fc-b').textContent = ch; q('fc-ft').textContent = ch; return; }
+    q('fc-ft').textContent = old;
+    q('fc-b').textContent = old;
+    el.classList.remove('go');
+    void el.offsetWidth;
+    el.classList.add('go');
+    clearTimeout(el._flipT);
+    el._flipT = setTimeout(function () { q('fc-b').textContent = ch; el.classList.remove('go'); }, 640);
   }
 
 
@@ -425,18 +455,17 @@
         // সব ক্লাস শেষ: রাত ১২টা পর্যন্ত চলা বড় বালুঘড়ি (হোমপেজে লক করা)
         const des = S.settings.dayEndStyle || 'classic';
         html += '<section class="day-end" id="dayEnd">' + bigHourglassHtml(des, 'home') +
-          '<div class="de-clock hg-' + des + '" style="' + colorVars('#4F46E5') + '">' +
+          '<div class="de-clock bh-' + des + '">' +
           '<span class="de-clock-label">' + esc(t('dayEnd.label')) + '</span>' +
           '<div class="de-clock-row" id="deClock">' +
           ['h', 'm', 's'].map(function (u, i) {
-            return (i ? '<span class="de-colon">:</span>' : '') +
-              '<span class="de-unit"><span class="de-box"><span class="de-d" data-u="' + u + '0">0</span><span class="de-d" data-u="' + u + '1">0</span></span>' +
+            return (i ? '<span class="de-colon"><i></i><i></i></span>' : '') +
+              '<span class="de-unit"><span class="de-pair">' + flipDigitHtml(u + '0') + flipDigitHtml(u + '1') + '</span>' +
               '<small>' + esc(t('dayEnd.' + u)) + '</small></span>';
-          }).join('') + '</div></div>' +
-          '<div class="day-end-text"><span id="deNext"></span></div></section>';
+          }).join('') + '</div></div></section>';
       }
     }
-    html += prepPanelHtml(info);
+    if (html.indexOf('id="dayEnd"') === -1) html += prepPanelHtml(info);
     $('#view').innerHTML = html;
     fitOneLine($('#view'));
     updateLive();
@@ -448,18 +477,17 @@
     const sec = $('#dayEnd');
     if (!sec) return;
     const svg = $('.big-hg svg', sec);
-    const txt = $('.day-end-text', sec);
     const nav = $('#bottomNav');
     const top = sec.getBoundingClientRect().top + window.scrollY;
     const navH = nav ? nav.getBoundingClientRect().height : 70;
     const clock = $('.de-clock', sec);
-    const below = (txt ? txt.getBoundingClientRect().height : 24) + (clock ? clock.getBoundingClientRect().height : 90);
-    const avail = window.innerHeight - top - navH - below - 48;
+    const below = clock ? clock.getBoundingClientRect().height : 110;
+    const avail = window.innerHeight - top - navH - below - 44;
     if (!sec.clientWidth) { setTimeout(fitDayEnd, 300); return; } // পেজ তখনও দেখা যাচ্ছে না
-    const maxW = sec.clientWidth * 0.78;
-    let h = Math.max(200, Math.min(avail, 460, maxW * 284 / 200));
+    const maxW = sec.clientWidth * 0.86;
+    const h = Math.max(200, Math.min(avail, 440, maxW * 354 / 304));
     svg.style.height = Math.round(h) + 'px';
-    svg.style.width = Math.round(h * 200 / 284) + 'px';
+    svg.style.width = Math.round(h * 304 / 354) + 'px';
   }
 
   // ডিজিটাল কাউন্টডাউন: রাত ১২টা পর্যন্ত, প্রতি সেকেন্ডে; বালুঘড়িও একই সাথে এগোয়
@@ -474,13 +502,7 @@
       const v = String(parts[u]).padStart(2, '0');
       [0, 1].forEach(function (i) {
         const el = $('[data-u="' + u + i + '"]', box);
-        const ch = I.num(v[i]);
-        if (el && el.textContent !== ch) {
-          el.textContent = ch;
-          el.classList.remove('tick');
-          void el.offsetWidth;
-          el.classList.add('tick');
-        }
+        if (el) setFlip(el, I.num(v[i]));
       });
     });
     const hg = $('#dayEnd .big-hg');
@@ -507,20 +529,6 @@
     hg.style.setProperty('--bottom', (0.06 + p * 0.94).toFixed(4));
     hg.classList.toggle('is-done', p >= 1);
     tickDayEndClock();
-    // পরের ক্লাস (আগামীকাল বা তার পরের কর্মদিবস)
-    let nextTxt = '';
-    for (let d = 1; d < 8; d++) {
-      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
-      const dk = S.dayKeyOf(date);
-      if (S.settings.holidays.indexOf(dk) !== -1) continue;
-      const list = S.classesForDay(dk);
-      if (!list.length) continue;
-      const c = list[0];
-      const dayTxt = d === 1 ? t('prep.tomorrow') : I.dayName(dk);
-      nextTxt = t('dayEnd.next', { day: dayTxt, time: fmtTime(c.start), n: list.length });
-      break;
-    }
-    $('#deNext', sec).textContent = nextTxt;
   }
 
   /* পরের ক্লাসের প্রস্তুতি নোট: রুটিনের প্রতিটি সেকশনের জন্য একটি ঘর,
