@@ -361,6 +361,10 @@
     "title": "Day-end hourglass",
     "help": "When all of today's classes are over, a large hourglass runs in the empty space on the home page until midnight. It is locked on the home page; change its design only here, then tap Save.",
     "left": "{d} left in the day",
-    "next": "Next class: {day}, {time} · {n} classes"
+    "next": "Next class: {day}, {time} · {n} classes",
+    "label": "Time left in the day",
+    "h": "Hours",
+    "m": "Minutes",
+    "s": "Seconds"
   }
 }

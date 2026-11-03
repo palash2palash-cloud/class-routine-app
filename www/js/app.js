@@ -423,8 +423,17 @@
         html += '<div class="card-list">' + left.map(function (c, i) { return cardHtml(c, { live: true, index: i }); }).join('') + '</div>';
       } else {
         // সব ক্লাস শেষ: রাত ১২টা পর্যন্ত চলা বড় বালুঘড়ি (হোমপেজে লক করা)
-        html += '<section class="day-end" id="dayEnd">' + bigHourglassHtml(S.settings.dayEndStyle || 'classic', 'home') +
-          '<div class="day-end-text"><strong id="deLeft"></strong><span id="deNext"></span></div></section>';
+        const des = S.settings.dayEndStyle || 'classic';
+        html += '<section class="day-end" id="dayEnd">' + bigHourglassHtml(des, 'home') +
+          '<div class="de-clock hg-' + des + '" style="' + colorVars('#4F46E5') + '">' +
+          '<span class="de-clock-label">' + esc(t('dayEnd.label')) + '</span>' +
+          '<div class="de-clock-row" id="deClock">' +
+          ['h', 'm', 's'].map(function (u, i) {
+            return (i ? '<span class="de-colon">:</span>' : '') +
+              '<span class="de-unit"><span class="de-box"><span class="de-d" data-u="' + u + '0">0</span><span class="de-d" data-u="' + u + '1">0</span></span>' +
+              '<small>' + esc(t('dayEnd.' + u)) + '</small></span>';
+          }).join('') + '</div></div>' +
+          '<div class="day-end-text"><span id="deNext"></span></div></section>';
       }
     }
     html += prepPanelHtml(info);
@@ -443,12 +452,44 @@
     const nav = $('#bottomNav');
     const top = sec.getBoundingClientRect().top + window.scrollY;
     const navH = nav ? nav.getBoundingClientRect().height : 70;
-    const avail = window.innerHeight - top - navH - (txt ? txt.getBoundingClientRect().height : 60) - 36;
+    const clock = $('.de-clock', sec);
+    const below = (txt ? txt.getBoundingClientRect().height : 24) + (clock ? clock.getBoundingClientRect().height : 90);
+    const avail = window.innerHeight - top - navH - below - 48;
     if (!sec.clientWidth) { setTimeout(fitDayEnd, 300); return; } // পেজ তখনও দেখা যাচ্ছে না
     const maxW = sec.clientWidth * 0.78;
     let h = Math.max(200, Math.min(avail, 460, maxW * 284 / 200));
     svg.style.height = Math.round(h) + 'px';
     svg.style.width = Math.round(h * 200 / 284) + 'px';
+  }
+
+  // ডিজিটাল কাউন্টডাউন: রাত ১২টা পর্যন্ত, প্রতি সেকেন্ডে; বালুঘড়িও একই সাথে এগোয়
+  function tickDayEndClock() {
+    const box = $('#deClock');
+    if (!box) return false;
+    const now = new Date();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+    let left = Math.max(0, Math.floor((end - now.getTime()) / 1000));
+    const parts = { h: Math.floor(left / 3600), m: Math.floor((left % 3600) / 60), s: left % 60 };
+    ['h', 'm', 's'].forEach(function (u) {
+      const v = String(parts[u]).padStart(2, '0');
+      [0, 1].forEach(function (i) {
+        const el = $('[data-u="' + u + i + '"]', box);
+        const ch = I.num(v[i]);
+        if (el && el.textContent !== ch) {
+          el.textContent = ch;
+          el.classList.remove('tick');
+          void el.offsetWidth;
+          el.classList.add('tick');
+        }
+      });
+    });
+    const hg = $('#dayEnd .big-hg');
+    if (hg && state.dayEndStart) {
+      const p = Math.min(1, Math.max(0, (now.getTime() - state.dayEndStart) / Math.max(1, end - state.dayEndStart)));
+      hg.style.setProperty('--top', (1 - p).toFixed(4));
+      hg.style.setProperty('--bottom', (0.06 + p * 0.94).toFixed(4));
+    }
+    return true;
   }
 
   // দিনশেষের বালুঘড়ির বালি আর লেখা হালনাগাদ
@@ -458,14 +499,14 @@
     const now = new Date();
     const lastEnd = info.classes.reduce(function (mx, c) { return Math.max(mx, S.toMin(c.end)); }, 0);
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, lastEnd).getTime();
+    state.dayEndStart = start;
     const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
     const p = Math.min(1, Math.max(0, (now.getTime() - start) / Math.max(1, end - start)));
     const hg = $('.big-hg', sec);
     hg.style.setProperty('--top', (1 - p).toFixed(4));
     hg.style.setProperty('--bottom', (0.06 + p * 0.94).toFixed(4));
     hg.classList.toggle('is-done', p >= 1);
-    const leftMin = Math.max(0, Math.ceil((end - now.getTime()) / 60000));
-    $('#deLeft', sec).textContent = t('dayEnd.left', { d: I.duration(leftMin) });
+    tickDayEndClock();
     // পরের ক্লাস (আগামীকাল বা তার পরের কর্মদিবস)
     let nextTxt = '';
     for (let d = 1; d < 8; d++) {
@@ -1916,6 +1957,12 @@
     };
     setTimeout(tickMinute, 60000 - (Date.now() % 60000) + 200);
     setInterval(updateLive, 15000);
+    setInterval(function () {
+      if (state.view !== 'today' || document.hidden || !$('#deClock')) return;
+      // রাত ১২টা পার হলে নতুন দিনের ক্লাস দেখানো
+      if (S.isoDate(new Date()) !== state.renderedDay) { renderToday(); return; }
+      tickDayEndClock();
+    }, 1000);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { updateLive(); fitDayEnd(); });
     try {
       await N.init();
