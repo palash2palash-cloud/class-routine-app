@@ -105,26 +105,23 @@
   }
 
   function classLabel(c) {
-    const parts = [];
-    if (c.grade && c.section) parts.push(c.grade + '-' + c.section);
-    else if (c.grade) parts.push(c.grade);
-    else if (c.section) parts.push(c.section);
-    return parts.join('');
+    return window.Localize.classLabel(c);
   }
 
   function buildText(c, lead) {
     const I = window.I18N;
-    const subject = c.subject || t('form.untitled');
+    const L = window.Localize.loc;
+    const subject = L(c.subject) || t('form.untitled');
     const title = lead > 0
       ? t('notif.title', { subject: subject, min: lead })
       : t('notif.titleNow', { subject: subject });
     const bits = [];
     const cls = classLabel(c);
     if (cls) bits.push(t('notif.section', { section: cls }));
-    if (c.room) bits.push(t('notif.room', { room: c.room }));
+    if (c.room) bits.push(t('notif.room', { room: L(c.room) }));
     bits.push(t('notif.starts', { time: I.formatTime(c.start, window.Store.settings.timeFormat) }));
     let body = bits.join(' · ');
-    const large = c.note ? body + '\n' + c.note : body;
+    const large = c.note ? body + '\n' + L(c.note) : body;
     return { title: title, body: body, largeBody: large };
   }
 
@@ -172,7 +169,7 @@
         const at = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, S.toMin(ev.time) - ev.remind, 0, 0);
         if (at.getTime() <= now + 5000) return;
         const I = window.I18N;
-        const when = I.formatTime(ev.time, settings.timeFormat);
+        const when = ev.allDay ? t('cal.allDay') : I.formatTime(ev.time, settings.timeFormat);
         list.push({
           id: list.length + 1,
           at: at.getTime(),
@@ -181,6 +178,30 @@
           color: ev.color
         });
       });
+    }
+
+    // যেদিন কাজ আছে, সেদিন সারাদিন নোটিফিকেশন বারে চুপচাপ একটা তালিকা থাকে, রাত ১২টায় সরে যায়
+    for (let d = 0; d <= WINDOW_DAYS && list.length < MAX_NOTIFS - 1; d++) {
+      const date = new Date(base.getFullYear(), base.getMonth(), base.getDate() + d);
+      const iso = S.isoDate(date);
+      const evs = S.eventsOn(iso).filter(function (ev) { return ev.done.indexOf(iso) === -1; });
+      if (!evs.length) continue;
+      const I = window.I18N;
+      const until = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).getTime() - 1000;
+      const lines = evs.map(function (ev) {
+        return (ev.allDay ? t('cal.allDay') : I.formatTime(ev.time, settings.timeFormat)) + ' · ' + ev.title;
+      });
+      const pinId = 70000 + d;
+      list.push({
+        id: pinId,
+        at: d === 0 ? now + 6000 : date.getTime(),
+        until: until,
+        kind: 'pin',
+        title: t('cal.pinTitle', { n: I.num(evs.length) }),
+        body: lines.join('\n'),
+        color: evs[0].color
+      });
+      list.push({ id: pinId, at: until, kind: 'unpin', title: '', body: '', color: '' });
     }
     return list;
   }

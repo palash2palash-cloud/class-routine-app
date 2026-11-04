@@ -28,6 +28,7 @@
     breakEnabled: true, // পিডিএফ/ছবির রুটিনে টিফিন বিরতির ঘর
     breakStart: '11:05',
     breakEnd: '11:40',
+    wordMap: '', // নিজের যোগ করা অনুবাদ, প্রতি লাইনে "English = বাংলা"
     marqueeColor: '#DC2626', // দিনশেষে বালুঘড়ির উপরে পরের ক্লাসের স্ক্রল লেখার রং
     periods: [], // রুটিনের পিরিয়ড [{start, end}]; ফাঁকা থাকলে ক্লাসগুলোর সময় থেকে বের করা হয়
     profile: {
@@ -105,6 +106,7 @@
       out.breakEnd = s.breakEnd;
     }
     if (isColor(s.marqueeColor)) out.marqueeColor = s.marqueeColor;
+    if (typeof s.wordMap === 'string') out.wordMap = s.wordMap.slice(0, 4000);
     out.periods = cleanPeriods(s.periods);
     out.profile = cleanProfile(s.profile);
     return out;
@@ -353,6 +355,7 @@
       color: isColor(e.color) ? e.color : '#DB2777',
       remind: !isNaN(r) && r >= -1 && r <= 10080 ? r : 0,
       repeat: REPEATS.indexOf(e.repeat) !== -1 ? e.repeat : 'none',
+      allDay: !!e.allDay,
       done: Array.isArray(e.done) ? e.done.filter(function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); }).slice(-400) : []
     };
   }
@@ -378,7 +381,7 @@
   }
   function eventsOn(iso) {
     return (data.events || []).filter(function (e) { return eventOn(e, iso); })
-      .sort(function (x, y) { return toMin(x.time) - toMin(y.time) || x.title.localeCompare(y.title); });
+      .sort(function (x, y) { return (y.allDay ? 1 : 0) - (x.allDay ? 1 : 0) || toMin(x.time) - toMin(y.time) || x.title.localeCompare(y.title); });
   }
   function getEvent(id) {
     return (data.events || []).filter(function (e) { return e.id === id; })[0] || null;

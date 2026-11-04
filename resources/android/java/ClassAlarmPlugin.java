@@ -32,9 +32,13 @@ public class ClassAlarmPlugin extends Plugin {
                 c.put("title", o.optString("title"));
                 c.put("body", o.optString("body"));
                 c.put("color", o.optString("color", ""));
+                // kind: alarm (বিপ দিয়ে), pin (সারাদিন নোটিফিকেশন বারে চুপচাপ), unpin (দিন শেষে সরানো)
+                c.put("kind", o.optString("kind", "alarm"));
+                if (o.has("until")) c.put("until", o.optLong("until"));
                 list.put(c);
             }
             ClassAlarmScheduler.ensureChannel(ctx);
+            ClassAlarmScheduler.clearPins(ctx);
             ClassAlarmScheduler.replaceAll(ctx, list);
             call.resolve(status(ctx));
         } catch (Exception e) {
@@ -64,7 +68,7 @@ public class ClassAlarmPlugin extends Plugin {
     private JSObject status(Context ctx) {
         JSObject r = new JSObject();
         r.put("count", ClassAlarmScheduler.load(ctx).length());
-        r.put("next", ClassAlarmScheduler.nextTime(ctx));
+        r.put("next", ClassAlarmScheduler.nextTime(ctx, true));
         r.put("exact", ClassAlarmScheduler.canExact(ctx));
         r.put("enabled", NotificationManagerCompat.from(ctx).areNotificationsEnabled());
         int importance = -1;

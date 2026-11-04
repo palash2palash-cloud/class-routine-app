@@ -28,6 +28,9 @@ import org.json.JSONObject;
 public class ClassAlarmScheduler {
 
     public static final String CHANNEL_ID = "class-alarm-v2";
+    // ক্যালেন্ডারের দিনের কাজ: শব্দ ছাড়া, সারাদিন নোটিফিকেশন বারে থাকে
+    public static final String PIN_CHANNEL_ID = "day-tasks-v1";
+    static final int PIN_BASE = 70000;
     static final String PREFS = "class_alarm_store";
     static final String KEY_LIST = "alarms";
     static final String ACTION_FIRE = "com.palash.classroutine.CLASS_ALARM";
@@ -44,6 +47,19 @@ public class ClassAlarmScheduler {
         // আগের channel গুলো (কোনো সেটিং ভুলভাবে বদলে গিয়ে থাকলে) মুছে নতুন করে তৈরি
         nm.deleteNotificationChannel("class-reminders");
         nm.deleteNotificationChannel("class-alarm-v1");
+        if (nm.getNotificationChannel(PIN_CHANNEL_ID) == null) {
+            NotificationChannel pin = new NotificationChannel(
+                PIN_CHANNEL_ID,
+                "আজকের কাজ / Today's tasks",
+                NotificationManager.IMPORTANCE_LOW
+            );
+            pin.setDescription("ক্যালেন্ডারে যেদিন কাজ আছে, সেদিন সারাদিন নোটিফিকেশন বারে থাকে");
+            pin.setShowBadge(false);
+            pin.setSound(null, null);
+            pin.enableVibration(false);
+            pin.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            nm.createNotificationChannel(pin);
+        }
         if (nm.getNotificationChannel(CHANNEL_ID) != null) return;
         NotificationChannel channel = new NotificationChannel(
             CHANNEL_ID,
@@ -112,14 +128,37 @@ public class ClassAlarmScheduler {
 
     /* তালিকার সবচেয়ে কাছের ভবিষ্যৎ রিমাইন্ডারের সময় (না থাকলে -1) */
     public static long nextTime(Context ctx) {
+        return nextTime(ctx, false);
+    }
+
+    /* onlyAlarms = true হলে শুধু বিপ দেওয়া রিমাইন্ডার ধরা হয় (সেটিংসে "পরের রিমাইন্ডার" দেখানোর জন্য) */
+    public static long nextTime(Context ctx, boolean onlyAlarms) {
         JSONArray list = load(ctx);
         long now = System.currentTimeMillis();
         long best = -1;
         for (int i = 0; i < list.length(); i++) {
-            long at = list.optJSONObject(i) != null ? list.optJSONObject(i).optLong("at", 0) : 0;
+            JSONObject o = list.optJSONObject(i);
+            if (o == null) continue;
+            if (onlyAlarms && !"alarm".equals(o.optString("kind", "alarm"))) continue;
+            long at = o.optLong("at", 0);
             if (at > now && (best == -1 || at < best)) best = at;
         }
         return best;
+    }
+
+    static boolean isAlarmAt(Context ctx, long at) {
+        JSONArray list = load(ctx);
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject o = list.optJSONObject(i);
+            if (o != null && o.optLong("at", 0) == at && "alarm".equals(o.optString("kind", "alarm"))) return true;
+        }
+        return false;
+    }
+
+    /* আগের "আজকের কাজ" নোটিফিকেশনগুলো সরানো (তালিকা নতুন করে বসানোর আগে) */
+    public static void clearPins(Context ctx) {
+        NotificationManagerCompat nmc = NotificationManagerCompat.from(ctx);
+        for (int i = 0; i < 40; i++) nmc.cancel(PIN_BASE + i);
     }
 
     public static long scheduleNext(Context ctx) {
@@ -127,19 +166,32 @@ public class ClassAlarmScheduler {
         if (am == null) return -1;
         PendingIntent pi = firePending(ctx);
         long next = nextTime(ctx);
+        // ফোন বন্ধ থাকায় সময় পেরিয়ে যাওয়া কিছু থাকলে (যেমন আজকের কাজের নোটিফিকেশন) এখনই দেখানো
+        JSONArray all = load(ctx);
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < all.length(); i++) {
+            JSONObject o = all.optJSONObject(i);
+            if (o != null && o.optLong("at", 0) <= now) { next = now + 2000; break; }
+        }
         if (next == -1) {
             am.cancel(pi);
             return -1;
         }
-        setAt(ctx, am, next, pi);
+        setAt(ctx, am, next, pi, isAlarmAt(ctx, next));
         return next;
     }
 
     static void setAt(Context ctx, AlarmManager am, long at, PendingIntent pi) {
+        setAt(ctx, am, at, pi, true);
+    }
+
+    static void setAt(Context ctx, AlarmManager am, long at, PendingIntent pi, boolean clock) {
         try {
-            if (canExact(ctx)) {
+            if (canExact(ctx) && clock) {
                 // অ্যালার্ম ঘড়ির মতো: সবচেয়ে নির্ভরযোগ্য, Doze মোডেও ঠিক সময়ে বাজে
                 am.setAlarmClock(new AlarmManager.AlarmClockInfo(at, openAppPending(ctx)), pi);
+            } else if (canExact(ctx) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
             } else {
@@ -164,8 +216,17 @@ public class ClassAlarmScheduler {
             if (o == null) continue;
             long at = o.optLong("at", 0);
             if (at <= now + 30000) {
-                // ১৫ মিনিটের বেশি পুরোনো হলে আর দেখানো হয় না (যেমন ফোন বন্ধ ছিল)
-                if (at >= now - 15 * 60000) show(ctx, o.optInt("id", (int) (at / 1000)), o.optString("title"), o.optString("body"), o.optString("color", ""));
+                String kind = o.optString("kind", "alarm");
+                int nid = o.optInt("id", (int) (at / 1000));
+                if ("pin".equals(kind)) {
+                    // দিনের কাজ: সেদিন শেষ না হওয়া পর্যন্ত দেখানো (ফোন বন্ধ থাকলেও পরে চালু হলে)
+                    if (now < o.optLong("until", at + 86400000L)) showPin(ctx, nid, o.optString("title"), o.optString("body"), o.optString("color", ""));
+                } else if ("unpin".equals(kind)) {
+                    NotificationManagerCompat.from(ctx).cancel(nid);
+                } else if (at >= now - 15 * 60000) {
+                    // ১৫ মিনিটের বেশি পুরোনো হলে আর দেখানো হয় না (যেমন ফোন বন্ধ ছিল)
+                    show(ctx, nid, o.optString("title"), o.optString("body"), o.optString("color", ""));
+                }
             } else {
                 keep.put(o);
             }
@@ -182,6 +243,33 @@ public class ClassAlarmScheduler {
         i.putExtra("body", body);
         PendingIntent pi = PendingIntent.getBroadcast(ctx, REQ_TEST, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         setAt(ctx, am, System.currentTimeMillis() + delayMs, pi);
+    }
+
+    /* সারাদিনের কাজের নোটিফিকেশন: শব্দ নেই, সোয়াইপে সরে না, দিন শেষে নিজে সরে যায় */
+    public static void showPin(Context ctx, int id, String title, String body, String color) {
+        ensureChannel(ctx);
+        NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, PIN_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_class)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setShowWhen(false)
+            .setContentIntent(openAppPending(ctx));
+        try {
+            if (color != null && color.startsWith("#")) b.setColor(Color.parseColor(color));
+        } catch (Exception ignored) {}
+        try {
+            NotificationManagerCompat.from(ctx).notify(id, b.build());
+        } catch (SecurityException e) {
+            // নোটিফিকেশনের অনুমতি বন্ধ
+        }
     }
 
     public static void show(Context ctx, int id, String title, String body, String color) {

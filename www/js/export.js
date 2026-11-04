@@ -346,18 +346,19 @@
         const tx = x + 20, tw = cellW - 32;
         ctx.fillStyle = '#0F172A';
         ctx.font = '700 21px ' + FONT;
-        ctx.fillText(fitText(ctx, c.subject || t('form.untitled'), tw), tx, y + 34);
+        const L = window.Localize.loc;
+        ctx.fillText(fitText(ctx, L(c.subject) || t('form.untitled'), tw), tx, y + 34);
         ctx.fillStyle = '#334155';
         ctx.font = '500 16px ' + FONT;
         ctx.fillText(fitText(ctx, I.formatTime(c.start, fmt) + ' – ' + I.formatTime(c.end, fmt), tw), tx, y + 62);
-        const cls = [c.grade, c.section].filter(Boolean).join('-');
-        const line3 = [cls ? t('card.class') + ' ' + cls : '', c.room ? t('card.room') + ' ' + c.room : ''].filter(Boolean).join(' · ');
+        const cls = window.Localize.classLabel(c);
+        const line3 = [cls ? t('card.class') + ' ' + cls : '', c.room ? t('card.room') + ' ' + L(c.room) : ''].filter(Boolean).join(' · ');
         ctx.font = '400 16px ' + FONT;
         ctx.fillText(fitText(ctx, line3, tw), tx, y + 88);
         if (c.note) {
           ctx.fillStyle = '#64748B';
           ctx.font = '400 14px ' + FONT;
-          ctx.fillText(fitText(ctx, c.note, tw), tx, y + 112);
+          ctx.fillText(fitText(ctx, L(c.note), tw), tx, y + 112);
         }
       });
       y += cellH + gap;

@@ -144,9 +144,10 @@
     return I.formatTime(hhmm, S.settings.timeFormat);
   }
 
+  // রুটিনের লেখা অ্যাপের ভাষায় (Localize: বাংলা ⇄ ইংরেজি)
+  const L = function (x) { return window.Localize.loc(x); };
   function classSec(c) {
-    if (c.grade && c.section) return c.grade + '-' + c.section;
-    return c.grade || c.section || '';
+    return window.Localize.classLabel(c);
   }
 
   function hexToRgb(hex) {
@@ -265,7 +266,7 @@
     const lead = N.leadFor(c, S.settings);
     const meta = [];
     if (cs) meta.push('<span class="chip">' + ICON.people + esc(cs) + '</span>');
-    if (c.room) meta.push('<span class="chip">' + ICON.room + esc(t('card.room')) + ' ' + esc(c.room) + '</span>');
+    if (c.room) meta.push('<span class="chip">' + ICON.room + esc(t('card.room')) + ' ' + esc(L(c.room)) + '</span>');
     meta.push('<span class="chip chip-soft' + (lead === null || !S.settings.notifEnabled ? ' is-off' : '') + '">' +
       (lead === null || !S.settings.notifEnabled ? ICON.bellOff : ICON.bell) + esc(reminderLabel(c)) + '</span>');
 
@@ -277,10 +278,10 @@
       '<span class="t-end">' + esc(fmtTime(c.end)) + '</span>' +
       '</div>' +
       '<div class="card-body">' +
-      '<div class="card-head"><h3>' + esc(c.subject || t('form.untitled')) + '</h3>' +
+      '<div class="card-head"><h3>' + esc(L(c.subject) || t('form.untitled')) + '</h3>' +
       (opts.live ? '<span class="live-badge" hidden>' + esc(t('today.now')) + '</span>' : '') + '</div>' +
       '<div class="card-meta">' + meta.join('') + '</div>' +
-      (c.note ? '<p class="card-note">' + ICON.note + '<span>' + esc(c.note) + '</span></p>' : '') +
+      (c.note ? '<p class="card-note">' + ICON.note + '<span>' + esc(L(c.note)) + '</span></p>' : '') +
       (opts.live && S.getNote(S.sectionKey(c)) ? '<p class="card-prep">' + ICON.edit + '<span><b>' + esc(t('prep.cardLabel')) + '</b> ' + esc(S.getNote(S.sectionKey(c))) + '</span></p>' : '') +
       (opts.live ? '<div class="card-progress" hidden><span></span></div>' : '') +
       '</div>' +
@@ -524,26 +525,31 @@
     }
   }
 
-  // পরের ক্লাসের সব তথ্য এক লাইনে (দিনশেষের স্ক্রল লেখার জন্য)
+  // পরের ক্লাসের দিনের সব ক্লাসের পুরো তথ্য এক লাইনে (দিনশেষের স্ক্রল লেখার জন্য)
   function nextClassText() {
     const now = new Date();
+    const periods = S.periods();
     for (let d = 1; d < 8; d++) {
       const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
       const dk = S.dayKeyOf(date);
       if (S.settings.holidays.indexOf(dk) !== -1) continue;
       const list = S.classesForDay(dk);
       if (!list.length) continue;
-      const c = list[0];
-      const bits = [t('marquee.next', { day: d === 1 ? t('prep.tomorrow') + ' (' + I.dayName(dk) + ')' : I.dayName(dk) + ', ' + I.formatDate(date).split(', ').slice(1).join(', ') })];
-      bits.push(fmtTime(c.start) + ' – ' + fmtTime(c.end));
-      bits.push(c.subject || t('form.untitled'));
-      if (classSec(c)) bits.push(classSec(c));
-      if (c.room) bits.push(t('card.room') + ' ' + c.room);
-      if (c.note) bits.push(c.note.replace(/\s+/g, ' '));
-      const lead = N.leadFor(c, S.settings);
-      if (S.settings.notifEnabled && lead !== null && !isNaN(lead)) bits.push(t('marquee.remind', { m: I.num(lead) }));
-      if (list.length > 1) bits.push(t('marquee.total', { n: I.num(list.length) }));
-      return bits.join('   •   ');
+      const parts = date.getDate() + ' ' + (t('months')[date.getMonth()] || '');
+      const dayTxt = d === 1 ? t('prep.tomorrow') + ' (' + I.dayName(dk) + ', ' + I.num(parts) + ')' : I.dayName(dk) + ', ' + I.num(parts);
+      const out = [t('marquee.head', { day: dayTxt, n: I.num(list.length) })];
+      list.forEach(function (c) {
+        const pi = periods.findIndex(function (p) { return p.start === c.start; });
+        const bits = [];
+        if (pi !== -1) bits.push(t('marquee.period', { n: I.num(pi + 1) }));
+        bits.push(fmtTime(c.start) + ' – ' + fmtTime(c.end));
+        bits.push(L(c.subject) || t('form.untitled'));
+        if (c.grade) bits.push(t('marquee.grade', { g: window.Localize.loc(c.grade, 'grade') }));
+        if (c.section) bits.push(t('marquee.section', { s: L(c.section) }));
+        if (c.room) bits.push(t('card.room') + ' ' + L(c.room));
+        out.push(bits.join(', '));
+      });
+      return out.join('     ★     ');
     }
     return '';
   }
@@ -554,7 +560,7 @@
     if (!tr) return;
     const w = tr.scrollWidth;
     if (!w) { setTimeout(startMarquee, 300); return; }
-    tr.style.animationDuration = Math.max(8, w / 60).toFixed(1) + 's';
+    tr.style.animationDuration = Math.max(10, w / 70).toFixed(1) + 's';
     tr.classList.add('run');
   }
 
@@ -768,15 +774,15 @@
       const left = Math.ceil(S.toMin(current.end) - m);
       html += '<div class="status-row status-now" style="' + colorVars(current.color) + '">' +
         '<span class="pulse"></span><div><small>' + esc(t('today.runningNow')) + '</small>' +
-        '<strong>' + esc(current.subject || t('form.untitled')) + '</strong>' +
+        '<strong>' + esc(L(current.subject) || t('form.untitled')) + '</strong>' +
         '<span>' + esc(t('today.endsIn', { d: I.duration(left) })) + '</span></div></div>';
     }
     if (next) {
       const wait = Math.ceil(S.toMin(next.start) - m);
-      const where = [classSec(next), next.room ? t('card.room') + ' ' + next.room : ''].filter(Boolean).join(' · ');
+      const where = [classSec(next), next.room ? t('card.room') + ' ' + L(next.room) : ''].filter(Boolean).join(' · ');
       html += '<div class="status-row status-next">' +
         '<div class="countdown"><b>' + esc(I.num(wait >= 60 ? Math.floor(wait / 60) : wait)) + '</b><small>' + esc(wait >= 60 ? t('today.hourShort') : t('today.minShort')) + '</small></div>' +
-        '<div><small>' + esc(t('today.nextClass')) + '</small><strong>' + esc(next.subject || t('form.untitled')) + '</strong>' +
+        '<div><small>' + esc(t('today.nextClass')) + '</small><strong>' + esc(L(next.subject) || t('form.untitled')) + '</strong>' +
         '<span>' + esc(t('today.startsIn', { d: I.duration(wait) })) + (where ? ' · ' + esc(where) : '') + '</span></div></div>';
     }
     if (!current && !next) {
@@ -913,9 +919,9 @@
         }
         html += '<td>' + here.map(function (c) {
           return '<button type="button" class="grid-cell" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + '">' +
-            '<b>' + esc(c.subject || t('form.untitled')) + '</b>' +
+            '<b>' + esc(L(c.subject) || t('form.untitled')) + '</b>' +
             '<span>' + esc(classSec(c)) + '</span>' +
-            (c.room ? '<span>' + esc(t('card.room') + ' ' + c.room) + '</span>' : '') +
+            (c.room ? '<span>' + esc(t('card.room') + ' ' + L(c.room)) + '</span>' : '') +
             '</button>';
         }).join('') + '</td>';
       });
@@ -933,6 +939,33 @@
     ['#0D9488', '#65A30D'], ['#C2410C', '#9333EA'], ['#4F46E5', '#0891B2'], ['#BE123C', '#7C3AED']
   ];
   const REMIND_OPTS = [0, 5, 15, 30, 60, 1440, -1];
+
+  /* বাংলা তারিখ (বাংলাদেশের সংশোধিত বঙ্গাব্দ, ২০১৯ থেকে): ১৪ এপ্রিল ১ বৈশাখ;
+     বৈশাখ-আশ্বিন ৩১ দিন, কার্তিক-মাঘ ও চৈত্র ৩০ দিন, ফাল্গুন ২৯ (অধিবর্ষে ৩০) দিন */
+  function banglaDate(date) {
+    const y = date.getFullYear();
+    const startY = (date.getMonth() > 3 || (date.getMonth() === 3 && date.getDate() >= 14)) ? y : y - 1;
+    const start = new Date(startY, 3, 14);
+    let days = Math.round((new Date(y, date.getMonth(), date.getDate()) - start) / 86400000);
+    const feb = startY + 1;
+    const leap = (feb % 4 === 0 && feb % 100 !== 0) || feb % 400 === 0;
+    const lens = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, leap ? 30 : 29, 30];
+    let m = 0;
+    while (m < 11 && days >= lens[m]) { days -= lens[m]; m++; }
+    return { d: days + 1, m: m, y: startY - 593 };
+  }
+  function banglaDateText(date) {
+    const b = banglaDate(date);
+    return t('cal.bnDate', { d: I.num(b.d), m: t('bnMonths')[b.m], y: I.num(b.y) });
+  }
+
+  // জাতীয় ও আন্তর্জাতিক দিবস (প্রতি বছর একই ইংরেজি তারিখে)। চাঁদের হিসাবের ছুটি (ঈদ ইত্যাদি) এখানে নেই।
+  const OBS_DAYS = ['01-01', '02-21', '03-08', '03-25', '03-26', '04-07', '04-14', '05-01', '05-31', '06-05', '08-12',
+    '09-08', '10-05', '10-10', '10-16', '10-24', '11-21', '12-03', '12-10', '12-14', '12-16', '12-25'];
+  function observances(date) {
+    const k = String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    return OBS_DAYS.indexOf(k) !== -1 ? [t('obs.' + k)] : [];
+  }
   const REPEAT_OPTS = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
 
   function remindText(m) {
@@ -967,8 +1000,9 @@
       const dk = jsToKey[date.getDay()];
       const evs = S.eventsOn(iso);
       const hol = S.settings.holidays.indexOf(dk) !== -1;
-      const nCls = hol ? 0 : S.classesForDay(dk).length;
+      const obs = observances(date).length;
       const cls = ['cal-cell'];
+      if (obs) cls.push('is-obs');
       if (iso === todayIso) cls.push('is-today');
       if (iso === state.calSel) cls.push('is-sel');
       if (hol) cls.push('is-hol');
@@ -977,28 +1011,27 @@
         '<span class="cal-num">' + esc(I.num(d)) + '</span>' +
         '<span class="cal-dots">' + evs.slice(0, 3).map(function (e) { return '<i style="background:' + esc(e.color) + '"></i>'; }).join('') +
         (evs.length > 3 ? '<b>+</b>' : '') + '</span>' +
-        (nCls ? '<span class="cal-cls">' + esc(I.num(nCls)) + '</span>' : '') +
+        (obs ? '<span class="cal-star">★</span>' : '') +
         '</button>';
     }
     let html = '<section class="cal-card" style="--m1:' + col[0] + ';--m2:' + col[1] + '">' +
       '<header class="cal-head"><button type="button" class="cal-nav" data-cal="prev" aria-label="' + esc(t('cal.prev')) + '">' + ICON.back + '</button>' +
-      '<div class="cal-title"><h2>' + esc(monthName) + '</h2><span>' + esc(I.num(m0.getFullYear())) + '</span></div>' +
+      '<div class="cal-title"><h2>' + esc(monthName) + ' ' + esc(I.num(m0.getFullYear())) + '</h2><span>' + esc(bnMonthSpan(m0)) + '</span></div>' +
       '<button type="button" class="cal-nav cal-next" data-cal="next" aria-label="' + esc(t('cal.next')) + '">' + ICON.back + '</button></header>' +
       '<div class="cal-wd">' + S.DAYS.map(function (d) { return '<span class="' + (S.settings.holidays.indexOf(d) !== -1 ? 'is-hol' : '') + '">' + esc(I.dayShort(d)) + '</span>'; }).join('') + '</div>' +
       '<div class="cal-grid" id="calGrid">' + cells + '</div>' +
-      '<p class="cal-legend"><span><i class="lg-cls"></i>' + esc(t('cal.legendClass')) + '</span><span><i class="lg-ev"></i>' + esc(t('cal.legendEvent')) + '</span></p>' +
+      '<p class="cal-legend"><span><b class="lg-star">★</b>' + esc(t('cal.legendObs')) + '</span><span><i class="lg-ev"></i>' + esc(t('cal.legendEvent')) + '</span></p>' +
       '</section>';
 
     // বাছাই করা দিনের কাজ
     const sel = S.parseIso(state.calSel);
-    const selKey = jsToKey[sel.getDay()];
-    const selHol = S.settings.holidays.indexOf(selKey) !== -1;
-    const selCls = selHol ? [] : S.classesForDay(selKey);
+    const selObs = observances(sel);
     const evs = S.eventsOn(state.calSel);
     html += '<section class="cal-day" style="--m1:' + col[0] + ';--m2:' + col[1] + '">' +
       '<header class="cal-day-head"><div><h3>' + esc(I.formatDate(sel)) + '</h3>' +
-      '<span>' + esc(selHol ? t('week.holiday') : (selCls.length ? t('cal.classLine', { n: I.num(selCls.length), time: fmtTime(selCls[0].start) }) : t('cal.noClass'))) + '</span></div>' +
-      '<button type="button" class="btn btn-primary btn-small cal-add" data-action="cal-add">' + ICON.plus + esc(t('cal.add')) + '</button></header>';
+      '<span>' + esc(banglaDateText(sel)) + '</span></div>' +
+      '<button type="button" class="btn btn-primary btn-small cal-add" data-action="cal-add">' + ICON.plus + esc(t('cal.add')) + '</button></header>' +
+      selObs.map(function (o) { return '<div class="cal-obs">★ ' + esc(o) + '</div>'; }).join('');
     if (evs.length) {
       html += '<div class="ev-list">' + evs.map(function (e) { return eventHtml(e, state.calSel); }).join('') + '</div>';
     } else {
@@ -1025,10 +1058,18 @@
     bindCalendar();
   }
 
+  // মাসের নিচে বাংলা মাসের নাম: "কার্তিক–অগ্রহায়ণ ১৪৩৩"
+  function bnMonthSpan(m0) {
+    const a = banglaDate(m0);
+    const b = banglaDate(new Date(m0.getFullYear(), m0.getMonth() + 1, 0));
+    const names = t('bnMonths');
+    return (a.m === b.m ? names[a.m] : names[a.m] + '–' + names[b.m]) + ' ' + I.num(b.y) + ' ' + t('cal.bnEra');
+  }
+
   function eventHtml(e, iso, showDate) {
     const done = e.done.indexOf(iso) !== -1;
     const d = S.parseIso(iso);
-    const when = (showDate ? I.formatDate(d).split(', ')[0] + ' ' + I.num(d.getDate()) + ' · ' : '') + fmtTime(e.time);
+    const when = (showDate ? I.formatDate(d).split(', ')[0] + ' ' + I.num(d.getDate()) + ' · ' : '') + (e.allDay ? t('cal.allDay') : fmtTime(e.time));
     return '<div class="ev-item' + (done ? ' is-done' : '') + '" style="' + colorVars(e.color) + '">' +
       '<button type="button" class="ev-check" data-ev-done="' + esc(e.id) + '" data-iso="' + iso + '" aria-label="' + esc(t('cal.markDone')) + '">' + ICON.check + '</button>' +
       '<button type="button" class="ev-main" data-ev="' + esc(e.id) + '" data-iso="' + iso + '">' +
@@ -1098,6 +1139,7 @@
       '<label class="field"><span class="field-label">' + esc(t('cal.fTitle')) + '</span><input id="evTitle" maxlength="120" placeholder="' + esc(t('cal.fTitlePh')) + '"/></label>' +
       '<div class="row-2"><label class="field"><span class="field-label">' + esc(t('cal.fDate')) + '</span><input id="evDate" type="date"/></label>' +
       '<label class="field"><span class="field-label">' + esc(t('cal.fTime')) + '</span><input id="evTime" type="time"/></label></div>' +
+      '<label class="check-row ev-allday"><input type="checkbox" id="evAllDay"/><span>' + esc(t('cal.allDayHelp')) + '</span></label>' +
       '<div class="field-label">' + esc(t('cal.fRemind')) + '</div><div class="chips" id="evRemind">' +
       REMIND_OPTS.map(function (m) { return '<button type="button" class="chip-btn' + (m === e.remind ? ' on' : '') + '" data-val="' + m + '">' + esc(remindText(m)) + '</button>'; }).join('') + '</div>' +
       '<div class="field-label ev-gap">' + esc(t('cal.fRepeat')) + '</div><div class="chips" id="evRepeat">' +
@@ -1115,6 +1157,14 @@
     $('#evDate', el).value = editing ? e.date : (iso || e.date);
     $('#evTime', el).value = e.time;
     $('#evNote', el).value = e.note;
+    const allDay = $('#evAllDay', el);
+    allDay.checked = !!e.allDay;
+    function syncAllDay() {
+      $('#evTime', el).disabled = allDay.checked;
+      if (allDay.checked) $('#evTime', el).value = '08:00';
+    }
+    allDay.addEventListener('change', syncAllDay);
+    syncAllDay();
     let color = e.color;
     ['#evRemind', '#evRepeat'].forEach(function (id) {
       $(id, el).addEventListener('click', function (x) {
@@ -1153,7 +1203,7 @@
       const saved = S.saveEvent({
         id: editing ? e.id : undefined, title: title, date: date, time: time, note: $('#evNote', el).value,
         color: color, remind: parseInt($('#evRemind .on', el).getAttribute('data-val'), 10),
-        repeat: $('#evRepeat .on', el).getAttribute('data-val'), done: editing ? e.done : []
+        repeat: $('#evRepeat .on', el).getAttribute('data-val'), done: editing ? e.done : [], allDay: allDay.checked
       });
       if (!saved) { infoDialog(t('error.title'), t('settings.saveFail')); return; }
       N.reschedule();
@@ -1727,6 +1777,10 @@
       '</div>' +
       '<div id="permBlock" class="perm-block">' + (N.isNative() ? '<div class="loading-line"></div>' : '<p class="group-help">' + esc(t('perm.webOnly')) + '</p>') + '</div>');
 
+    html += group(t('words.title'),
+      '<p class="group-help">' + esc(t('words.help')) + '</p>' +
+      '<textarea id="s-words" class="words-box" rows="4" maxlength="4000" placeholder="' + esc(t('words.ph')) + '">' + esc(st.wordMap || '') + '</textarea>');
+
     html += group(t('period.title'),
       actionRow('edit-periods', t('period.edit'), t('period.settingsHelp')));
 
@@ -1858,6 +1912,17 @@
       const v = b.getAttribute('data-val');
       if (state.draft.dayEndStyle === v) return;
       changeDraft(function (d) { d.dayEndStyle = v; });
+    });
+
+    $('#s-words').addEventListener('input', function (e) {
+      state.draft.wordMap = e.target.value;
+      if (!state.dirty) {
+        state.dirty = true;
+        const bar = $('.save-bar');
+        bar.classList.add('is-dirty');
+        $('span', bar).textContent = t('settings.unsaved');
+        $('button', bar).disabled = false;
+      }
     });
 
     $('#s-mq').addEventListener('click', function (e) {
