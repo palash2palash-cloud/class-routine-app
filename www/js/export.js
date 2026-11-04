@@ -188,7 +188,7 @@
       return { day: d, holiday: S.settings.holidays.indexOf(d) !== -1, classes: S.classesForDay(d) };
     }).filter(function (r) { return !r.holiday || r.classes.length; });
 
-    const slots = S.timeSlots(rows.map(function (r) { return r.classes; }));
+    const slots = S.mergedSlots(rows.map(function (r) { return r.classes; }));
     const cols = buildColumns(slots, S);
     const slotIndex = {};
     cols.forEach(function (col, i) { if (col.kind === 'class') slotIndex[col.start] = i; });

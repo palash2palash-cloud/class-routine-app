@@ -13,6 +13,7 @@
     prevView: 'today',
     editId: null,
     presetDay: null,
+    presetTimes: null,
     search: '',
     renderedDay: null,
     loadError: false,
@@ -44,6 +45,7 @@
     search: '<svg viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l4.6 4.6a1 1 0 0 1-1.4 1.4l-4.6-4.6A7 7 0 1 1 10 3Zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z"/></svg>',
     copy: '<svg viewBox="0 0 24 24"><path d="M8 3h11a2 2 0 0 1 2 2v11h-2V5H8V3ZM5 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/></svg>',
     trash: '<svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>',
+    periods: '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm1 3v4.6l3.4 2-1 1.7L11 12.7V7h2Z"/></svg>',
     check: '<svg viewBox="0 0 24 24"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z"/></svg>',
     pdf: '<svg viewBox="0 0 24 24"><path d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V9h5.5L13 3.5ZM11 11v5.2l-2.1-2.1-1.4 1.4L12 20l4.5-4.5-1.4-1.4-2.1 2.1V11h-2Z"/></svg>',
     palette: '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3Zm-5 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm4 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>'
@@ -323,6 +325,7 @@
       view = 'form';
       state.editId = null;
       state.presetDay = opts.day || null;
+      state.presetTimes = opts.start && opts.end ? { start: opts.start, end: opts.end } : null;
     } else if (view === 'form') {
       state.editId = opts.id || null;
       state.presetDay = opts.day || null;
@@ -407,6 +410,17 @@
       html += '<div class="banner banner-error"><strong>' + esc(t('error.loadTitle')) + '</strong><span>' + esc(t('error.loadText')) + '</span>' +
         '<button type="button" class="btn btn-small" data-action="restore">' + esc(t('settings.restore')) + '</button></div>';
     }
+    // রাত ১২টার পর থেকে আজকের ক্লাস যতক্ষণ বাকি, ততক্ষণ উপরে ছোট ফ্লিপ ঘড়ি (ক্লাস চললে লাল)
+    const nm0 = nowMin();
+    if (!info.holiday && info.classes.some(function (c) { return S.toMin(c.end) > nm0; })) {
+      html += '<section class="now-clock" id="nowClock" aria-hidden="true">' +
+        '<span class="nc-label" id="ncLabel"></span>' +
+        '<span class="nc-digits">' +
+        ['h', 'm', 's'].map(function (u, i) {
+          return (i ? '<span class="nc-colon"><i></i><i></i></span>' : '') + '<span class="nc-pair">' + flipDigitHtml('n' + u + '0') + flipDigitHtml('n' + u + '1') + '</span>';
+        }).join('') + '</span>' +
+        '<span class="nc-ap" id="ncAp"></span></section>';
+    }
     html += profileCardHtml();
 
     if (info.holiday) {
@@ -441,8 +455,8 @@
           }).join('') + '</div></div></section>';
       }
     }
-    if (html.indexOf('id="dayEnd"') === -1) html += prepPanelHtml(info);
     $('#view').innerHTML = html;
+    tickNowClock();
     fitOneLine($('#view'));
     updateLive();
     fitDayEnd();
@@ -488,6 +502,35 @@
       hg.style.setProperty('--bottom', (0.06 + p * 0.94).toFixed(4));
     }
     return true;
+  }
+
+  // হোমপেজের উপরের ফ্লিপ ঘড়ি: এখনকার সময়, প্রতি সেকেন্ডে
+  function tickNowClock() {
+    const box = $('#nowClock');
+    if (!box) return;
+    const now = new Date();
+    const h24 = now.getHours();
+    const is12 = S.settings.timeFormat !== '24';
+    const h = is12 ? (h24 % 12 || 12) : h24;
+    const parts = { h: h, m: now.getMinutes(), s: now.getSeconds() };
+    ['h', 'm', 's'].forEach(function (u) {
+      const v = String(parts[u]).padStart(2, '0');
+      [0, 1].forEach(function (i) {
+        const el = $('[data-u="n' + u + i + '"]', box);
+        if (el) setFlip(el, I.num(v[i]));
+      });
+    });
+    const hm = String(h24).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const ap = $('#ncAp', box);
+    if (is12) {
+      const f = I.formatTime(hm, '12').split(' ');
+      ap.textContent = I.getLang() === 'bn' ? f[0] : f[f.length - 1];
+    }
+    ap.hidden = !is12;
+    const m = h24 * 60 + now.getMinutes();
+    const live = todayInfo().classes.some(function (c) { return S.toMin(c.start) <= m && m < S.toMin(c.end); });
+    box.classList.toggle('is-live', live);
+    $('#ncLabel', box).textContent = live ? t('nowClock.live') : t('nowClock.label');
   }
 
   // দিনশেষের বালুঘড়ির বালি আর লেখা হালনাগাদ
@@ -693,6 +736,7 @@
   function renderWeek() {
     const mode = S.settings.weekMode;
     setTop(t('week.title'), t('week.sub', { n: S.data.classes.length }),
+      '<button type="button" class="icon-btn" data-action="edit-periods" aria-label="' + esc(t('period.edit')) + '">' + ICON.periods + '</button>' +
       (S.data.classes.length ? '<button type="button" class="icon-btn" data-action="save-pdf" aria-label="' + esc(t('settings.savePdf')) + '">' + ICON.pdf + '</button>' : '') +
       '<div class="seg seg-icons">' +
       '<button type="button" class="' + (mode === 'list' ? 'on' : '') + '" data-action="week-mode" data-mode="list" aria-label="' + esc(t('week.listView')) + '">' + ICON.list + '</button>' +
@@ -793,7 +837,7 @@
     }).filter(function (r) { return !q || r.list.length; });
     if (!rows.length) return emptyHtml('search', t('week.noResultTitle'), t('week.noResultText'));
     // কলাম = সপ্তাহের সব আলাদা শুরুর সময়, যাতে একই পিরিয়ড একই কলামে থাকে
-    const slots = S.timeSlots(rows.map(function (r) { return r.list; }));
+    const slots = S.mergedSlots(rows.map(function (r) { return r.list; }));
     let html = '<div class="grid-scroll"><table class="week-grid"><thead><tr><th>' + esc(t('week.day')) + '</th>';
     slots.forEach(function (sl, i) {
       html += '<th>' + esc(t('week.period', { n: i + 1 })) + '<small>' + esc(fmtTime(sl.start)) + '</small></th>';
@@ -805,6 +849,11 @@
       (slots.length ? slots : [{ start: null }]).forEach(function (sl, i) {
         const here = r.list.filter(function (c) { return c.start === sl.start; });
         if (!here.length) {
+          if (sl.start && !r.holiday && !q) {
+            // খালি ঘরে চাপলে ওই দিন আর পিরিয়ডের সময় বসানো অবস্থায় নতুন ক্লাস
+            html += '<td class="empty-cell"><button type="button" class="grid-add" data-action="add" data-day="' + r.day + '" data-start="' + sl.start + '" data-end="' + sl.end + '" aria-label="' + esc(t('week.addHere')) + '">' + ICON.plus + '</button></td>';
+            return;
+          }
           html += '<td class="empty-cell">' + (i === 0 && r.holiday && !r.list.length ? esc(t('week.holiday')) : '') + '</td>';
           return;
         }
@@ -826,8 +875,118 @@
 
   function defaultTimes(day) {
     const list = S.classesForDay(day);
+    const after = list.length ? S.toMin(list[list.length - 1].end) : 0;
+    // সেই দিনের শেষ ক্লাসের পরের প্রথম খালি পিরিয়ড
+    const p = S.periods().filter(function (x) {
+      return S.toMin(x.start) >= after && !list.some(function (c) { return c.start === x.start; });
+    })[0];
+    if (p) return { start: p.start, end: p.end };
     const start = list.length ? list[list.length - 1].end : '10:00';
     return { start: start, end: addMinutes(start, 45) };
+  }
+
+  function periodChipsHtml(start, end) {
+    return S.periods().map(function (p, i) {
+      return '<button type="button" class="chip-btn period-chip' + (p.start === start && p.end === end ? ' on' : '') + '" data-ps="' + p.start + '" data-pe="' + p.end + '">' +
+        '<b>' + esc(t('period.n', { n: I.num(i + 1) })) + '</b><small>' + esc(fmtTime(p.start)) + '</small></button>';
+    }).join('') +
+      '<button type="button" class="chip-btn chip-edit" data-action="edit-periods">' + ICON.periods + esc(t('period.edit')) + '</button>';
+  }
+
+  /* পিরিয়ড সাজানো: যোগ, সময় বদল, মুছে ফেলা। সময় বদলালে ওই পিরিয়ডের ক্লাসগুলোর সময়ও বদলায়। */
+  function openPeriodSheet() {
+    let rows = S.periods().map(function (p, i) { return { id: 'p' + i, start: p.start, end: p.end, orig: { start: p.start, end: p.end } }; });
+    let seq = rows.length;
+    const entry = openOverlay('sheet',
+      '<div class="sheet-handle"></div><h2 class="sheet-title">' + esc(t('period.title')) + '</h2>' +
+      '<p class="sheet-sub">' + esc(t('period.help')) + '</p>' +
+      '<div class="pd-list" id="pdList"></div>' +
+      '<button type="button" class="btn btn-tonal btn-block pd-add" data-pd="add">' + ICON.plus + esc(t('period.add')) + '</button>' +
+      '<label class="check-row"><input type="checkbox" id="pdShift" checked/><span>' + esc(t('period.shift')) + '</span></label>' +
+      '<p class="field-error" id="pdErr"></p>' +
+      '<div class="sheet-actions"><button type="button" class="btn btn-text" data-pd="cancel">' + esc(t('common.cancel')) + '</button>' +
+      '<button type="button" class="btn btn-primary" data-pd="ok">' + esc(t('common.save')) + '</button></div>');
+    const el = entry.el;
+    const listEl = $('#pdList', el);
+    function readInputs() {
+      $$('.pd-row', listEl).forEach(function (r) {
+        const row = rows.filter(function (x) { return x.id === r.getAttribute('data-id'); })[0];
+        if (!row) return;
+        row.start = $('.pd-s', r).value;
+        row.end = $('.pd-e', r).value;
+      });
+    }
+    function draw() {
+      listEl.innerHTML = rows.length ? rows.map(function (r, i) {
+        return '<div class="pd-row" data-id="' + r.id + '"><span class="pd-n">' + esc(t('period.n', { n: I.num(i + 1) })) + '</span>' +
+          '<input type="time" class="pd-s" value="' + esc(r.start) + '" aria-label="' + esc(t('form.start')) + '"/><span class="pd-dash">–</span>' +
+          '<input type="time" class="pd-e" value="' + esc(r.end) + '" aria-label="' + esc(t('form.end')) + '"/>' +
+          '<button type="button" class="icon-btn small pd-del" data-pd="del" aria-label="' + esc(t('period.del')) + '">' + ICON.trash + '</button></div>';
+      }).join('') : '<p class="group-help">' + esc(t('period.empty')) + '</p>';
+    }
+    draw();
+    el.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-pd]');
+      if (!b) return;
+      const act = b.getAttribute('data-pd');
+      readInputs();
+      if (act === 'cancel') { closeOverlay(entry, true); return; }
+      if (act === 'add') {
+        const last = rows[rows.length - 1];
+        const len = last && last.start && last.end ? Math.max(20, S.toMin(last.end) - S.toMin(last.start)) : 40;
+        const st = last && last.end ? last.end : '08:00';
+        rows.push({ id: 'n' + (seq++), start: st, end: addMinutes(st, len), orig: null });
+        draw();
+        const inputs = $$('.pd-s', listEl);
+        if (inputs.length) inputs[inputs.length - 1].scrollIntoView({ block: 'nearest' });
+        return;
+      }
+      if (act === 'del') {
+        const id = b.closest('.pd-row').getAttribute('data-id');
+        const idx = rows.findIndex(function (x) { return x.id === id; });
+        confirmDialog({
+          title: t('period.delTitle', { n: I.num(idx + 1) }),
+          message: t('period.delText'),
+          okText: t('period.del'),
+          danger: true
+        }).then(function (ok) {
+          if (!ok) return;
+          rows = rows.filter(function (x) { return x.id !== id; });
+          draw();
+        });
+        return;
+      }
+      if (act === 'ok') {
+        const err = $('#pdErr', el);
+        err.textContent = '';
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r.start || !r.end || S.toMin(r.end) <= S.toMin(r.start)) { err.textContent = t('period.invalid', { n: I.num(i + 1) }); return; }
+        }
+        const sorted = rows.slice().sort(function (a, b) { return S.toMin(a.start) - S.toMin(b.start); });
+        for (let i = 0; i + 1 < sorted.length; i++) {
+          if (S.toMin(sorted[i + 1].start) < S.toMin(sorted[i].end)) {
+            err.textContent = t('period.overlap', { a: fmtTime(sorted[i].start), b: fmtTime(sorted[i + 1].start) });
+            return;
+          }
+        }
+        const changes = $('#pdShift', el).checked ? rows.filter(function (r) {
+          return r.orig && (r.orig.start !== r.start || r.orig.end !== r.end);
+        }).map(function (r) { return { from: r.orig, to: { start: r.start, end: r.end } }; }) : [];
+        const moved = S.setPeriods(sorted.map(function (r) { return { start: r.start, end: r.end }; }), changes);
+        if (moved < 0) { infoDialog(t('error.title'), t('settings.saveFail')); return; }
+        if (state.draft) state.draft.periods = S.settings.periods.slice();
+        closeOverlay(entry, true);
+        if (moved) N.reschedule();
+        toast(moved ? t('period.savedShift', { n: I.num(moved) }) : t('period.saved'));
+        const chips = $('#f-periods');
+        if (state.view === 'form' && chips) {
+          chips.innerHTML = periodChipsHtml($('#f-start').value, $('#f-end').value);
+        } else {
+          render();
+        }
+      }
+    });
   }
 
   function datalist(id, values) {
@@ -841,7 +1000,7 @@
     if (state.editId && !editing) { navigate('today'); return; }
     const today = S.dayKeyOf(new Date());
     const day = editing ? editing.day : (state.presetDay || (S.settings.holidays.indexOf(today) === -1 ? today : 'sat'));
-    const times = editing ? { start: editing.start, end: editing.end } : defaultTimes(day);
+    const times = editing ? { start: editing.start, end: editing.end } : (state.presetTimes || defaultTimes(day));
     const c = editing || {
       subject: '', grade: '', section: '', room: '', note: '',
       color: S.PALETTE[S.data.classes.length % S.PALETTE.length], remind: 'default'
@@ -871,6 +1030,8 @@
         return '<button type="button" class="chip-btn' + (d === day ? ' on' : '') + (hol ? ' is-holiday' : '') + '" data-day="' + d + '">' + esc(I.dayShort(d)) + '</button>';
       }).join('') + '</div>' +
       (!editing ? '<p class="field-help">' + esc(t('form.daysHelp')) + '</p>' : '') +
+      '<div class="field-label period-label">' + esc(t('period.pick')) + '</div>' +
+      '<div class="chips period-chips" id="f-periods">' + periodChipsHtml(times.start, times.end) + '</div>' +
       '<div class="row-2">' +
       field('start', t('form.start'), '<input id="f-start" type="time" name="start" required value="' + esc(times.start) + '"/>') +
       field('end', t('form.end'), '<input id="f-end" type="time" name="end" required value="' + esc(times.end) + '"/>') +
@@ -936,6 +1097,23 @@
     start.addEventListener('input', updateDuration);
     end.addEventListener('input', updateDuration);
     updateDuration();
+
+    // পিরিয়ড বাছলে শুরু-শেষের সময় নিজে থেকে বসে যায়
+    function markPeriod() {
+      $$('#f-periods .period-chip').forEach(function (b) {
+        b.classList.toggle('on', b.getAttribute('data-ps') === start.value && b.getAttribute('data-pe') === end.value);
+      });
+    }
+    $('#f-periods').addEventListener('click', function (e) {
+      const b = e.target.closest('.period-chip');
+      if (!b) return;
+      start.value = b.getAttribute('data-ps');
+      end.value = b.getAttribute('data-pe');
+      updateDuration();
+      markPeriod();
+    });
+    start.addEventListener('change', markPeriod);
+    end.addEventListener('change', markPeriod);
 
     // দিনের চিপ
     const daysWrap = $('#f-days');
@@ -1245,6 +1423,9 @@
       '</div>' +
       '<div id="permBlock" class="perm-block">' + (N.isNative() ? '<div class="loading-line"></div>' : '<p class="group-help">' + esc(t('perm.webOnly')) + '</p>') + '</div>');
 
+    html += group(t('period.title'),
+      actionRow('edit-periods', t('period.edit'), t('period.settingsHelp')));
+
     html += group(t('profile.title'),
       actionRow('edit-profile', t('profile.settingsRow'), t('profile.settingsHelp')));
 
@@ -1438,6 +1619,7 @@
     const next = Object.assign({}, d, {
       profile: prev.profile,
       mutedDates: prev.mutedDates,
+      periods: prev.periods,
       weekMode: prev.weekMode
     });
     S.data.settings = next;
@@ -1480,7 +1662,10 @@
   async function handleAction(action, el) {
     switch (action) {
       case 'add':
-        navigate('add', { day: el.getAttribute('data-day') });
+        navigate('add', { day: el.getAttribute('data-day'), start: el.getAttribute('data-start'), end: el.getAttribute('data-end') });
+        break;
+      case 'edit-periods':
+        openPeriodSheet();
         break;
       case 'toggle-mute-today': {
         const iso = S.isoDate(new Date());
@@ -1942,10 +2127,11 @@
     setTimeout(tickMinute, 60000 - (Date.now() % 60000) + 200);
     setInterval(updateLive, 15000);
     setInterval(function () {
-      if (state.view !== 'today' || document.hidden || !$('#deClock')) return;
+      if (state.view !== 'today' || document.hidden || (!$('#deClock') && !$('#nowClock'))) return;
       // রাত ১২টা পার হলে নতুন দিনের ক্লাস দেখানো
       if (S.isoDate(new Date()) !== state.renderedDay) { renderToday(); return; }
       tickDayEndClock();
+      tickNowClock();
     }, 1000);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { updateLive(); fitDayEnd(); });
     try {

@@ -874,3 +874,39 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 @keyframes bhFallS { 0% { transform: translate(0, 0); opacity: 0; } 8% { opacity: 1; } 100% { transform: translate(0, 136px); opacity: 1; } }
 .hg-preview { height: 72px; }
 .hg-preview .hourglass svg, .hg-preview .hourglass .big-hg svg { width: 56px; height: 65px; }
+
+/* ---------- হোমপেজের উপরের ছোট ফ্লিপ ঘড়ি (কালো, ক্লাস চললে লাল) ---------- */
+.now-clock {
+  --bh-card: #111214; --bh-ink: #FFFFFF;
+  display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 14px; flex-wrap: wrap;
+}
+.now-clock.is-live { --bh-card: #DC2626; }
+.nc-label { font-size: .8rem; font-weight: 700; color: var(--text-2); }
+.now-clock.is-live .nc-label { color: #DC2626; }
+.nc-digits { display: flex; align-items: center; gap: 4px; }
+.nc-pair { display: flex; gap: 3px; }
+.now-clock .fc { --fh: 40px; --fw: 29px; border-radius: 7px; box-shadow: 0 4px 10px rgba(0, 0, 0, .22); }
+.now-clock .fc-t, .now-clock .fc-ft { border-radius: 7px 7px 0 0; }
+.now-clock .fc-b, .now-clock .fc-fb { border-radius: 0 0 7px 7px; }
+.now-clock .fc > span { transition: background-color .5s; }
+.nc-colon { display: flex; flex-direction: column; gap: 7px; padding: 0 1px; }
+.nc-colon i { width: 5px; height: 5px; border-radius: 50%; background: var(--bh-card); transition: background-color .5s; }
+.nc-ap { font-size: .82rem; font-weight: 700; color: var(--bh-ink); background: var(--bh-card); padding: 5px 9px; border-radius: 8px; transition: background-color .5s; }
+[data-theme="dark"] .now-clock:not(.is-live) { --bh-card: #000000; }
+[data-theme="dark"] .now-clock:not(.is-live) .fc { box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 4px 10px rgba(0, 0, 0, .4); }
+
+/* ---------- পিরিয়ড ---------- */
+.period-label { margin-top: 14px; }
+.period-chips { margin-bottom: 4px; }
+.period-chip { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.2; padding-top: 6px; padding-bottom: 6px; }
+.period-chip small { font-size: .72rem; opacity: .8; }
+.chip-edit { display: inline-flex; align-items: center; gap: 5px; border-style: dashed; }
+.chip-edit svg { width: 16px; height: 16px; fill: currentColor; }
+.pd-list { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; margin: 4px 0 12px; }
+.pd-row { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 6px; padding: 8px 8px 8px 12px; border-radius: 14px; background: var(--surface-2, var(--bg)); border: 1px solid var(--border); }
+.pd-n { grid-column: 1 / -1; font-weight: 700; font-size: .88rem; white-space: nowrap; }
+.pd-row input[type="time"] { min-width: 0; width: 100%; padding: 8px 6px; font: inherit; font-size: .92rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+.pd-dash { color: var(--text-3); }
+.pd-add { margin-bottom: 10px; }
+.grid-add { width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; border: 1.5px dashed var(--border); border-radius: 10px; background: transparent; color: var(--text-3); cursor: pointer; }
+.grid-add svg { width: 18px; height: 18px; fill: currentColor; }

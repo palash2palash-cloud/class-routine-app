@@ -113,7 +113,8 @@
     "movedClash": "Moved to {day}, but it overlaps another class",
     "day": "Day",
     "period": "Period {n}",
-    "gridHint": "Swipe sideways to see the whole week. Tap any cell to edit."
+    "gridHint": "Swipe sideways to see the whole week. Tap any cell to edit.",
+    "addHere": "Add a class here"
   },
   "card": {
     "class": "Class",
@@ -367,5 +368,27 @@
     "h": "Hours",
     "m": "Minutes",
     "s": "Seconds"
+  },
+  "period": {
+    "title": "Periods",
+    "edit": "Edit periods",
+    "help": "Add as many periods as you need and set their times. When adding a class, pick a period and the times fill in.",
+    "settingsHelp": "Add, retime or remove periods",
+    "n": "Period {n}",
+    "add": "Add a period",
+    "pick": "Pick a period",
+    "shift": "When a period's time changes, move its classes too",
+    "saved": "Periods saved",
+    "savedShift": "Periods saved, {n} classes moved to the new time",
+    "invalid": "Period {n}: end time must be after start time",
+    "overlap": "The periods at {a} and {b} overlap",
+    "delTitle": "Delete period {n}?",
+    "delText": "Only the period is removed from the list. Classes at this time stay in the routine. It is removed when you tap Save.",
+    "del": "Delete",
+    "empty": "No periods yet. Tap the button below to add one."
+  },
+  "nowClock": {
+    "label": "Time now",
+    "live": "Class running"
   }
 }

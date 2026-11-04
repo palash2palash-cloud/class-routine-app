@@ -28,6 +28,7 @@
     breakEnabled: true, // পিডিএফ/ছবির রুটিনে টিফিন বিরতির ঘর
     breakStart: '11:05',
     breakEnd: '11:40',
+    periods: [], // রুটিনের পিরিয়ড [{start, end}]; ফাঁকা থাকলে ক্লাসগুলোর সময় থেকে বের করা হয়
     profile: {
       photo: '', // পাসপোর্ট সাইজ ছবি (JPEG data URL)
       bn: { name: '', designation: '', subject: '', institution: '', city: '' },
@@ -102,6 +103,7 @@
       out.breakStart = s.breakStart;
       out.breakEnd = s.breakEnd;
     }
+    out.periods = cleanPeriods(s.periods);
     out.profile = cleanProfile(s.profile);
     return out;
   }
@@ -332,6 +334,75 @@
   }
 
   // কয়েকটি দিনের ক্লাস থেকে আলাদা আলাদা শুরুর সময় (গ্রিড ও ছবির কলামের জন্য)
+  function cleanPeriods(p) {
+    if (!Array.isArray(p)) return [];
+    const seen = {};
+    const out = [];
+    p.forEach(function (x) {
+      if (!x || !isTime(x.start) || !isTime(x.end) || toMin(x.end) <= toMin(x.start) || seen[x.start]) return;
+      seen[x.start] = true;
+      out.push({ start: x.start, end: x.end });
+    });
+    return out.sort(byTime).slice(0, 20);
+  }
+
+  // রুটিনের পিরিয়ডগুলো: নিজে সাজানো থাকলে সেগুলো, না থাকলে ক্লাসের সময় থেকে
+  function periods() {
+    const own = data.settings.periods || [];
+    if (own.length) return own.map(function (x) { return { start: x.start, end: x.end }; });
+    const slots = timeSlots(DAYS.map(function (d) { return classesForDay(d); })).map(function (x) { return { start: x.start, end: x.end }; });
+    // দুই ক্লাসের মাঝে প্রায় এক পিরিয়ডের সমান ফাঁকা থাকলে (টিফিন বাদে) সেটাও একটা পিরিয়ড, যাতে নম্বর ঠিক থাকে
+    const lens = slots.map(function (x) { return toMin(x.end) - toMin(x.start); }).sort(function (a, b) { return a - b; });
+    const typical = lens.length ? lens[Math.floor(lens.length / 2)] : 45;
+    const st = data.settings;
+    const bs = st.breakEnabled ? toMin(st.breakStart) : -1, be = st.breakEnabled ? toMin(st.breakEnd) : -1;
+    const out = [];
+    slots.forEach(function (x, i) {
+      out.push(x);
+      const nx = slots[i + 1];
+      if (!nx) return;
+      let a = toMin(x.end), b = toMin(nx.start);
+      if (bs >= 0 && bs < b && be > a) { if (be - a < typical * 0.66) a = be; else if (b - bs < typical * 0.66) b = bs; else return; }
+      if (b - a >= Math.max(25, typical * 0.66) && b - a <= typical * 1.5) out.push({ start: fromMin(a), end: fromMin(b) });
+    });
+    return out.sort(byTime);
+  }
+
+  // সপ্তাহের ছক ও পিডিএফের কলাম: পিরিয়ড + পিরিয়ডের বাইরে থাকা ক্লাসের সময়
+  function mergedSlots(lists) {
+    const out = periods();
+    const seen = {};
+    out.forEach(function (x) { seen[x.start] = x; });
+    timeSlots(lists).forEach(function (x) {
+      if (seen[x.start]) {
+        if (toMin(x.end) > toMin(seen[x.start].end)) seen[x.start].end = x.end;
+        return;
+      }
+      seen[x.start] = { start: x.start, end: x.end };
+      out.push(seen[x.start]);
+    });
+    return out.sort(byTime);
+  }
+
+  /* পিরিয়ড সংরক্ষণ। changes = [{from:{start,end}, to:{start,end}}]:
+     যে পিরিয়ডের সময় বদলেছে, সেই সময়ের ক্লাসগুলোর সময়ও একই সাথে বদলানো হয়। ফেরত দেয় কয়টি ক্লাস বদলেছে। */
+  function setPeriods(list, changes) {
+    let moved = 0;
+    (changes || []).forEach(function (ch) {
+      const delta = toMin(ch.to.start) - toMin(ch.from.start);
+      data.classes.forEach(function (c) {
+        if (c._pm || c.start !== ch.from.start) return;
+        c.start = ch.to.start;
+        c.end = c.end === ch.from.end ? ch.to.end : fromMin(Math.min(1439, Math.max(toMin(ch.to.start) + 5, toMin(c.end) + delta)));
+        c._pm = true;
+        moved++;
+      });
+    });
+    data.classes.forEach(function (c) { delete c._pm; });
+    data.settings.periods = cleanPeriods(list);
+    return save() ? moved : -1;
+  }
+
   function timeSlots(lists) {
     const seen = {};
     const out = [];
@@ -416,6 +487,9 @@
     moveToDay: moveToDay,
     subjects: subjects,
     timeSlots: timeSlots,
+    periods: periods,
+    mergedSlots: mergedSlots,
+    setPeriods: setPeriods,
     collator: collator,
     normalize: normalize,
     matches: matches,
