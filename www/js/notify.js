@@ -162,6 +162,26 @@
         });
       });
     }
+
+    // ক্যালেন্ডারের কাজের রিমাইন্ডার (ছুটি বা ক্লাসের রিমাইন্ডার বন্ধ থাকলেও বাজবে)
+    for (let d = 0; d <= WINDOW_DAYS && list.length < MAX_NOTIFS; d++) {
+      const date = new Date(base.getFullYear(), base.getMonth(), base.getDate() + d);
+      const iso = S.isoDate(date);
+      S.eventsOn(iso).forEach(function (ev) {
+        if (list.length >= MAX_NOTIFS || ev.remind < 0 || ev.done.indexOf(iso) !== -1) return;
+        const at = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, S.toMin(ev.time) - ev.remind, 0, 0);
+        if (at.getTime() <= now + 5000) return;
+        const I = window.I18N;
+        const when = I.formatTime(ev.time, settings.timeFormat);
+        list.push({
+          id: list.length + 1,
+          at: at.getTime(),
+          title: ev.remind > 0 ? t('cal.notifTitleLead', { title: ev.title, when: when }) : t('cal.notifTitle', { title: ev.title }),
+          body: ev.note ? when + '\n' + ev.note : when,
+          color: ev.color
+        });
+      });
+    }
     return list;
   }
 

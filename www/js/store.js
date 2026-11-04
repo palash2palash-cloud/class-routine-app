@@ -28,6 +28,7 @@
     breakEnabled: true, // পিডিএফ/ছবির রুটিনে টিফিন বিরতির ঘর
     breakStart: '11:05',
     breakEnd: '11:40',
+    marqueeColor: '#DC2626', // দিনশেষে বালুঘড়ির উপরে পরের ক্লাসের স্ক্রল লেখার রং
     periods: [], // রুটিনের পিরিয়ড [{start, end}]; ফাঁকা থাকলে ক্লাসগুলোর সময় থেকে বের করা হয়
     profile: {
       photo: '', // পাসপোর্ট সাইজ ছবি (JPEG data URL)
@@ -43,7 +44,7 @@
   }
 
   function emptyData() {
-    return { version: 1, classes: [], settings: Object.assign({}, DEFAULT_SETTINGS), prepNotes: {} };
+    return { version: 1, classes: [], settings: Object.assign({}, DEFAULT_SETTINGS), prepNotes: {}, events: [] };
   }
 
   function isTime(s) {
@@ -103,6 +104,7 @@
       out.breakStart = s.breakStart;
       out.breakEnd = s.breakEnd;
     }
+    if (isColor(s.marqueeColor)) out.marqueeColor = s.marqueeColor;
     out.periods = cleanPeriods(s.periods);
     out.profile = cleanProfile(s.profile);
     return out;
@@ -181,7 +183,7 @@
     const src = raw.data && raw.data.classes ? raw.data : raw;
     if (!Array.isArray(src.classes)) return null;
     const classes = src.classes.map(cleanClass).filter(Boolean);
-    return { version: 1, classes: classes, settings: cleanSettings(src.settings), prepNotes: cleanNotes(src.prepNotes) };
+    return { version: 1, classes: classes, settings: cleanSettings(src.settings), prepNotes: cleanNotes(src.prepNotes), events: cleanEvents(src.events) };
   }
 
   function load() {
@@ -334,6 +336,74 @@
   }
 
   // কয়েকটি দিনের ক্লাস থেকে আলাদা আলাদা শুরুর সময় (গ্রিড ও ছবির কলামের জন্য)
+  /* ---------- ক্যালেন্ডারের কাজের রিমাইন্ডার ----------
+     {id, date:"YYYY-MM-DD", time:"HH:MM", title, note, color, remind: আগে কত মিনিট (বা -1 = বন্ধ),
+      repeat: none|daily|weekly|monthly|yearly, done: [যেসব তারিখে কাজ শেষ বলে দাগ দেওয়া]} */
+  const REPEATS = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
+  function cleanEvent(e) {
+    if (!e || typeof e !== 'object') return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date) || !isTime(e.time)) return null;
+    const title = cleanText(e.title, 120);
+    if (!title) return null;
+    const r = parseInt(e.remind, 10);
+    return {
+      id: typeof e.id === 'string' && e.id ? e.id.slice(0, 40) : uid(),
+      date: e.date, time: e.time, title: title,
+      note: cleanText(e.note, 500),
+      color: isColor(e.color) ? e.color : '#DB2777',
+      remind: !isNaN(r) && r >= -1 && r <= 10080 ? r : 0,
+      repeat: REPEATS.indexOf(e.repeat) !== -1 ? e.repeat : 'none',
+      done: Array.isArray(e.done) ? e.done.filter(function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); }).slice(-400) : []
+    };
+  }
+  function cleanEvents(list) {
+    return Array.isArray(list) ? list.map(cleanEvent).filter(Boolean).slice(0, 2000) : [];
+  }
+  function parseIso(iso) {
+    const p = iso.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  // কোনো কাজ এই তারিখে পড়ে কি না (পুনরাবৃত্তি ধরে)
+  function eventOn(e, iso) {
+    if (iso < e.date) return false;
+    if (iso === e.date) return true;
+    const a = parseIso(e.date), b = parseIso(iso);
+    switch (e.repeat) {
+      case 'daily': return true;
+      case 'weekly': return a.getDay() === b.getDay();
+      case 'monthly': return a.getDate() === b.getDate();
+      case 'yearly': return a.getDate() === b.getDate() && a.getMonth() === b.getMonth();
+      default: return false;
+    }
+  }
+  function eventsOn(iso) {
+    return (data.events || []).filter(function (e) { return eventOn(e, iso); })
+      .sort(function (x, y) { return toMin(x.time) - toMin(y.time) || x.title.localeCompare(y.title); });
+  }
+  function getEvent(id) {
+    return (data.events || []).filter(function (e) { return e.id === id; })[0] || null;
+  }
+  function saveEvent(e) {
+    const clean = cleanEvent(e);
+    if (!clean) return null;
+    data.events = data.events || [];
+    const i = data.events.findIndex(function (x) { return x.id === clean.id; });
+    if (i === -1) data.events.push(clean); else data.events[i] = clean;
+    return save() ? clean : null;
+  }
+  function deleteEvent(id) {
+    data.events = (data.events || []).filter(function (x) { return x.id !== id; });
+    return save();
+  }
+  function toggleEventDone(id, iso) {
+    const e = getEvent(id);
+    if (!e) return false;
+    const i = e.done.indexOf(iso);
+    if (i === -1) e.done.push(iso); else e.done.splice(i, 1);
+    save();
+    return i === -1;
+  }
+
   function cleanPeriods(p) {
     if (!Array.isArray(p)) return [];
     const seen = {};
@@ -456,8 +526,10 @@
 
   function clearAll() {
     const keepSettings = data.settings;
+    const keepEvents = data.events;
     data = emptyData();
     data.settings = keepSettings;
+    data.events = keepEvents;
     save();
   }
 
@@ -487,6 +559,14 @@
     moveToDay: moveToDay,
     subjects: subjects,
     timeSlots: timeSlots,
+    eventsOn: eventsOn,
+    eventOn: eventOn,
+    getEvent: getEvent,
+    saveEvent: saveEvent,
+    deleteEvent: deleteEvent,
+    toggleEventDone: toggleEventDone,
+    parseIso: parseIso,
+    get events() { return data.events || []; },
     periods: periods,
     mergedSlots: mergedSlots,
     setPeriods: setPeriods,
