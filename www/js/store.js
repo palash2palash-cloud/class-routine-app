@@ -209,6 +209,7 @@
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify(data));
+      if (typeof window.onStoreSaved === 'function') window.onStoreSaved();
       return true;
     } catch (e) {
       console.error('save failed', e);

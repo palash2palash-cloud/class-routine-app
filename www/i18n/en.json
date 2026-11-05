@@ -121,7 +121,8 @@
     "class": "Class",
     "room": "Room",
     "remindOff": "Reminder off",
-    "remindMin": "{m} min before"
+    "remindMin": "{m} min before",
+    "left": "left"
   },
   "form": {
     "addTitle": "New class",
@@ -496,5 +497,16 @@
     "title": "Routine text translation",
     "help": "When you switch language, subject, class, section, room and notes are shown in that language. If a word is not translated, add it here, one per line, e.g. Banking = ব্যাংকিং",
     "ph": "Economics = অর্থনীতি"
+  },
+  "owner": {
+    "title": "Welcome!",
+    "text": "This app comes with the class routine and profile of {name}. Who are you?",
+    "me": "I'm {name}, keep my details",
+    "other": "I'm another teacher, I'll set up my own",
+    "otherHelpFresh": "If you choose another teacher, the routine and profile start empty. Add your own photo, details and classes later.",
+    "otherHelp": "If you choose another teacher, what is here now stays as it is. Change it from Settings.",
+    "meDone": "Your photo and details are in place",
+    "otherDone": "OK, set it up your way",
+    "restore": "Restore everything from an earlier backup file"
   }
 }

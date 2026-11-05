@@ -260,6 +260,44 @@
     return '<span class="hourglass" aria-hidden="true">' + bigHourglassHtml(style, 'c' + String(id).replace(/[^a-zA-Z0-9_-]/g, '')) + '</span>';
   }
 
+  // চলমান ক্লাসের কার্ডে ক্লাস শেষ হতে কত বাকি, তার গোল ঘড়ি
+  function cardTimerHtml() {
+    let ticks = '';
+    for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6;
+      const r1 = i % 3 ? 29.5 : 28, r2 = 32;
+      ticks += '<line x1="' + (42 + Math.sin(a) * r1).toFixed(2) + '" y1="' + (42 - Math.cos(a) * r1).toFixed(2) + '" x2="' + (42 + Math.sin(a) * r2).toFixed(2) + '" y2="' + (42 - Math.cos(a) * r2).toFixed(2) + '"/>';
+    }
+    return '<div class="card-timer" aria-hidden="true"><svg viewBox="0 0 84 84">' +
+      '<circle class="ct-face" cx="42" cy="42" r="40"/>' +
+      '<circle class="ct-track" cx="42" cy="42" r="36"/>' +
+      '<circle class="ct-prog" cx="42" cy="42" r="36" transform="rotate(-90 42 42)"/>' +
+      '<g class="ct-ticks">' + ticks + '</g>' +
+      '<circle class="ct-dot" cx="42" cy="6" r="4"/>' +
+      '</svg><span class="ct-text"><b class="ct-time">০০:০০</b><small>' + esc(t('card.left')) + '</small></span></div>';
+  }
+
+  function tickCardTimer() {
+    const el = $('.class-card.is-now .card-timer');
+    if (!el) return;
+    const c = S.getClass(el.closest('.class-card').getAttribute('data-id'));
+    if (!c) return;
+    const now = new Date();
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const st = base + S.toMin(c.start) * 60000, en = base + S.toMin(c.end) * 60000;
+    const left = Math.max(0, Math.round((en - now.getTime()) / 1000));
+    const p = Math.min(1, Math.max(0, (now.getTime() - st) / Math.max(1, en - st)));
+    const mm = Math.floor(left / 60), ss = left % 60;
+    $('.ct-time', el).textContent = I.num(String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0'));
+    const C = 2 * Math.PI * 36;
+    const prog = $('.ct-prog', el);
+    prog.style.strokeDasharray = C.toFixed(2);
+    prog.style.strokeDashoffset = (C * p).toFixed(2);
+    // ঘড়ির কাঁটার মতো একটা বিন্দু ঘোরে
+    $('.ct-dot', el).setAttribute('transform', 'rotate(' + (p * 360).toFixed(1) + ' 42 42)');
+    el.classList.toggle('is-ending', left <= 300);
+  }
+
   function cardHtml(c, opts) {
     opts = opts || {};
     const cs = classSec(c);
@@ -280,6 +318,7 @@
       '<div class="card-body">' +
       '<div class="card-head"><h3>' + esc(L(c.subject) || t('form.untitled')) + '</h3>' +
       (opts.live ? '<span class="live-badge" hidden>' + esc(t('today.now')) + '</span>' : '') + '</div>' +
+      (opts.live ? cardTimerHtml() : '') +
       '<div class="card-meta">' + meta.join('') + '</div>' +
       (c.note ? '<p class="card-note">' + ICON.note + '<span>' + esc(L(c.note)) + '</span></p>' : '') +
       (opts.live && S.getNote(S.sectionKey(c)) ? '<p class="card-prep">' + ICON.edit + '<span><b>' + esc(t('prep.cardLabel')) + '</b> ' + esc(S.getNote(S.sectionKey(c))) + '</span></p>' : '') +
@@ -753,6 +792,7 @@
         prog.hidden = !isNow;
         if (isNow) $('span', prog).style.width = Math.min(100, Math.max(0, ((m - s) / (e - s)) * 100)).toFixed(1) + '%';
       }
+      if (isNow) setTimeout(tickCardTimer, 0);
       const hg = $('.hourglass', el);
       if (hg && isNow) {
         // বালুঘড়ি দুই সময়ের লেখার মাঝ বরাবর থাকবে
@@ -2486,10 +2526,87 @@
       const settings = Object.assign({}, S.settings, { holidays: parsed.settings.holidays });
       S.replaceAll({ version: 1, classes: parsed.classes, settings: settings });
       localStorage.setItem(SEED_FLAG, '1');
+      state.justSeeded = true;
     } catch (e) {
       console.warn('default routine not loaded', e);
     }
   }
+
+  /* আপনার প্রোফাইল (ছবি ও বাংলা/ইংরেজি তথ্য) অ্যাপের ভেতরেই আছে: www/data/default-profile.json।
+     নতুন করে ইনস্টল করলে প্রথমবার জিজ্ঞেস করে: আপনি নিজে হলে সব তথ্য বসে যায়,
+     অন্য কেউ হলে ফাঁকা অ্যাপ থেকে নিজের মতো সাজিয়ে নিতে পারেন। */
+  const OWNER_FLAG = 'classRoutine.ownerChoice';
+  async function ownerProfile() {
+    try {
+      const r = await fetch('data/default-profile.json', { cache: 'no-cache' });
+      return r.ok ? await r.json() : null;
+    } catch (e) { return null; }
+  }
+  function profileEmpty(p) {
+    return !p.photo && ['bn', 'en'].every(function (lg) { return !Object.keys(p[lg] || {}).some(function (k) { return p[lg][k]; }); });
+  }
+  // নিজের তথ্য: যে ঘর ফাঁকা, শুধু সেগুলো ভরে দেওয়া (আপনি নিজে কিছু বদলে থাকলে সেটাই থাকে)
+  function applyOwnerProfile(own) {
+    const cur = S.settings.profile;
+    const next = { photo: cur.photo || own.photo || '', bn: Object.assign({}, cur.bn), en: Object.assign({}, cur.en) };
+    ['bn', 'en'].forEach(function (lg) {
+      Object.keys(own[lg] || {}).forEach(function (k) { if (!next[lg][k]) next[lg][k] = own[lg][k]; });
+    });
+    S.data.settings.profile = next;
+    S.save();
+  }
+  async function askOwner() {
+    if (localStorage.getItem(OWNER_FLAG)) return;
+    const own = await ownerProfile();
+    if (!own) return;
+    const name = (I.getLang() === 'bn' ? own.bn.name : own.en.name) || own.bn.name;
+    const entry = openOverlay('sheet',
+      '<div class="sheet-handle"></div>' +
+      '<div class="owner-pic"><img src="' + own.photo + '" alt=""/></div>' +
+      '<h2 class="sheet-title owner-title">' + esc(t('owner.title')) + '</h2>' +
+      '<p class="sheet-sub">' + esc(t('owner.text', { name: name })) + '</p>' +
+      '<button type="button" class="btn btn-primary btn-block" data-owner="me">' + ICON.check + esc(t('owner.me', { name: name })) + '</button>' +
+      '<button type="button" class="btn btn-tonal btn-block owner-other" data-owner="other">' + esc(t('owner.other')) + '</button>' +
+      (N.isNative() ? '<button type="button" class="btn btn-text btn-block owner-other" data-owner="restore">' + esc(t('owner.restore')) + '</button>' : '') +
+      '<p class="field-help owner-help">' + esc(state.justSeeded ? t('owner.otherHelpFresh') : t('owner.otherHelp')) + '</p>');
+    entry.el.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-owner]');
+      if (!b) return;
+      if (b.getAttribute('data-owner') === 'restore') {
+        // অ্যাপ মুছে আবার বসালে: Documents/ClassRoutine/auto-backup.json বেছে নিলেই সব ফিরে আসে
+        localStorage.setItem(OWNER_FLAG, 'restored');
+        closeOverlay(entry, true);
+        $('#restoreInput').value = '';
+        $('#restoreInput').click();
+        return;
+      }
+      if (b.getAttribute('data-owner') === 'me') {
+        applyOwnerProfile(own);
+        localStorage.setItem(OWNER_FLAG, 'owner');
+        toast(t('owner.meDone'));
+      } else {
+        localStorage.setItem(OWNER_FLAG, 'other');
+        // সদ্য বসানো নমুনা রুটিন সরিয়ে ফাঁকা অ্যাপ (আগে থেকে থাকা নিজের তথ্য মোছা হয় না)
+        if (state.justSeeded) {
+          S.data.classes = [];
+          S.data.settings.periods = [];
+          S.save();
+          N.reschedule();
+        }
+        toast(t('owner.otherDone'));
+      }
+      closeOverlay(entry, true);
+      render();
+    });
+  }
+
+  // কিছু বদলালেই কয়েক সেকেন্ড পরে চুপচাপ ব্যাকআপ ফাইল হালনাগাদ
+  let autoBackupT = null;
+  window.onStoreSaved = function () {
+    if (!N.isNative()) return;
+    clearTimeout(autoBackupT);
+    autoBackupT = setTimeout(function () { E.autoBackup(); }, 3000);
+  };
 
   async function boot() {
     const res = S.load();
@@ -2510,6 +2627,7 @@
     $('#app').hidden = false;
     boot.classList.add('hide');
     setTimeout(function () { boot.remove(); }, 400);
+    setTimeout(askOwner, 700);
     // প্রতি মিনিটের শুরুতে হালনাগাদ, যাতে ক্লাস শুরু/শেষের সাথে সাথেই হাইলাইট বদলায়
     const tickMinute = function () {
       updateLive();
@@ -2523,6 +2641,7 @@
       if (S.isoDate(new Date()) !== state.renderedDay) { renderToday(); return; }
       tickDayEndClock();
       tickNowClock();
+      tickCardTimer();
     }, 1000);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { updateLive(); fitDayEnd(); });
     try {

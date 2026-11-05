@@ -87,6 +87,33 @@
     return saveFile('routine-backup-' + stamp() + '.json', 'application/json', text, true);
   }
 
+  /* নিজে থেকে ব্যাকআপ: প্রতিবার কিছু বদলালে Documents/ClassRoutine/auto-backup.json এ চুপচাপ লেখা হয়।
+     অ্যাপ মুছে আবার ইনস্টল করলে এই ফাইল থেকে সব ফিরিয়ে আনা যায়।
+     আগের ইনস্টলের ফাইলে লেখার অনুমতি না থাকলে নতুন নামে লেখা হয়। */
+  async function autoBackup() {
+    const P = plugins();
+    if (!window.Notify.isNative() || !P.Filesystem) return null;
+    const text = JSON.stringify({ app: 'class-routine', format: 1, exportedAt: new Date().toISOString(), data: window.Store.data });
+    const KEYN = 'classRoutine.autoBackupName';
+    let name = null;
+    try { name = localStorage.getItem(KEYN); } catch (e) { /* ignore */ }
+    const tryWrite = async function (n) {
+      await P.Filesystem.writeFile({ directory: 'DOCUMENTS', path: 'ClassRoutine/' + n, data: text, encoding: 'utf8', recursive: true });
+      try { localStorage.setItem(KEYN, n); } catch (e) { /* ignore */ }
+      return n;
+    };
+    try {
+      return await tryWrite(name || 'auto-backup.json');
+    } catch (e) {
+      try {
+        return await tryWrite('auto-backup-' + stamp() + '.json');
+      } catch (e2) {
+        console.warn('auto backup failed', e2);
+        return null;
+      }
+    }
+  }
+
   // JSON লেখা পড়ে যাচাই করা। সফল হলে পরিষ্কার ডেটা দেয়, না হলে null।
   function parseBackup(text) {
     try {
@@ -445,6 +472,7 @@
 
   window.Exporter = {
     backup: backup,
+    autoBackup: autoBackup,
     parseBackup: parseBackup,
     saveImage: saveImage,
     savePdf: savePdf,

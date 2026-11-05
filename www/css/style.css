@@ -1020,3 +1020,32 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
   background: linear-gradient(90deg, rgba(245, 158, 11, .18), rgba(245, 158, 11, .05)); color: var(--text); border: 1px solid rgba(245, 158, 11, .35); }
 .ev-allday { margin-top: 2px; }
 .words-box { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2, var(--bg)); color: var(--text); font: inherit; font-size: .92rem; resize: vertical; }
+
+/* ---------- চলমান ক্লাসের কার্ডের গোল ঘড়ি (ক্লাস শেষ হতে কত বাকি) ---------- */
+.card-timer { display: none; }
+.class-card.is-now .card-timer {
+  display: block; position: absolute; right: 0; top: 40px; width: 84px; height: 84px;
+  filter: drop-shadow(0 6px 12px rgba(var(--c-rgb), .35));
+}
+.class-card.is-now .card-meta, .class-card.is-now .card-note { padding-right: 94px; }
+.class-card.is-now .card-body { min-height: 132px; }
+.card-timer svg { width: 84px; height: 84px; display: block; }
+.ct-face { fill: color-mix(in srgb, var(--c) 10%, var(--surface)); stroke: rgba(var(--c-rgb), .25); stroke-width: 1; }
+.ct-track { fill: none; stroke: rgba(var(--c-rgb), .16); stroke-width: 6; }
+.ct-prog { fill: none; stroke: var(--c); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.ct-ticks line { stroke: rgba(var(--c-rgb), .45); stroke-width: 1.4; stroke-linecap: round; }
+.ct-dot { fill: #fff; stroke: var(--c); stroke-width: 2.5; transition: transform 1s linear; }
+.ct-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
+.ct-time { font-family: 'Montserrat', 'Kalpurush', sans-serif; font-size: 1.02rem; font-weight: 700; color: var(--c); letter-spacing: .01em; }
+.ct-text small { font-size: .68rem; color: var(--text-2); font-weight: 600; margin-top: 2px; }
+.card-timer.is-ending .ct-prog { stroke: #DC2626; }
+.card-timer.is-ending .ct-time { color: #DC2626; }
+.card-timer.is-ending { animation: ctPulse 1s ease-in-out infinite; }
+@keyframes ctPulse { 50% { transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .card-timer.is-ending { animation: none; } }
+/* প্রথমবারের প্রশ্ন */
+.owner-pic { display: flex; justify-content: center; margin: 4px 0 8px; }
+.owner-pic img { width: 86px; height: 110px; object-fit: cover; border-radius: 14px; border: 3px solid var(--accent, #E0E7FF); box-shadow: var(--shadow); }
+.owner-title { text-align: center; }
+.owner-other { margin-top: 10px; }
+.owner-help { text-align: center; margin-top: 10px; }
