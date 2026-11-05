@@ -1065,11 +1065,31 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 @keyframes scGlow { 50% { opacity: .65; transform: scale(1.08); } }
 .sc-rays { stroke: #FFE58A; stroke-width: 2.4; stroke-linecap: round; animation: scSpin 30s linear infinite; transform-origin: center; }
 @keyframes scSpin { to { transform: rotate(360deg); } }
-.sc-birds { fill: none; stroke: #334155; stroke-width: 1.5; stroke-linecap: round; animation: scFly 26s linear infinite; }
-.sc-bird { animation: scFlap .6s ease-in-out infinite alternate; transform-origin: center; }
-.sc-bird.b2 { animation-delay: -.3s; } .sc-bird.b3 { animation-delay: -.15s; }
-@keyframes scFly { from { transform: translate(-200px, 10px); } 50% { transform: translate(40px, -6px); } to { transform: translate(300px, 4px); } }
-@keyframes scFlap { to { transform: scaleY(.45); } }
+.sc-flock { fill: none; stroke: #2B3A55; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; animation: scFly 16s linear infinite; }
+.sc-flock.f2 { animation-duration: 24s; animation-delay: -11s; }
+.sc-flock.dark { stroke: #2A1E45; }
+.sc-bird { animation: scFlap .5s ease-in-out infinite alternate; transform-origin: center; }
+/* পাখির ঝাঁক বাঁ দিক থেকে ঢুকে একটু ওঠানামা করে ডান দিক দিয়ে বেরিয়ে যায় */
+@keyframes scFly { 0% { transform: translate(-70px, 14px); } 50% { transform: translate(180px, -10px); } 100% { transform: translate(460px, 6px); } }
+@keyframes scFlap { to { transform: scaleY(.35); } }
+.sc-sail { animation: scSail 70s linear infinite; }
+.sc-sail.slow { animation-duration: 90s; animation-delay: -40s; }
+@keyframes scSail { from { transform: translateX(-30px); } to { transform: translateX(400px); } }
+.sc-bob { animation: scBob 2.6s ease-in-out infinite alternate; }
+@keyframes scBob { from { transform: translateY(0) rotate(-1.5deg); } to { transform: translateY(1.6px) rotate(1.5deg); } }
+.sc-boat { animation: scSail 40s linear infinite; animation-delay: -12s; }
+.sc-ripple.r2 { animation-duration: 4s; animation-delay: -1.5s; }
+.sc-grass path { animation: scPine 2.4s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+.sc-star { fill: #FFFFFF; animation: scTwinkle 3s ease-in-out infinite; }
+@keyframes scTwinkle { 50% { opacity: .25; } }
+.sc-shoot { opacity: 0; animation: scShoot 7s ease-in infinite; animation-delay: 2s; }
+@keyframes scShoot { 0%, 82% { opacity: 0; transform: translate(40px, 10px); } 86% { opacity: 1; } 100% { opacity: 0; transform: translate(200px, 66px); } }
+.sc-clouds.night .sc-cloud { fill: #4A5487; opacity: .55; }
+.sc-clouds.dusk .sc-cloud { fill: #FFC7A6; opacity: .75; }
+.sc-reflect { animation: scRipple 3.4s ease-in-out infinite; }
+.sc-fly { fill: #FDF39A; animation: scFirefly 3.2s ease-in-out infinite; }
+@keyframes scFirefly { 0%, 100% { opacity: .1; transform: translate(0, 0); } 50% { opacity: 1; transform: translate(6px, -8px); } }
+.sc-set { animation: scRise 14s ease-in-out infinite alternate-reverse; }
 .sc-glint { fill: #FFF7D1; animation: scGlint 2.2s ease-in-out infinite; }
 @keyframes scGlint { 50% { opacity: .2; } }
 .sc-wave.w1 { animation: scWave 9s linear infinite; }
@@ -1087,8 +1107,6 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 @keyframes scWet { 0%, 40% { opacity: .2; } 60% { opacity: .65; } 100% { opacity: .2; } }
 .sc-umb { animation: scSway 3.2s ease-in-out infinite alternate; transform-origin: 50% 100%; }
 @keyframes scSway { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg); } }
-.sc-fronds { animation: scFrond 3.6s ease-in-out infinite alternate; transform-origin: 30% 40%; }
-@keyframes scFrond { from { transform: rotate(-4deg); } to { transform: rotate(5deg); } }
 .sc-wind { fill: none; stroke: rgba(255, 255, 255, .7); stroke-width: 1.4; stroke-linecap: round; animation: scWind 6s linear infinite; }
 @keyframes scWind { 0% { transform: translateX(-90px); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateX(380px); opacity: 0; } }
 .sc-sunrise { animation: scRise 12s ease-in-out infinite alternate; }
@@ -1102,3 +1120,13 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .sc-pine path { animation: scPine 4s ease-in-out infinite alternate; transform-origin: 50% 100%; }
 @keyframes scPine { from { transform: rotate(-1.5deg); } to { transform: rotate(1.5deg); } }
 @media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } }
+
+/* সেটিংসে ছুটির দিনের দৃশ্য বাছাই */
+.scene-days { display: flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; }
+.scene-days button { flex: 1; min-width: 88px; padding: 8px 6px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: .86rem; font-weight: 600; }
+.scene-days button.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--surface)); color: var(--primary); }
+.scene-options { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.scene-pv { display: block; width: 100%; aspect-ratio: 360 / 250; border-radius: 10px; overflow: hidden; pointer-events: none; }
+.scene-pv .scene * { animation-play-state: paused !important; }
+.scene-pv.none { display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--primary) 8%, var(--surface)); color: var(--primary); }
+.scene-pv.none svg { width: 34px; height: 34px; }

@@ -508,5 +508,19 @@
     "meDone": "Your photo and details are in place",
     "otherDone": "OK, set it up your way",
     "restore": "Restore everything from an earlier backup file"
+  },
+  "scene": {
+    "title": "Holiday scene",
+    "help": "Pick the animated scene shown on the home page for each holiday. Tap Save below when done.",
+    "day_fri": "Friday",
+    "day_sat": "Saturday",
+    "day_other": "Other holidays",
+    "sea": "Beach",
+    "hill": "Hills & lake",
+    "river": "Village river",
+    "tea": "Tea garden",
+    "night": "Moonlit night",
+    "sunset": "Sunset",
+    "none": "Just the sun"
   }
 }

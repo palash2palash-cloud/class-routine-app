@@ -1785,6 +1785,20 @@
           '<span class="hg-name">' + esc(t('hg.' + k)) + '</span></button>';
       }).join('') + '</div>');
 
+    const SC_LIST = (window.Scenes ? window.Scenes.LIST : []).concat(['none']);
+    const scDay = state.sceneDay || 'fri';
+    const scSel = (st.scenes || {})[scDay] || 'sea';
+    html += group(t('scene.title'),
+      '<p class="group-help">' + esc(t('scene.help')) + '</p>' +
+      '<div class="scene-days" id="s-sceneDay">' + ['fri', 'sat', 'other'].map(function (d) {
+        return '<button type="button" data-day="' + d + '" class="' + (d === scDay ? 'on' : '') + '">' + esc(t('scene.day_' + d)) + '</button>';
+      }).join('') + '</div>' +
+      '<div class="hg-options scene-options" id="s-scene">' + SC_LIST.map(function (k) {
+        return '<button type="button" class="hg-option' + (scSel === k ? ' on' : '') + '" data-val="' + k + '">' +
+          (k === 'none' ? '<span class="scene-pv none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></span>' : '<span class="scene-pv">' + window.Scenes.html(k) + '</span>') +
+          '<span class="hg-name">' + esc(t('scene.' + k)) + '</span></button>';
+      }).join('') + '</div>');
+
     html += group(t('dayEnd.title'),
       '<p class="group-help">' + esc(t('dayEnd.help')) + '</p>' +
       '<div class="hg-options de-options" id="s-dayend">' +
@@ -1945,6 +1959,20 @@
     $('#s-notif').addEventListener('change', function (e) {
       const on = e.target.checked;
       changeDraft(function (d) { d.notifEnabled = on; });
+    });
+
+    $('#s-sceneDay').addEventListener('click', function (e) {
+      const b = e.target.closest('button[data-day]');
+      if (!b || state.sceneDay === b.getAttribute('data-day')) return;
+      state.sceneDay = b.getAttribute('data-day');
+      const y = window.scrollY; renderSettings(); window.scrollTo(0, y);
+    });
+    $('#s-scene').addEventListener('click', function (e) {
+      const b = e.target.closest('.hg-option');
+      if (!b) return;
+      const v = b.getAttribute('data-val'), day = state.sceneDay || 'fri';
+      if ((state.draft.scenes || {})[day] === v) return;
+      changeDraft(function (d) { d.scenes = Object.assign({ fri: 'sea', sat: 'hill', other: 'river' }, d.scenes); d.scenes[day] = v; });
     });
 
     $('#s-dayend').addEventListener('click', function (e) {

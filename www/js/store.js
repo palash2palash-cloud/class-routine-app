@@ -29,6 +29,7 @@
     breakStart: '11:05',
     breakEnd: '11:40',
     wordMap: '', // নিজের যোগ করা অনুবাদ, প্রতি লাইনে "English = বাংলা"
+    scenes: { fri: 'sea', sat: 'hill', other: 'river' }, // ছুটির দিনের চলন্ত দৃশ্য (none = শুধু সূর্যের ছবি)
     marqueeColor: '#DC2626', // দিনশেষে বালুঘড়ির উপরে পরের ক্লাসের স্ক্রল লেখার রং
     periods: [], // রুটিনের পিরিয়ড [{start, end}]; ফাঁকা থাকলে ক্লাসগুলোর সময় থেকে বের করা হয়
     profile: {
@@ -106,6 +107,13 @@
       out.breakEnd = s.breakEnd;
     }
     if (isColor(s.marqueeColor)) out.marqueeColor = s.marqueeColor;
+    const SCN = ['sea', 'hill', 'river', 'tea', 'night', 'sunset', 'none'];
+    const sc = s.scenes && typeof s.scenes === 'object' ? s.scenes : {};
+    out.scenes = {
+      fri: SCN.indexOf(sc.fri) !== -1 ? sc.fri : 'sea',
+      sat: SCN.indexOf(sc.sat) !== -1 ? sc.sat : 'hill',
+      other: SCN.indexOf(sc.other) !== -1 ? sc.other : 'river'
+    };
     if (typeof s.wordMap === 'string') out.wordMap = s.wordMap.slice(0, 4000);
     out.periods = cleanPeriods(s.periods);
     out.profile = cleanProfile(s.profile);
