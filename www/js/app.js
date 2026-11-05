@@ -328,13 +328,13 @@
       '</article>';
   }
 
-  function emptyHtml(kind, title, text, btn) {
-    const art = {
+  function emptyHtml(kind, title, text, btn, artHtml) {
+    const art = artHtml ? '<div class="scene-wrap">' + artHtml + '</div>' : {
       empty: '<svg viewBox="0 0 120 100" class="empty-art"><rect x="18" y="16" width="84" height="70" rx="14" class="ea-1"/><rect x="18" y="16" width="84" height="20" rx="10" class="ea-2"/><rect x="32" y="48" width="44" height="8" rx="4" class="ea-3"/><rect x="32" y="64" width="30" height="8" rx="4" class="ea-4"/><circle cx="92" cy="78" r="16" class="ea-5"/><path d="M92 70v8l6 4" class="ea-6"/></svg>',
       holiday: '<svg viewBox="0 0 120 100" class="empty-art"><circle cx="60" cy="44" r="22" class="ea-5"/><g class="ea-6"><path d="M60 10v8M60 70v8M26 44h8M86 44h8M36 20l6 6M78 62l6 6M36 68l6-6M78 26l6-6"/></g><rect x="20" y="84" width="80" height="8" rx="4" class="ea-2"/></svg>',
       search: '<svg viewBox="0 0 120 100" class="empty-art"><circle cx="52" cy="44" r="24" class="ea-2"/><circle cx="52" cy="44" r="14" class="ea-1"/><path d="M70 62l20 20" class="ea-6" stroke-width="8"/></svg>'
     }[kind];
-    return '<div class="empty">' + art + '<h3>' + esc(title) + '</h3><p>' + esc(text) + '</p>' +
+    return '<div class="empty' + (artHtml ? ' has-scene' : '') + '">' + art + '<h3>' + esc(title) + '</h3><p>' + esc(text) + '</p>' +
       (btn ? '<button type="button" class="btn btn-primary" data-action="' + esc(btn.action) + '"' + (btn.day ? ' data-day="' + esc(btn.day) + '"' : '') + '>' + ICON.plus + esc(btn.label) + '</button>' : '') +
       '</div>';
   }
@@ -465,7 +465,8 @@
     html += profileCardHtml();
 
     if (info.holiday) {
-      html += emptyHtml('holiday', t('today.holidayTitle'), info.classes.length ? t('today.holidayHasClasses') : t('today.holidayText'));
+      // শুক্রবারে সমুদ্র, শনিবারে পাহাড়ের চলন্ত দৃশ্য; অন্য ছুটির দিনে সূর্য
+      html += emptyHtml('holiday', t('today.holidayTitle'), info.classes.length ? t('today.holidayHasClasses') : t('today.holidayText'), null, window.Scenes ? window.Scenes.forDay(info.dayKey) : '');
       if (info.classes.length) {
         html += '<div class="card-list">' + info.classes.map(function (c, i) { return cardHtml(c, { index: i }); }).join('') + '</div>';
       }
