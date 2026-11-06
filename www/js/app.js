@@ -42,6 +42,7 @@
     back: '<svg viewBox="0 0 24 24"><path d="M15.7 4.3a1 1 0 0 1 0 1.4L9.4 12l6.3 6.3a1 1 0 1 1-1.4 1.4l-7-7a1 1 0 0 1 0-1.4l7-7a1 1 0 0 1 1.4 0Z"/></svg>',
     list: '<svg viewBox="0 0 24 24"><path d="M4 5h16v2H4V5Zm0 6h16v2H4v-2Zm0 6h16v2H4v-2Z"/></svg>',
     grid: '<svg viewBox="0 0 24 24"><path d="M3 3h8v8H3V3Zm10 0h8v8h-8V3ZM3 13h8v8H3v-8Zm10 0h8v8h-8v-8Z"/></svg>',
+    glance: '<svg viewBox="0 0 24 24"><path d="M2 4h4v4H2V4Zm5.5 0h4v4h-4V4ZM13 4h4v4h-4V4Zm5.5 0H22v4h-3.5V4ZM2 10h4v4H2v-4Zm5.5 0h4v4h-4v-4ZM13 10h4v4h-4v-4Zm5.5 0H22v4h-3.5v-4ZM2 16h4v4H2v-4Zm5.5 0h4v4h-4v-4ZM13 16h4v4h-4v-4Zm5.5 0H22v4h-3.5v-4Z"/></svg>',
     search: '<svg viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l4.6 4.6a1 1 0 0 1-1.4 1.4l-4.6-4.6A7 7 0 1 1 10 3Zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z"/></svg>',
     copy: '<svg viewBox="0 0 24 24"><path d="M8 3h11a2 2 0 0 1 2 2v11h-2V5H8V3ZM5 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/></svg>',
     trash: '<svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>',
@@ -842,6 +843,7 @@
       '<div class="seg seg-icons">' +
       '<button type="button" class="' + (mode === 'list' ? 'on' : '') + '" data-action="week-mode" data-mode="list" aria-label="' + esc(t('week.listView')) + '">' + ICON.list + '</button>' +
       '<button type="button" class="' + (mode === 'grid' ? 'on' : '') + '" data-action="week-mode" data-mode="grid" aria-label="' + esc(t('week.gridView')) + '">' + ICON.grid + '</button>' +
+      '<button type="button" class="' + (mode === 'glance' ? 'on' : '') + '" data-action="week-mode" data-mode="glance" aria-label="' + esc(t('week.glanceView')) + '">' + ICON.glance + '</button>' +
       '</div>');
 
     let html = '<div class="search-box">' + ICON.search +
@@ -868,6 +870,10 @@
     }
     if (S.settings.weekMode === 'grid') {
       body.innerHTML = weekGridHtml(q);
+      return;
+    }
+    if (S.settings.weekMode === 'glance') {
+      body.innerHTML = weekGlanceHtml(q);
       return;
     }
     let html = '';
@@ -969,6 +975,54 @@
       html += '</tr>';
     });
     html += '</tbody></table></div><p class="hint">' + esc(t('week.gridHint')) + '</p>';
+    return html;
+  }
+
+  /* পুরো সপ্তাহ এক পর্দায়: পাশে সরাতে হয় না, ছোট ঘরে শুধু শ্রেণি আর শাখার সংক্ষেপ */
+  const ROMAN = { one: 'I', two: 'II', three: 'III', four: 'IV', five: 'V', six: 'VI', seven: 'VII', eight: 'VIII', nine: 'IX', ten: 'X', eleven: 'XI', twelve: 'XII', first: '1st', second: '2nd' };
+  function shortGrade(c) {
+    const g = window.Localize.loc(c.grade, 'grade');
+    if (I.getLang() === 'bn') return g;
+    return g.split(/\s+/).map(function (w) { return ROMAN[w.toLowerCase()] || w; }).join(' ');
+  }
+  function shortSection(c) {
+    return L(c.section).replace(/মানবিক/g, 'মা').replace(/বিজ্ঞান/g, 'বি').replace(/ব্যবসায়/g, 'ব্য');
+  }
+
+  function weekGlanceHtml(q) {
+    const rows = S.DAYS.map(function (d) {
+      return { day: d, holiday: S.settings.holidays.indexOf(d) !== -1, list: S.classesForDay(d).filter(function (c) { return S.matches(c, q); }) };
+    }).filter(function (r) { return !q || r.list.length; });
+    if (!rows.length) return emptyHtml('search', t('week.noResultTitle'), t('week.noResultText'));
+    const slots = S.mergedSlots(rows.map(function (r) { return r.list; }));
+    const subjects = {};
+    S.data.classes.forEach(function (c) { subjects[(c.subject || '').trim().toLowerCase()] = 1; });
+    const manySubjects = Object.keys(subjects).length > 1;
+    let html = '<div class="glance"><table class="glance-grid"><thead><tr><th class="g-day"></th>';
+    slots.forEach(function (sl, i) {
+      html += '<th><b>' + esc(I.num(i + 1)) + '</b><small>' + esc(I.num(((+sl.start.slice(0, 2) % 12) || 12) + ':' + sl.start.slice(3, 5))) + '</small></th>';
+    });
+    html += '</tr></thead><tbody>';
+    let total = 0;
+    rows.forEach(function (r) {
+      total += r.list.length;
+      html += '<tr class="' + (r.holiday ? 'is-holiday' : '') + '"><th class="g-day">' + esc(I.dayShort(r.day)) + '</th>';
+      if (r.holiday && !r.list.length) {
+        html += '<td class="g-off" colspan="' + Math.max(1, slots.length) + '">' + esc(t('week.holiday')) + '</td></tr>';
+        return;
+      }
+      slots.forEach(function (sl) {
+        const here = r.list.filter(function (c) { return c.start === sl.start; });
+        if (!here.length) { html += '<td class="g-empty"></td>'; return; }
+        html += '<td>' + here.map(function (c) {
+          return '<button type="button" class="grid-cell g-cell" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + '">' +
+            (manySubjects ? '<i>' + esc((L(c.subject) || '').slice(0, 6)) + '</i>' : '') +
+            '<b>' + esc(shortGrade(c)) + '</b><span>' + esc(shortSection(c)) + '</span></button>';
+        }).join('') + '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div><p class="hint">' + esc(t('week.glanceHint', { n: total })) + '</p>';
     return html;
   }
 

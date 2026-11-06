@@ -98,7 +98,7 @@
     if (!isNaN(lead) && lead >= 0 && lead <= 720) out.leadMinutes = lead;
     if (Array.isArray(s.mutedDays)) out.mutedDays = s.mutedDays.filter(function (d) { return DAYS.indexOf(d) !== -1; });
     if (Array.isArray(s.mutedDates)) out.mutedDates = s.mutedDates.filter(function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); });
-    if (s.weekMode === 'grid' || s.weekMode === 'list') out.weekMode = s.weekMode;
+    if (['grid', 'list', 'glance'].indexOf(s.weekMode) !== -1) out.weekMode = s.weekMode;
     if (['classic', 'black', 'wood', 'crystal', 'rose', 'night', 'emerald', 'minimal', 'off'].indexOf(s.hgStyle) !== -1) out.hgStyle = s.hgStyle;
     if (['classic', 'black', 'wood', 'crystal', 'rose', 'night', 'emerald', 'minimal'].indexOf(s.dayEndStyle) !== -1) out.dayEndStyle = s.dayEndStyle;
     if (typeof s.breakEnabled === 'boolean') out.breakEnabled = s.breakEnabled;
@@ -107,7 +107,7 @@
       out.breakEnd = s.breakEnd;
     }
     if (isColor(s.marqueeColor)) out.marqueeColor = s.marqueeColor;
-    const SCN = ['sea', 'hill', 'river', 'tea', 'night', 'sunset', 'none'];
+    const SCN = ['sea', 'hill', 'everest', 'river', 'tea', 'night', 'sunset', 'none'];
     const sc = s.scenes && typeof s.scenes === 'object' ? s.scenes : {};
     out.scenes = {
       fri: SCN.indexOf(sc.fri) !== -1 ? sc.fri : 'sea',

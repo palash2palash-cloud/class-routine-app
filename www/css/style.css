@@ -1056,6 +1056,8 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .scene { width: 100%; height: 100%; display: block; }
 [data-theme="dark"] .scene-wrap { box-shadow: 0 14px 34px rgba(0, 0, 0, .5); }
 .scene * { transform-box: fill-box; }
+/* transform অ্যাট্রিবিউট (অবস্থান ও মাপ) SVG-এর নিজের হিসাবে চলবে */
+.scene g[transform] { transform-box: view-box; transform-origin: 0 0; }
 .sc-cloud { fill: #FFFFFF; opacity: .92; }
 .sc-cloud.c1 { animation: scDrift 46s linear infinite; }
 .sc-cloud.c2 { animation: scDrift 64s linear infinite; animation-delay: -20s; opacity: .8; }
@@ -1130,3 +1132,46 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .scene-pv .scene * { animation-play-state: paused !important; }
 .scene-pv.none { display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--primary) 8%, var(--surface)); color: var(--primary); }
 .scene-pv.none svg { width: 34px; height: 34px; }
+
+/* ---------- সাপ্তাহিক রুটিন এক নজরে (পুরো সপ্তাহ এক পর্দায়) ---------- */
+.glance { background: var(--surface); border-radius: 18px; padding: 8px 6px; box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, .06)); }
+.glance-grid { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 3px; }
+.glance-grid th { font-weight: 600; color: var(--text-2); text-align: center; padding: 2px 0 4px; }
+.glance-grid thead th b { display: block; font-size: .9rem; color: var(--primary); line-height: 1.1; }
+.glance-grid thead th small { display: block; font-size: .62rem; font-weight: 500; color: var(--text-3); white-space: nowrap; letter-spacing: -.2px; }
+.glance-grid .g-day { width: 34px; font-size: .8rem; color: var(--text); text-align: left; padding-left: 2px; }
+.glance-grid tr.is-holiday .g-day { color: var(--error); }
+.glance-grid td { padding: 0; height: 52px; vertical-align: middle; }
+.glance-grid td.g-empty { background: color-mix(in srgb, var(--text-3) 7%, transparent); border-radius: 8px; }
+.glance-grid td.g-off { text-align: center; font-size: .78rem; color: var(--error); background: color-mix(in srgb, var(--error) 8%, transparent); border-radius: 8px; height: 30px; }
+.g-cell { width: 100%; height: 100%; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px 1px !important; border-radius: 8px !important; overflow: hidden; }
+.g-cell + .g-cell { margin-top: 3px; }
+.g-cell b { font-size: .7rem !important; line-height: 1.15; white-space: nowrap; letter-spacing: -.2px; }
+.g-cell span { font-size: .68rem !important; line-height: 1.15; white-space: nowrap; color: var(--text) !important; font-weight: 600; }
+.g-cell i { font-style: normal; font-size: .58rem; color: var(--text-2); white-space: nowrap; overflow: hidden; max-width: 100%; }
+.g-cell { border-left-width: 3px !important; text-align: center; }
+
+/* ---------- দৃশ্যের নতুন চলন ---------- */
+.sc-sunbody { animation: scSunPulse 3.2s ease-in-out infinite; transform-origin: center; }
+@keyframes scSunPulse { 50% { transform: scale(1.08); } }
+.sc-rays { animation: scSpin 14s linear infinite, scRayPulse 2.4s ease-in-out infinite; }
+@keyframes scRayPulse { 50% { opacity: .55; } }
+.sc-ship { animation: scSail 110s linear infinite; animation-delay: -30s; }
+.sc-sail.s2 { animation-duration: 80s; animation-delay: -55s; }
+.sc-sail.s3 { animation-duration: 55s; animation-delay: -10s; }
+.sc-smoke circle { fill: #E2E8F0; opacity: .7; animation: scSmoke 3s ease-out infinite; transform-origin: center; }
+.sc-smoke circle:nth-child(2) { animation-delay: -1s; } .sc-smoke circle:nth-child(3) { animation-delay: -2s; }
+@keyframes scSmoke { 0% { transform: translate(0, 4px) scale(.5); opacity: .8; } 100% { transform: translate(10px, -8px) scale(1.4); opacity: 0; } }
+.sc-boat.far { animation-duration: 75s; animation-delay: -50s; animation-direction: reverse; }
+.sc-leaf { animation: scSway 2.8s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+.sc-snowcap { animation: scCapShine 5s ease-in-out infinite; }
+@keyframes scCapShine { 50% { filter: brightness(1.12); } }
+.sc-sparkle { transform-origin: center; animation: scSparkle 2.6s ease-in-out infinite; }
+@keyframes scSparkle { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 50% { opacity: 1; transform: scale(1.2) rotate(45deg); } }
+.sc-plume { animation: scPlume 4s ease-out infinite; }
+.sc-plume.p2 { animation-delay: -1.3s; } .sc-plume.p3 { animation-delay: -2.6s; }
+@keyframes scPlume { 0% { transform: translate(0, 0) scale(.4, .6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(70px, 8px) scale(2.4, 1.6); opacity: 0; } }
+.sc-flake { fill: #FFFFFF; opacity: .9; animation: scSnowFall 7s linear infinite; }
+@keyframes scSnowFall { from { transform: translate(0, 0); } to { transform: translate(-24px, 160px); } }
+.sc-flag { transform-origin: 50% 0; animation: scFlag 1.2s ease-in-out infinite alternate; }
+@keyframes scFlag { from { transform: skewX(-12deg) scaleY(.92); } to { transform: skewX(10deg) scaleY(1); } }

@@ -81,7 +81,7 @@
     "emptyText": "You haven't added any classes for today yet.",
     "addBtn": "Add a class",
     "holidayTitle": "Today is a holiday",
-    "holidayText": "Take a rest. No reminders will come today.",
+    "holidayText": "Take a rest today and spend time with your family.",
     "holidayHasClasses": "Today is marked as a holiday, so the classes below will not send reminders.",
     "muteToday": "Mute or unmute today's reminders",
     "mutedBanner": "Reminders are muted for today.",
@@ -115,7 +115,9 @@
     "day": "Day",
     "period": "Period {n}",
     "gridHint": "Swipe sideways to see the whole week. Tap any cell to edit.",
-    "addHere": "Add a class here"
+    "addHere": "Add a class here",
+    "glanceView": "At a glance",
+    "glanceHint": "All {n} classes of the week at a glance. Top number is the period, below it the start time. Tap any cell to edit."
   },
   "card": {
     "class": "Class",
@@ -521,6 +523,7 @@
     "tea": "Tea garden",
     "night": "Moonlit night",
     "sunset": "Sunset",
-    "none": "Just the sun"
+    "none": "Just the sun",
+    "everest": "Everest"
   }
 }
