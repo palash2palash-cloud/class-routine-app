@@ -469,6 +469,8 @@
     if (info.holiday) {
       // শুক্রবারে সমুদ্র, শনিবারে পাহাড়ের চলন্ত দৃশ্য; অন্য ছুটির দিনে সূর্য
       html += emptyHtml('holiday', t('today.holidayTitle'), info.classes.length ? t('today.holidayHasClasses') : t('today.holidayText'), null, window.Scenes ? window.Scenes.forDay(info.dayKey) : '');
+      if (window.Scenes && window.Scenes.choiceFor(info.dayKey) === 'random') state.sceneRandom = Date.now();
+      else state.sceneRandom = 0;
       if (info.classes.length) {
         html += '<div class="card-list">' + info.classes.map(function (c, i) { return cardHtml(c, { index: i }); }).join('') + '</div>';
       }
@@ -1297,6 +1299,131 @@
     };
   }
 
+  /* শ্রেণি আর শাখা চেনা: "Twelve", "XII", "12", "দ্বাদশ" সব একই; "H1", "H-1", "মানবিক-১" একই */
+  function gradeNum(txt) {
+    const s = I.toAsciiDigits(String(txt || '')).toLowerCase();
+    const words = [['twelve', 12], ['xii', 12], ['দ্বাদশ', 12], ['eleven', 11], ['xi', 11], ['একাদশ', 11], ['ten', 10], ['দশম', 10], ['nine', 9], ['নবম', 9],
+      ['eight', 8], ['অষ্টম', 8], ['seven', 7], ['সপ্তম', 7], ['six', 6], ['ষষ্ঠ', 6]];
+    for (let i = 0; i < words.length; i++) {
+      const re = new RegExp('(^|[^a-z])' + words[i][0] + '([^a-z]|$)');
+      if (/[a-z]/.test(words[i][0]) ? re.test(s) : s.indexOf(words[i][0]) !== -1) return words[i][1];
+    }
+    const m = /(?:class|grade|শ্রেণি)?\s*\b(\d{1,2})\b/.exec(s);
+    return m ? +m[1] : null;
+  }
+  function sectionCode(txt) {
+    let s = I.toAsciiDigits(String(txt || '')).toLowerCase();
+    s = s.replace(/মানবিক|humanities|arts/g, 'h').replace(/বিজ্ঞান|science/g, 's').replace(/ব্যবসায়|business|commerce/g, 'b');
+    const m = /(?:^|[^a-z])(?:section\s*)?([hsbc])\s*-?\s*(\d{1,2})(?!\d)/.exec(s);
+    return m ? (m[1] === 'c' ? 'b' : m[1]) + m[2] : null;
+  }
+  function findGroup(text, gradeTxt, secTxt) {
+    const g = gradeNum(gradeTxt || text), sc = sectionCode(secTxt || text);
+    if (!g || !sc) return null;
+    const hit = S.classGroups().filter(function (x) {
+      return x.sample && gradeNum(x.sample.grade) === g && sectionCode(x.sample.section) === sc;
+    })[0];
+    return hit ? hit.key : null;
+  }
+
+  /* শুধু আপনার ফোনে: www/data/default-students.json থেকে চার শাখার শিক্ষার্থী একবার বসে যায়।
+     যে শাখায় আগে থেকেই শিক্ষার্থী আছে, সেখানে কিছু বদলানো হয় না। */
+  const OWNER_STU_FLAG = 'classRoutine.ownerStudents';
+  async function importOwnerStudents() {
+    try {
+      if (localStorage.getItem(OWNER_STU_FLAG)) return;
+      const r = await fetch('data/default-students.json', { cache: 'no-cache' });
+      if (!r.ok) return;
+      const d = await r.json();
+      let n = 0;
+      (d.groups || []).forEach(function (g) {
+        const key = findGroup('', g.grade, g.section) || S.sectionKey({ grade: g.grade, section: g.section });
+        if (S.studentsOf(key).length) return;
+        const res = S.upsertStudents(key, g.students || []);
+        if (res) n += res.added;
+      });
+      localStorage.setItem(OWNER_STU_FLAG, '1');
+      if (n) toast(t('att.ownerImported', { n: I.num(n) }));
+    } catch (e) {
+      console.warn('owner students', e);
+    }
+  }
+
+  // এক্সেল/CSV ফাইল বেছে নেওয়া
+  function pickStudentFile() {
+    return new Promise(function (resolve) {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = '.xlsx,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv';
+      inp.onchange = function () { resolve(inp.files && inp.files[0]); };
+      inp.click();
+    });
+  }
+
+  async function loadStudentFile() {
+    const file = await pickStudentFile();
+    if (!file) return null;
+    try {
+      const sheets = await E.readStudentFile(file);
+      return sheets.map(function (sh) { return { name: sh.name, text: E.sheetText(sh), students: E.studentsFromRows(sh.rows) }; })
+        .filter(function (sh) { return sh.students.length; });
+    } catch (e) {
+      console.error(e);
+      infoDialog(t('error.title'), t('att.importFail'));
+      return null;
+    }
+  }
+
+  function pickSheet(sheets) {
+    return new Promise(function (resolve) {
+      let done = false;
+      const entry = openOverlay('dialog',
+        '<h2 class="dialog-title">' + esc(t('att.pickSheet')) + '</h2>' +
+        '<div class="att-sheetpick">' + sheets.map(function (sh, i) {
+          return '<button type="button" class="att-group" data-i="' + i + '"><b>' + esc(sh.name) + '</b><span>' + esc(t('att.sheetCount', { n: I.num(sh.students.length) })) + '</span></button>';
+        }).join('') + '</div>' +
+        '<div class="dialog-actions"><button type="button" class="btn btn-text" data-act="cancel">' + esc(t('common.cancel')) + '</button></div>',
+        function () { if (!done) resolve(null); });
+      entry.el.addEventListener('click', function (e) {
+        const b = e.target.closest('[data-i]');
+        if (b) { done = true; closeOverlay(entry, true); resolve(sheets[+b.getAttribute('data-i')]); }
+        if (e.target.closest('[data-act="cancel"]')) { done = true; closeOverlay(entry, true); resolve(null); }
+      });
+    });
+  }
+
+  // একটা শাখায় আনা
+  async function importToGroup(group, onDone) {
+    const sheets = await loadStudentFile();
+    if (!sheets) return;
+    if (!sheets.length) { infoDialog(t('error.title'), t('att.importNone')); return; }
+    let sh = sheets.filter(function (x) { return findGroup(x.text) === group; })[0];
+    if (!sh) sh = sheets.length === 1 ? sheets[0] : await pickSheet(sheets);
+    if (!sh) return;
+    const r = S.upsertStudents(group, sh.students);
+    if (!r) { toast(t('settings.saveFail')); return; }
+    if (onDone) onDone();
+    toast(t('att.importDone', { a: I.num(r.added), u: I.num(r.updated) }));
+  }
+
+  // পুরো ফাইল: প্রতিটা শিট নিজের শ্রেণি-শাখায় (শিটের নাম বা উপরের লেখা দেখে)
+  async function importAllSheets(onDone) {
+    const sheets = await loadStudentFile();
+    if (!sheets) return;
+    if (!sheets.length) { infoDialog(t('error.title'), t('att.importNone')); return; }
+    const lines = [];
+    let skipped = [];
+    sheets.forEach(function (sh) {
+      const key = findGroup(sh.text);
+      if (!key) { skipped.push(sh.name); return; }
+      const r = S.upsertStudents(key, sh.students);
+      if (r) lines.push(t('att.importLine', { cls: groupLabel(key), a: I.num(r.added), u: I.num(r.updated) }));
+    });
+    if (onDone) onDone();
+    infoDialog(t('att.importTitle'), (lines.length ? lines.join('\n') : t('att.importNoMatch')) +
+      (skipped.length ? '\n\n' + t('att.importSkipped', { names: skipped.join(', ') }) : ''));
+  }
+
   // সেটিংস থেকে: সব শ্রেণি-শাখার তালিকা, শিক্ষার্থী সম্পাদনা আর খাতা সংরক্ষণ
   function openStudentsHub() {
     const entry = openOverlay('sheet', '<div class="att-sheet"></div>');
@@ -1311,11 +1438,13 @@
           return '<button type="button" class="att-group" data-group="' + esc(g.key) + '"' + (g.sample ? ' style="' + colorVars(g.sample.color) + '"' : '') + '>' +
             '<b>' + esc(groupLabel(g.key)) + '</b><span>' + esc(t('att.groupLine', { n: I.num(n), r: I.num(r) })) + '</span></button>';
         }).join('') + '</div>' : '<p class="att-empty">' + esc(t('att.noGroups')) + '</p>') +
+        '<button type="button" class="att-import" data-act="import"><i>XLS</i><span><b>' + esc(t('att.importAll')) + '</b><small>' + esc(t('att.importAllHelp')) + '</small></span></button>' +
         '<div class="sheet-actions"><button type="button" class="btn btn-primary" data-act="close">' + esc(t('common.ok')) + '</button></div>';
     }
     draw();
     box.addEventListener('click', function (e) {
       if (e.target.closest('[data-act="close"]')) { closeOverlay(entry, true); return; }
+      if (e.target.closest('[data-act="import"]')) { importAllSheets(draw); return; }
       const g = e.target.closest('[data-group]');
       if (g) openGroupSheet(g.getAttribute('data-group'), draw);
     });
@@ -1331,7 +1460,8 @@
       box.innerHTML = '<div class="sheet-handle"></div><h2 class="sheet-title">' + esc(groupLabel(group)) + '</h2>' +
         '<p class="sheet-sub">' + esc(t('att.total', { n: I.num(total) })) + ' · ' + esc(t('att.liveOnly')) + '</p>' +
         '<div class="att-tools"><button type="button" class="att-tool" data-att="add">' + ICON.plus + '<span>' + esc(t('att.addStudent')) + '</span></button>' +
-        '<button type="button" class="att-tool" data-att="bulk">' + ICON.list + '<span>' + esc(t('att.bulk')) + '</span></button></div>' +
+        '<button type="button" class="att-tool" data-att="bulk">' + ICON.list + '<span>' + esc(t('att.bulk')) + '</span></button>' +
+        '<button type="button" class="att-tool" data-att="import"><b class="xls">XLS</b><span>' + esc(t('att.importShort')) + '</span></button></div>' +
         '<div class="att-list">' + studentRowsHtml(group, null) + '</div>' +
         exportRowHtml(ym) +
         '<div class="sheet-actions"><button type="button" class="btn btn-primary" data-att="done">' + esc(t('common.ok')) + '</button></div>';
@@ -1346,6 +1476,7 @@
       if (act === 'done') closeOverlay(entry);
       else if (act === 'add') openStudentForm(group, null, draw);
       else if (act === 'bulk') openBulkStudents(group, draw);
+      else if (act === 'import') importToGroup(group, draw);
       else if (act === 'prevMonth' || act === 'nextMonth') { ym = shiftYm(ym, act === 'prevMonth' ? -1 : 1); draw(); }
       else if (act === 'xlsx' || act === 'pdf') exportAttendance(group, ym, act);
     });
@@ -2164,9 +2295,9 @@
           '<span class="hg-name">' + esc(t('hg.' + k)) + '</span></button>';
       }).join('') + '</div>');
 
-    const SC_LIST = (window.Scenes ? window.Scenes.LIST : []).concat(['none']);
+    const SC_LIST = ['random'].concat(window.Scenes ? window.Scenes.LIST : []);
     const scDay = state.sceneDay || 'fri';
-    const scSel = (st.scenes || {})[scDay] || 'sea';
+    const scSel = (st.scenes || {})[scDay] || 'random';
     html += group(t('scene.title'),
       '<p class="group-help">' + esc(t('scene.help')) + '</p>' +
       '<div class="scene-days" id="s-sceneDay">' + ['fri', 'sat', 'other'].map(function (d) {
@@ -2174,7 +2305,7 @@
       }).join('') + '</div>' +
       '<div class="hg-options scene-options" id="s-scene">' + SC_LIST.map(function (k) {
         return '<button type="button" class="hg-option' + (scSel === k ? ' on' : '') + '" data-val="' + k + '">' +
-          (k === 'none' ? '<span class="scene-pv none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></span>' : '<span class="scene-pv">' + window.Scenes.html(k) + '</span>') +
+          (k === 'random' ? '<span class="scene-pv random"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5c2.5 0 3.8 1.2 5 3.5l1 2c1.2 2.3 2.5 3.5 5 3.5H21M18 13l3 3-3 3M3 17h3.5c1.2 0 2.1-.3 2.8-.8M14.7 7.8c.7-.5 1.6-.8 2.8-.8H21M18 4l3 3-3 3"/></svg><small>' + esc(t('scene.randomSub')) + '</small></span>' : '<span class="scene-pv">' + window.Scenes.html(k) + '</span>') +
           '<span class="hg-name">' + esc(t('scene.' + k)) + '</span></button>';
       }).join('') + '</div>');
 
@@ -2210,6 +2341,10 @@
       S.DAYS.map(function (d) { return '<button type="button" class="chip-btn' + (st.mutedDays.indexOf(d) !== -1 ? ' on warn' : '') + '" data-day="' + d + '">' + esc(I.dayShort(d)) + '</button>'; }).join('') + '</div>' +
       '<div class="field-label">' + esc(t('sound.title')) + '</div>' +
       (N.isNative() ? '<div class="sound-box"><div class="sound-name">' + ICON.bell + '<span id="soundName">' + esc(t('sound.default')) + '</span></div>' +
+        '<div class="tone-list" id="toneList">' + TONES.map(function (k) {
+          return '<div class="tone" data-tone="' + k + '"><button type="button" class="tone-play" data-action="tone-play" data-tone="' + k + '" aria-label="' + esc(t('sound.preview')) + '"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>' +
+            '<button type="button" class="tone-pick" data-action="tone-pick" data-tone="' + k + '"><b>' + esc(t('sound.t_' + k)) + '</b><small>' + esc(t('sound.d_' + k)) + '</small></button></div>';
+        }).join('') + '</div>' +
         '<div class="sound-btns"><button type="button" class="btn btn-tonal" data-action="sound-pick">' + esc(t('sound.pick')) + '</button>' +
         '<button type="button" class="btn btn-text" data-action="sound-preview">' + esc(t('sound.preview')) + '</button>' +
         '<button type="button" class="btn btn-text" data-action="sound-reset" id="soundReset" hidden>' + esc(t('sound.reset')) + '</button></div>' +
@@ -2311,10 +2446,14 @@
   }
 
   // সেটিংসে কিছু বদলালে তা খসড়ায় থাকে; "সংরক্ষণ করুন" চাপলে তবেই কাজে লাগে
+  // অ্যাপের নিজের ৫ সেকেন্ডের শব্দ (res/raw/tone_*.ogg)
+  const TONES = ['morning', 'marimba', 'harp', 'crystal', 'dingdong', 'piano'];
   function updateSoundLabel(r) {
     const el = $('#soundName');
     if (!el || !r) return;
-    el.textContent = r.uri ? (r.title || t('sound.custom')) : t('sound.default');
+    const m = /\/raw\/tone_([a-z]+)$/.exec(r.uri || '');
+    el.textContent = m ? t('sound.t_' + m[1]) : r.uri ? (r.title || t('sound.custom')) : t('sound.default');
+    $$('#toneList .tone').forEach(function (x) { x.classList.toggle('on', !!m && x.getAttribute('data-tone') === m[1]); });
     const reset = $('#soundReset');
     if (reset) reset.hidden = !r.uri;
   }
@@ -2370,7 +2509,7 @@
       if (!b) return;
       const v = b.getAttribute('data-val'), day = state.sceneDay || 'fri';
       if ((state.draft.scenes || {})[day] === v) return;
-      changeDraft(function (d) { d.scenes = Object.assign({ fri: 'sea', sat: 'hill', other: 'river' }, d.scenes); d.scenes[day] = v; });
+      changeDraft(function (d) { d.scenes = Object.assign({ fri: 'random', sat: 'random', other: 'random' }, d.scenes); d.scenes[day] = v; });
     });
 
     $('#s-dayend').addEventListener('click', function (e) {
@@ -2607,6 +2746,18 @@
       case 'sound-preview':
         await N.sound('preview');
         break;
+      case 'tone-play':
+        await N.sound('preview', '', 'tone_' + el.getAttribute('data-tone'));
+        break;
+      case 'tone-pick': {
+        const k = el.getAttribute('data-tone');
+        const r = await N.sound('builtin', t('sound.t_' + k), 'tone_' + k);
+        updateSoundLabel(r);
+        await N.sound('preview', '', 'tone_' + k);
+        toast(t('sound.changedTo', { name: t('sound.t_' + k) }));
+        N.reschedule();
+        break;
+      }
       case 'test-notif': {
         const r = await N.test();
         if (r === 'granted') toast(t('perm.testSent'));
@@ -3005,6 +3156,8 @@
     S.save();
   }
   async function askOwner() {
+    // আগেই "আমি নিজে" বেছে থাকলে (আগের সংস্করণে) শিক্ষার্থীর তালিকাও একবার বসে যায়
+    if (localStorage.getItem(OWNER_FLAG) === 'owner') { importOwnerStudents(); return; }
     if (localStorage.getItem(OWNER_FLAG)) return;
     const own = await ownerProfile();
     if (!own) return;
@@ -3032,6 +3185,7 @@
       if (b.getAttribute('data-owner') === 'me') {
         applyOwnerProfile(own);
         localStorage.setItem(OWNER_FLAG, 'owner');
+        importOwnerStudents();
         toast(t('owner.meDone'));
       } else {
         localStorage.setItem(OWNER_FLAG, 'other');
@@ -3085,6 +3239,23 @@
     setTimeout(tickMinute, 60000 - (Date.now() % 60000) + 200);
     setInterval(updateLive, 15000);
     setInterval(checkAttendanceSheet, 3000);
+    // ছুটির দিনে এলোমেলো দৃশ্য: ৩০ সেকেন্ড পরপর ধীরে মিলিয়ে নতুন দৃশ্য
+    setInterval(function () {
+      if (!state.sceneRandom || state.view !== 'today' || document.hidden) return;
+      if (Date.now() - state.sceneRandom < 29500) return;
+      const wrap = $('.scene-wrap');
+      if (!wrap) { state.sceneRandom = 0; return; }
+      state.sceneRandom = Date.now();
+      const next = document.createElement('div');
+      next.className = 'scene-next';
+      next.innerHTML = window.Scenes.random();
+      wrap.appendChild(next);
+      requestAnimationFrame(function () { next.classList.add('show'); });
+      setTimeout(function () {
+        Array.prototype.slice.call(wrap.children).forEach(function (ch) { if (ch !== next) ch.remove(); });
+        next.classList.remove('scene-next', 'show');
+      }, 1400);
+    }, 1000);
     setInterval(function () {
       if (state.view !== 'today' || document.hidden || (!$('#deClock') && !$('#nowClock'))) return;
       // রাত ১২টা পার হলে নতুন দিনের ক্লাস দেখানো

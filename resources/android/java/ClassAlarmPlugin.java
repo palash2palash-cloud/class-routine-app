@@ -112,12 +112,30 @@ public class ClassAlarmPlugin extends Plugin {
         call.resolve(soundInfo(getContext()));
     }
 
-    /* বাছাই করা শব্দ একবার বাজিয়ে শোনানো */
+    /* অ্যাপের ভেতরের সুন্দর শব্দগুলোর একটা (res/raw/tone_*.ogg) বেছে নেওয়া */
+    @PluginMethod
+    public void setBuiltinSound(PluginCall call) {
+        String name = call.getString("name", "");
+        if (!name.matches("tone_[a-z]+")) { call.reject("bad name"); return; }
+        Context ctx = getContext();
+        ClassAlarmScheduler.setSound(ctx, "android.resource://" + ctx.getPackageName() + "/raw/" + name, call.getString("title", name));
+        call.resolve(soundInfo(ctx));
+    }
+
+    private Ringtone playing;
+
+    /* শব্দ একবার বাজিয়ে শোনানো: name দিলে অ্যাপের সেই শব্দ, না দিলে এখন বাছাই করা শব্দ */
     @PluginMethod
     public void previewSound(PluginCall call) {
+        Context ctx = getContext();
         try {
-            Ringtone rt = RingtoneManager.getRingtone(getContext(), ClassAlarmScheduler.soundUri(getContext()));
-            if (rt != null) rt.play();
+            if (playing != null && playing.isPlaying()) playing.stop();
+            String name = call.getString("name", "");
+            Uri uri = name.matches("tone_[a-z]+")
+                ? Uri.parse("android.resource://" + ctx.getPackageName() + "/raw/" + name)
+                : ClassAlarmScheduler.soundUri(ctx);
+            playing = RingtoneManager.getRingtone(ctx, uri);
+            if (playing != null) playing.play();
         } catch (Exception ignored) {}
         call.resolve();
     }

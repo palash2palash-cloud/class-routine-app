@@ -1221,7 +1221,7 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .att-row:has(.m-l.on) { border-color: rgba(217, 119, 6, .35); background: color-mix(in srgb, #D97706 6%, var(--surface-2)); }
 .att-roll { min-width: 36px; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center; background: var(--surface); font-weight: 700; color: var(--primary); font-size: .92rem; box-shadow: inset 0 0 0 1px var(--border); }
 .att-name { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; border: 0; background: none; padding: 0; color: var(--text); font: inherit; text-align: left; }
-.att-name b { font-size: .95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.att-name b { font-size: .93rem; font-weight: 600; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; max-width: 100%; }
 .att-name small { font-size: .72rem; color: var(--text-3); }
 .att-marks { display: flex; gap: 4px; padding: 3px; border-radius: 13px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); }
 .att-marks button { width: 38px; height: 34px; border-radius: 10px; border: 0; background: transparent; color: var(--text-3); font: inherit; font-weight: 800; font-size: .92rem; transition: background .15s, color .15s; }
@@ -1254,3 +1254,45 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .sound-name { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 2px 0 8px; }
 .sound-name svg { width: 18px; height: 18px; fill: var(--primary); }
 .sound-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.att-tool .xls { font-size: .6rem; font-weight: 800; padding: 2px 4px; border-radius: 4px; background: #16A34A; color: #fff; letter-spacing: .3px; }
+.att-import { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; margin-bottom: 12px; border-radius: 14px; border: 1.5px dashed #16A34A; background: rgba(22, 163, 74, .07); color: var(--text); font: inherit; text-align: left; }
+.att-import i { font-style: normal; font-size: .7rem; font-weight: 800; padding: 6px 7px; border-radius: 8px; background: linear-gradient(135deg, #16A34A, #15803D); color: #fff; }
+.att-import span { display: flex; flex-direction: column; }
+.att-import b { font-size: .93rem; }
+.att-import small { font-size: .76rem; color: var(--text-2); }
+.att-sheetpick { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; max-height: 50vh; overflow-y: auto; }
+
+/* এলোমেলো দৃশ্য: নতুনটা ধীরে ফুটে ওঠে */
+.scene-wrap { position: relative; }
+.scene-wrap > .scene-next { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease; }
+.scene-wrap > .scene-next.show { opacity: 1; }
+.scene-wrap > div { width: 100%; height: 100%; }
+.scene-pv.random { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #fff; background: linear-gradient(135deg, #0EA5E9, #6366F1 45%, #EC4899 75%, #F59E0B); }
+.scene-pv.random svg { width: 32px; height: 32px; }
+.scene-pv.random small { font-size: .7rem; font-weight: 600; opacity: .95; }
+/* আসল সূর্য */
+.sc-halo { animation: scHalo 5s ease-in-out infinite; transform-origin: center; }
+@keyframes scHalo { 50% { transform: scale(1.1); opacity: .85; } }
+.sc-beams { transform-origin: center; }
+.sc-beams.b1 { animation: scSpin 60s linear infinite, scBeamFade 4s ease-in-out infinite; }
+.sc-beams.b2 { animation: scSpinBack 40s linear infinite, scBeamFade 3s ease-in-out infinite reverse; }
+@keyframes scSpinBack { to { transform: rotate(-360deg); } }
+@keyframes scBeamFade { 50% { opacity: .55; } }
+.sc-corona { animation: scHalo 2.6s ease-in-out infinite; transform-origin: center; }
+.sc-disk { animation: scSunPulse 3.6s ease-in-out infinite; transform-origin: center; }
+.sc-surface { animation: scSpin 50s linear infinite; transform-origin: center; }
+.sc-twinkle { transform-origin: center; animation: scTwinkleSun 4s ease-in-out infinite; }
+@keyframes scTwinkleSun { 0%, 100% { opacity: .15; transform: rotate(0) scale(.8); } 50% { opacity: .7; transform: rotate(45deg) scale(1.15); } }
+.sc-flare { animation: scFlare 6s ease-in-out infinite; transform-origin: center; }
+@keyframes scFlare { 50% { opacity: .05; transform: translate(-6px, -4px) scale(1.2); } }
+
+/* রিমাইন্ডারের শব্দের তালিকা */
+.tone-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 10px; }
+.tone { display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 14px; background: var(--surface-2); border: 1.5px solid transparent; }
+.tone.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--surface-2)); }
+.tone-play { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--primary); display: flex; align-items: center; justify-content: center; }
+.tone-play svg { width: 16px; height: 16px; fill: #fff; margin-left: 2px; }
+.tone-pick { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; border: 0; background: none; padding: 0; color: var(--text); font: inherit; text-align: left; }
+.tone-pick b { font-size: .86rem; }
+.tone-pick small { font-size: .68rem; color: var(--text-3); line-height: 1.2; }

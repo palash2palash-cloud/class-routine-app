@@ -795,7 +795,161 @@
     return out;
   }
 
+
+  /* ---------- এক্সেল (.xlsx) বা CSV পড়া: শিক্ষার্থীর তালিকা আনার জন্য ---------- */
+  async function inflateRaw(bytes) {
+    const ds = new DecompressionStream('deflate-raw');
+    const stream = new Blob([bytes]).stream().pipeThrough(ds);
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+
+  async function unzip(buf) {
+    const b = new Uint8Array(buf);
+    const dv = new DataView(buf);
+    let eocd = -1;
+    for (let i = b.length - 22; i >= Math.max(0, b.length - 70000); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('not a zip');
+    const count = dv.getUint16(eocd + 10, true);
+    let p = dv.getUint32(eocd + 16, true);
+    const dec = new TextDecoder();
+    const files = {};
+    for (let n = 0; n < count; n++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const method = dv.getUint16(p + 10, true);
+      const csize = dv.getUint32(p + 20, true);
+      const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+      const off = dv.getUint32(p + 42, true);
+      const name = dec.decode(b.subarray(p + 46, p + 46 + nlen));
+      const lnl = dv.getUint16(off + 26, true), lel = dv.getUint16(off + 28, true);
+      const start = off + 30 + lnl + lel;
+      files[name] = { method: method, data: b.subarray(start, start + csize) };
+      p += 46 + nlen + elen + clen;
+    }
+    return {
+      text: async function (name) {
+        const f = files[name];
+        if (!f) return null;
+        const raw = f.method === 8 ? await inflateRaw(f.data) : f.data;
+        return dec.decode(raw);
+      }
+    };
+  }
+
+  function colIndex(ref) {
+    const m = /^([A-Z]+)/.exec(ref || '');
+    if (!m) return -1;
+    let n = 0;
+    for (let i = 0; i < m[1].length; i++) n = n * 26 + (m[1].charCodeAt(i) - 64);
+    return n - 1;
+  }
+
+  // ফেরত দেয়: [{ name: শিটের নাম, rows: [[ঘরের লেখা, ...], ...] }]
+  async function readXlsx(buf) {
+    const z = await unzip(buf);
+    const parse = function (txt) { return new DOMParser().parseFromString(txt, 'application/xml'); };
+    const all = function (doc, tag) { return Array.prototype.slice.call(doc.getElementsByTagNameNS('*', tag)); };
+    const shared = [];
+    const ssTxt = await z.text('xl/sharedStrings.xml');
+    if (ssTxt) all(parse(ssTxt), 'si').forEach(function (si) { shared.push(all(si, 't').map(function (x) { return x.textContent; }).join('')); });
+    const wb = parse(await z.text('xl/workbook.xml'));
+    const relsTxt = await z.text('xl/_rels/workbook.xml.rels');
+    const rels = {};
+    if (relsTxt) all(parse(relsTxt), 'Relationship').forEach(function (r) { rels[r.getAttribute('Id')] = r.getAttribute('Target'); });
+    const sheets = [];
+    const list = all(wb, 'sheet');
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
+      const rid = s.getAttribute('r:id') || s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+      let target = rels[rid] || ('worksheets/sheet' + (i + 1) + '.xml');
+      target = target.replace(/^\/?xl\//, '').replace(/^\//, '');
+      const txt = await z.text('xl/' + target);
+      if (!txt) continue;
+      const rows = [];
+      all(parse(txt), 'row').forEach(function (row) {
+        const r = [];
+        all(row, 'c').forEach(function (c) {
+          const ci = colIndex(c.getAttribute('r'));
+          const tp = c.getAttribute('t');
+          let v = '';
+          if (tp === 'inlineStr') v = all(c, 't').map(function (x) { return x.textContent; }).join('');
+          else {
+            const ve = all(c, 'v')[0];
+            v = ve ? ve.textContent : '';
+            if (tp === 's') v = shared[+v] || '';
+          }
+          r[ci < 0 ? r.length : ci] = String(v).trim();
+        });
+        const ri = parseInt(row.getAttribute('r'), 10);
+        rows[isNaN(ri) ? rows.length : ri - 1] = r;
+      });
+      sheets.push({ name: s.getAttribute('name') || ('Sheet' + (i + 1)), rows: Array.from(rows, function (r) { return r ? Array.from(r, function (x) { return x || ''; }) : []; }) });
+    }
+    return sheets;
+  }
+
+  function readCsv(text) {
+    const rows = String(text).replace(/^﻿/, '').split(/\r?\n/).map(function (line) {
+      const out = [];
+      let cur = '', q = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (q) { if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; } else if (ch === '"') q = false; else cur += ch; }
+        else if (ch === '"') q = true;
+        else if (ch === ',' || ch === ';' || ch === '\t') { out.push(cur.trim()); cur = ''; }
+        else cur += ch;
+      }
+      out.push(cur.trim());
+      return out;
+    });
+    return [{ name: 'CSV', rows: rows }];
+  }
+
+  // শিটের সারি থেকে শিক্ষার্থী: শিরোনামের সারি (ID / Roll / Name) খুঁজে কলাম চেনা
+  function studentsFromRows(rows) {
+    const low = function (x) { return String(x || '').toLowerCase().replace(/[^a-zঀ-৿]/g, ''); };
+    let head = -1, ci = { id: -1, roll: -1, name: -1 };
+    for (let i = 0; i < Math.min(rows.length, 30); i++) {
+      const r = rows[i] || [];
+      const c = { id: -1, roll: -1, name: -1 };
+      r.forEach(function (v, j) {
+        const k = low(v);
+        if (c.id < 0 && /^(id|idno|studentid|আইডি|আইডিনং|আইডিনম্বর)/.test(k)) c.id = j;
+        else if (c.roll < 0 && /^(roll|rollno|রোল|রোলনং|রোলনম্বর)/.test(k)) c.roll = j;
+        else if (c.name < 0 && /^(name|studentname|studentsname|নাম|শিক্ষার্থীরনাম)/.test(k)) c.name = j;
+      });
+      if (c.name >= 0 && (c.roll >= 0 || c.id >= 0)) { head = i; ci = c; break; }
+    }
+    if (head < 0) { head = -1; ci = { id: 0, roll: 1, name: 2 }; }
+    const out = [];
+    rows.slice(head + 1).forEach(function (r) {
+      if (!r) return;
+      const g = function (j) { return j >= 0 ? String(r[j] || '').trim() : ''; };
+      const st = { sid: g(ci.id), roll: g(ci.roll), name: g(ci.name).replace(/\s+/g, ' ') };
+      if (!st.name && !st.roll && !st.sid) return;
+      if (/total|মোট/i.test(st.sid + ' ' + st.roll) && !/\d{3,}/.test(st.sid)) return;
+      if (!st.name && !/\d/.test(st.sid + st.roll)) return;
+      out.push(st);
+    });
+    return out;
+  }
+
+  // শিটের নাম বা উপরের লেখা থেকে শ্রেণি ও শাখা আন্দাজ করা (যেমন "CLASS 12 H-1")
+  function sheetText(sh) {
+    return [sh.name].concat((sh.rows || []).slice(0, 4).map(function (r) { return (r || []).join(' '); })).join(' ');
+  }
+
+  async function readStudentFile(file) {
+    const name = (file.name || '').toLowerCase();
+    if (/\.csv$|\.txt$/.test(name)) return readCsv(await file.text());
+    return readXlsx(await file.arrayBuffer());
+  }
+
   window.Exporter = {
+    readStudentFile: readStudentFile,
+    studentsFromRows: studentsFromRows,
+    sheetText: sheetText,
     saveAttendanceXlsx: saveAttendanceXlsx,
     saveAttendancePdf: saveAttendancePdf,
     attendanceTable: attendanceTable,

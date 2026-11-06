@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  const LIST = ['sea', 'hill', 'everest', 'river', 'tea', 'night', 'sunset'];
+  const LIST = ['sea', 'hill', 'everest', 'river', 'tea', 'night', 'sunset', 'sun'];
   let seq = 0;
 
   function wave(y, amp, len, width) {
@@ -450,7 +450,62 @@
       '<g class="sc-snow">' + flakes.join('') + '</g>');
   }
 
-  const BUILD = { sea: seaScene, hill: hillScene, river: riverScene, tea: teaScene, night: nightScene, sunset: sunsetScene, everest: everestScene };
+  /* ---------------- আসল সূর্য ----------------
+     সাদা-হলুদ কেন্দ্র, কমলা কিনারা, চারপাশে স্তরে স্তরে আলোর আভা (গ্লো),
+     দুই স্তরের আলোর রশ্মি উল্টো দিকে ঘোরে, লেন্স ফ্লেয়ার আর ঝিলিক। */
+  function sunScene(P) {
+    const cx = 180, cy = 108;
+    function beams(n, len, w, rot) {
+      let d = '';
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2 + rot;
+        const l = len * (i % 2 ? .72 : 1) * (i % 3 === 0 ? 1.12 : 1);
+        const x1 = Math.cos(a - w) * 30, y1 = Math.sin(a - w) * 30, x2 = Math.cos(a + w) * 30, y2 = Math.sin(a + w) * 30;
+        const xe = Math.cos(a) * l, ye = Math.sin(a) * l;
+        d += 'M' + x1.toFixed(1) + ' ' + y1.toFixed(1) + 'L' + xe.toFixed(1) + ' ' + ye.toFixed(1) + 'L' + x2.toFixed(1) + ' ' + y2.toFixed(1) + 'Z';
+      }
+      return d;
+    }
+    const flares = [[.55, 7, '#FFE9A8', .35], [.95, 4, '#A7F3D0', .3], [1.25, 12, '#FBCFE8', .18], [1.6, 5, '#BAE6FD', .35], [1.95, 18, '#FDE68A', .12]]
+      .map(function (f, i) {
+        const x = cx + (60) * f[0] * 1.6, y = cy + 70 * f[0];
+        return '<circle class="sc-flare" style="animation-delay:' + (-i * .6) + 's" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + f[1] + '" fill="' + f[2] + '" opacity="' + f[3] + '"/>';
+      }).join('');
+    const defs = '<radialGradient id="' + P + 'Sky" cx="50%" cy="43%" r="75%"><stop offset="0" stop-color="#FFE7A3"/><stop offset=".22" stop-color="#FDBA5C"/><stop offset=".5" stop-color="#4FA3E8"/><stop offset="1" stop-color="#1D4E9E"/></radialGradient>' +
+      '<radialGradient id="' + P + 'Core" cx="45%" cy="42%" r="60%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".35" stop-color="#FFFBE0"/><stop offset=".7" stop-color="#FFE066"/><stop offset=".92" stop-color="#FFB627"/><stop offset="1" stop-color="#FF8A1F"/></radialGradient>' +
+      '<radialGradient id="' + P + 'Halo"><stop offset="0" stop-color="#FFF6CF" stop-opacity="1"/><stop offset=".25" stop-color="#FFE38A" stop-opacity=".75"/><stop offset=".6" stop-color="#FFC857" stop-opacity=".22"/><stop offset="1" stop-color="#FFC857" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="' + P + 'Beam" cx="0" cy="0" r="170" gradientUnits="userSpaceOnUse"><stop offset=".15" stop-color="#FFF7D6" stop-opacity=".85"/><stop offset=".55" stop-color="#FFE7A0" stop-opacity=".25"/><stop offset="1" stop-color="#FFE7A0" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="' + P + 'Rim"><stop offset=".78" stop-color="#FF9F1C" stop-opacity="0"/><stop offset=".93" stop-color="#FF7A00" stop-opacity=".35"/><stop offset="1" stop-color="#FF5E00" stop-opacity="0"/></radialGradient>' +
+      '<filter id="' + P + 'Soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>' +
+      grad(P + 'Sea', [[0, '#3B8FD9'], [1, '#1A4F96']]);
+    return svg('sun', defs,
+      '<rect width="360" height="250" fill="url(#' + P + 'Sky)"/>' +
+      '<g transform="translate(' + cx + ' ' + cy + ')">' +
+      // বড় নরম আভা
+      '<circle class="sc-halo" r="150" fill="url(#' + P + 'Halo)"/>' +
+      // আলোর রশ্মি: দুই স্তর, উল্টো দিকে ঘোরে
+      '<g class="sc-beams b1" filter="url(#' + P + 'Soft)"><path d="' + beams(16, 170, .07, 0) + '" fill="url(#' + P + 'Beam)"/></g>' +
+      '<g class="sc-beams b2" filter="url(#' + P + 'Soft)"><path d="' + beams(24, 120, .045, .13) + '" fill="url(#' + P + 'Beam)" opacity=".8"/></g>' +
+      '<circle class="sc-corona" r="58" fill="url(#' + P + 'Halo)"/>' +
+      '<circle r="38" fill="url(#' + P + 'Rim)"/>' +
+      // সূর্যের চাকতি
+      '<g class="sc-disk"><circle r="31" fill="url(#' + P + 'Core)"/>' +
+      '<circle r="31" fill="none" stroke="#FFD25C" stroke-width="1.2" opacity=".6"/>' +
+      '</g>' +
+      // ঝিলিক
+      '<path class="sc-twinkle" d="M0 -54 L1.4 -2 L54 0 L1.4 2 L0 54 L-1.4 2 L-54 0 L-1.4 -2 Z" fill="#FFFFFF" opacity=".35"/>' +
+      '</g>' +
+      flares +
+      // নিচে আলো-পড়া মেঘ
+      '<g class="sc-clouds"><g class="sc-cloud c1">' + cloud(30, 180, 1.1) + '</g><g class="sc-cloud c2">' + cloud(290, 168, .9) + '</g></g>' +
+      // দূরের শান্ত সমুদ্র আর তাতে সূর্যের প্রতিচ্ছবি
+      '<rect y="208" width="360" height="42" fill="url(#' + P + 'Sea)"/>' +
+      '<rect y="207" width="360" height="1.5" fill="#FFF3C4" opacity=".8"/>' +
+      [0, 1, 2, 3, 4, 5].map(function (i) { const w = 70 - i * 9; return '<rect class="sc-glint" style="animation-delay:' + (i * .3) + 's" x="' + (cx - w / 2 + (i % 2 ? 6 : -6)) + '" y="' + (212 + i * 6) + '" width="' + w + '" height="2" rx="1" fill="#FFF1B8"/>'; }).join('') +
+      flock(64, 'f2', .7));
+  }
+
+  const BUILD = { sea: seaScene, hill: hillScene, river: riverScene, tea: teaScene, night: nightScene, sunset: sunsetScene, everest: everestScene, sun: sunScene };
 
   function html(kind) {
     if (!BUILD[kind]) return '';
@@ -458,20 +513,30 @@
     return BUILD[kind]('sc' + seq + kind);
   }
 
-  // ছুটির দিনে কোন দৃশ্য: সেটিংস থেকে, না থাকলে শুক্রবারে সমুদ্র, শনিবারে পাহাড়
+  // ছুটির দিনে কোন দৃশ্য: সেটিংস থেকে; "random" হলে গ্যালারির সব দৃশ্য পালা করে (৩০ সেকেন্ড পরপর)
   function choiceFor(dayKey) {
     const st = (window.Store && window.Store.settings) || {};
     const sc = st.scenes || {};
-    if (dayKey === 'fri') return sc.fri || 'sea';
-    if (dayKey === 'sat') return sc.sat || 'hill';
-    return sc.other || 'river';
+    const v = dayKey === 'fri' ? sc.fri : dayKey === 'sat' ? sc.sat : sc.other;
+    return v || 'random';
+  }
+
+  let last = '';
+  function randomKind() {
+    const pool = LIST.filter(function (k) { return k !== last; });
+    last = pool[Math.floor(Math.random() * pool.length)];
+    return last;
+  }
+
+  function resolve(kind) {
+    return kind === 'random' ? randomKind() : kind;
   }
 
   window.Scenes = {
-    NONE: 'none',
     LIST: LIST,
     html: html,
     choiceFor: choiceFor,
-    forDay: function (dayKey) { return html(choiceFor(dayKey)); }
+    random: function () { return html(randomKind()); },
+    forDay: function (dayKey) { const k = resolve(choiceFor(dayKey)); last = k; return html(k); }
   };
 })();

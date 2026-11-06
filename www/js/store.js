@@ -29,7 +29,7 @@
     breakStart: '11:05',
     breakEnd: '11:40',
     wordMap: '', // নিজের যোগ করা অনুবাদ, প্রতি লাইনে "English = বাংলা"
-    scenes: { fri: 'sea', sat: 'hill', other: 'river' }, // ছুটির দিনের চলন্ত দৃশ্য (none = শুধু সূর্যের ছবি)
+    scenes: { fri: 'random', sat: 'random', other: 'random' }, // ছুটির দিনের চলন্ত দৃশ্য (random = ৩০ সেকেন্ড পরপর এলোমেলো)
     marqueeColor: '#DC2626', // দিনশেষে বালুঘড়ির উপরে পরের ক্লাসের স্ক্রল লেখার রং
     periods: [], // রুটিনের পিরিয়ড [{start, end}]; ফাঁকা থাকলে ক্লাসগুলোর সময় থেকে বের করা হয়
     profile: {
@@ -107,13 +107,12 @@
       out.breakEnd = s.breakEnd;
     }
     if (isColor(s.marqueeColor)) out.marqueeColor = s.marqueeColor;
-    const SCN = ['sea', 'hill', 'everest', 'river', 'tea', 'night', 'sunset', 'none'];
+    const SCN = ['random', 'sea', 'hill', 'everest', 'river', 'tea', 'night', 'sunset', 'sun'];
     const sc = s.scenes && typeof s.scenes === 'object' ? s.scenes : {};
-    out.scenes = {
-      fri: SCN.indexOf(sc.fri) !== -1 ? sc.fri : 'sea',
-      sat: SCN.indexOf(sc.sat) !== -1 ? sc.sat : 'hill',
-      other: SCN.indexOf(sc.other) !== -1 ? sc.other : 'river'
-    };
+    // scenes2: এই সংস্করণ থেকে সবার জন্য এলোমেলো দৃশ্য শুরু; পরে কেউ নির্দিষ্ট দৃশ্য বাছলে সেটাই থাকে
+    const fix = function (v) { v = v === 'none' ? 'sun' : v; return s.scenes2 && SCN.indexOf(v) !== -1 ? v : 'random'; };
+    out.scenes = { fri: fix(sc.fri), sat: fix(sc.sat), other: fix(sc.other) };
+    out.scenes2 = true;
     if (typeof s.wordMap === 'string') out.wordMap = s.wordMap.slice(0, 4000);
     out.periods = cleanPeriods(s.periods);
     out.profile = cleanProfile(s.profile);
@@ -256,6 +255,23 @@
     let n = 0;
     arr.forEach(function (x) { const c = cleanStudent(x); if (c && list.length < 500) { list.push(c); n++; } });
     return save() ? n : -1;
+  }
+
+  // এক্সেল থেকে আনা: একই আইডি (না থাকলে একই রোল ও নাম) আগে থাকলে হালনাগাদ, না থাকলে নতুন
+  function upsertStudents(group, arr) {
+    if (!data.students) data.students = {};
+    const list = data.students[group] || (data.students[group] = []);
+    let added = 0, updated = 0;
+    arr.forEach(function (x) {
+      const c = cleanStudent(x);
+      if (!c) return;
+      const i = list.findIndex(function (y) {
+        return c.sid ? y.sid === c.sid : (y.roll === c.roll && normalize(y.name) === normalize(c.name));
+      });
+      if (i !== -1) { c.id = list[i].id; list[i] = c; updated++; }
+      else if (list.length < 500) { list.push(c); added++; }
+    });
+    return save() ? { added: added, updated: updated } : null;
   }
 
   function deleteStudent(group, id) {
@@ -721,6 +737,7 @@
     studentsOf: studentsOf,
     saveStudent: saveStudent,
     addStudents: addStudents,
+    upsertStudents: upsertStudents,
     deleteStudent: deleteStudent,
     getAttendance: getAttendance,
     openAttendance: openAttendance,

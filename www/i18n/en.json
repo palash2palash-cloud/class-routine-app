@@ -514,7 +514,7 @@
   },
   "scene": {
     "title": "Holiday scene",
-    "help": "Pick the animated scene shown on the home page for each holiday. Tap Save below when done.",
+    "help": "Pick the animated scene shown on the home page for each holiday. \"Shuffle\" changes the scene every 30 seconds. Tap Save below when done.",
     "day_fri": "Friday",
     "day_sat": "Saturday",
     "day_other": "Other holidays",
@@ -525,7 +525,10 @@
     "night": "Moonlit night",
     "sunset": "Sunset",
     "none": "Just the sun",
-    "everest": "Everest"
+    "everest": "Everest",
+    "random": "Shuffle",
+    "randomSub": "every 30 seconds",
+    "sun": "Sun"
   },
   "att": {
     "btn": "Take attendance",
@@ -580,7 +583,20 @@
     "btnHint": "Tap to mark present, absent or late",
     "btnSub": "{p} of {n} present",
     "marksHead": "Mark",
-    "register": "Save register"
+    "register": "Save register",
+    "ownerImported": "Your list of {n} students has been added",
+    "importAll": "Import all sections from Excel",
+    "importAllHelp": "One section per sheet (e.g. CLASS 12 H-1), columns: ID NO, ROLL NO, NAME",
+    "importShort": "From Excel",
+    "importFail": "Could not read the file. Choose an .xlsx or .csv file.",
+    "importNone": "No students found in the file. Check that the columns are named ID, Roll, Name.",
+    "pickSheet": "Import from which sheet?",
+    "sheetCount": "{n} students",
+    "importDone": "{a} added, {u} updated",
+    "importTitle": "Imported from Excel",
+    "importLine": "{cls}: {a} new, {u} updated",
+    "importNoMatch": "No sheet matched a class-section in your routine.",
+    "importSkipped": "Could not tell the class-section of these sheets: {names}. Open that section and tap \"From Excel\" to import them one by one."
   },
   "sound": {
     "title": "Reminder sound",
@@ -589,9 +605,23 @@
     "pick": "Choose phone sound",
     "preview": "Play",
     "reset": "Use beep",
-    "help": "Pick any ringtone, alarm or notification sound from your phone. The next reminder will use it.",
+    "help": "Pick one of the app's own 5-second sounds above (tap ▶ to listen), or tap \"Choose phone sound\" for a ringtone, alarm or notification sound from your phone. The next reminder will use it.",
     "pickTitle": "Reminder sound",
     "changed": "Reminder sound changed",
-    "resetDone": "The app's beep will play again"
+    "resetDone": "The app's beep will play again",
+    "t_morning": "Morning bells",
+    "d_morning": "A sweet rising bell melody",
+    "t_marimba": "Marimba",
+    "d_marimba": "Soft wooden mallet notes",
+    "t_harp": "Harp",
+    "d_harp": "A gentle falling glissando",
+    "t_crystal": "Crystal",
+    "d_crystal": "Bright, glassy chimes",
+    "t_dingdong": "Ding-dong",
+    "d_dingdong": "A soft two-note school bell",
+    "t_piano": "Piano",
+    "d_piano": "A calm piano phrase",
+    "changedTo": "Reminders will now play: {name}",
+    "builtinHead": "App sounds"
   }
 }

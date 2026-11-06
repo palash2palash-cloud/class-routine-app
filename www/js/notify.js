@@ -257,13 +257,14 @@
   }
 
   // রিমাইন্ডারের শব্দ: ফোনের নিজের শব্দ বাছাই / অ্যাপের বিপে ফেরা / শুনে দেখা
-  async function sound(action, title) {
+  async function sound(action, title, name) {
     const al = AL();
     if (!al) return null;
     try {
       if (action === 'pick') return await al.pickSound({ title: title || '' });
       if (action === 'reset') return await al.resetSound();
-      if (action === 'preview') { await al.previewSound(); return null; }
+      if (action === 'builtin') return await al.setBuiltinSound({ name: name, title: title || name });
+      if (action === 'preview') { await al.previewSound(name ? { name: name } : {}); return null; }
       return await al.getSound();
     } catch (e) {
       console.warn('sound', e);

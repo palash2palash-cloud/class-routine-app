@@ -1,0 +1,733 @@
+{
+ "format": 1,
+ "groups": [
+  {
+   "grade": "Twelve",
+   "section": "H1",
+   "title": "CLASS TWELVE · HUMANITIES · SECTION H-1",
+   "students": [
+    {
+     "sid": "100681",
+     "roll": "704",
+     "name": "FAHMIDA MANIK"
+    },
+    {
+     "sid": "100682",
+     "roll": "706",
+     "name": "WARISHA HANNAN TAMANNA"
+    },
+    {
+     "sid": "100699",
+     "roll": "724",
+     "name": "MST. NUSRAT JAHAN"
+    },
+    {
+     "sid": "100700",
+     "roll": "725",
+     "name": "JANNATUL MARIYA"
+    },
+    {
+     "sid": "100702",
+     "roll": "727",
+     "name": "NAJNIN NAHAR RAFIA"
+    },
+    {
+     "sid": "100703",
+     "roll": "728",
+     "name": "MRS LAMISA"
+    },
+    {
+     "sid": "100716",
+     "roll": "741",
+     "name": "SHEIKH IBNAT MASUD EMARA"
+    },
+    {
+     "sid": "100730",
+     "roll": "755",
+     "name": "SADIA JAHAN PROVA"
+    },
+    {
+     "sid": "100743",
+     "roll": "769",
+     "name": "M MAZHARUL ISLAM"
+    },
+    {
+     "sid": "100750",
+     "roll": "778",
+     "name": "MD. SHIFUL ISLAM ISHAN"
+    },
+    {
+     "sid": "100754",
+     "roll": "782",
+     "name": "MD. MAHMUDUL HASAN"
+    },
+    {
+     "sid": "100755",
+     "roll": "784",
+     "name": "MD AMDADUL ISLAM"
+    },
+    {
+     "sid": "100759",
+     "roll": "788",
+     "name": "MD. ANAMUL HOQUE RONY"
+    },
+    {
+     "sid": "100761",
+     "roll": "790",
+     "name": "MD. FAHAD AL- HASAN HASIB"
+    },
+    {
+     "sid": "100765",
+     "roll": "794",
+     "name": "MOHAMMAD SAMI"
+    },
+    {
+     "sid": "100776",
+     "roll": "806",
+     "name": "SAZZADUL ISLAM"
+    },
+    {
+     "sid": "100779",
+     "roll": "810",
+     "name": "MD. MAHBUB HASAN"
+    },
+    {
+     "sid": "100780",
+     "roll": "811",
+     "name": "MD. MUSHFIQUR RAHMAN"
+    },
+    {
+     "sid": "100782",
+     "roll": "813",
+     "name": "MD. HASIB ZAMAN"
+    },
+    {
+     "sid": "100786",
+     "roll": "818",
+     "name": "MD. MOUSFIKUR RAHMAN"
+    },
+    {
+     "sid": "100789",
+     "roll": "821",
+     "name": "MD. ABDUR RAHIM CHISTY"
+    },
+    {
+     "sid": "100793",
+     "roll": "825",
+     "name": "MD. SAIMUN MIAJI SAMMIR"
+    },
+    {
+     "sid": "100797",
+     "roll": "831",
+     "name": "JAHADI HASAN SAMIR"
+    },
+    {
+     "sid": "100798",
+     "roll": "832",
+     "name": "MD. JEHAD"
+    },
+    {
+     "sid": "100807",
+     "roll": "844",
+     "name": "MD NOMAAN BHUIYAN RAHEEB"
+    },
+    {
+     "sid": "905338",
+     "roll": "",
+     "name": "MST SALMA AKTER"
+    }
+   ]
+  },
+  {
+   "grade": "Twelve",
+   "section": "H2",
+   "title": "CLASS TWELVE · HUMANITIES · SECTION H-2",
+   "students": [
+    {
+     "sid": "100679",
+     "roll": "702",
+     "name": "SUMIYA AKTHER"
+    },
+    {
+     "sid": "100683",
+     "roll": "707",
+     "name": "MST TAHIDA ISLAM MAISHA"
+    },
+    {
+     "sid": "100684",
+     "roll": "708",
+     "name": "SUMIYA SULTANA"
+    },
+    {
+     "sid": "100685",
+     "roll": "709",
+     "name": "MONIKA YEASMIN OMI"
+    },
+    {
+     "sid": "100686",
+     "roll": "710",
+     "name": "MST TASNIA IBNAT"
+    },
+    {
+     "sid": "100687",
+     "roll": "711",
+     "name": "UMME NUSRAT ALAM"
+    },
+    {
+     "sid": "100688",
+     "roll": "712",
+     "name": "MST TAHMINA AKTER EKRA"
+    },
+    {
+     "sid": "100689",
+     "roll": "714",
+     "name": "VASHWATI CHAKRABORTY"
+    },
+    {
+     "sid": "100690",
+     "roll": "715",
+     "name": "ISRAT JAHAN"
+    },
+    {
+     "sid": "100691",
+     "roll": "716",
+     "name": "MAISHA AKTER"
+    },
+    {
+     "sid": "100692",
+     "roll": "717",
+     "name": "MAIMON NAHAR MAIMONA"
+    },
+    {
+     "sid": "100693",
+     "roll": "718",
+     "name": "MEHBUBA RAHMAN SAYMA"
+    },
+    {
+     "sid": "100695",
+     "roll": "720",
+     "name": "TASNIM BILLA SABIHA"
+    },
+    {
+     "sid": "100696",
+     "roll": "721",
+     "name": "MST SADIA AFRIN"
+    },
+    {
+     "sid": "100698",
+     "roll": "723",
+     "name": "SAMIA ALAM NADIA"
+    },
+    {
+     "sid": "100701",
+     "roll": "726",
+     "name": "KAZI ANIKA"
+    },
+    {
+     "sid": "100706",
+     "roll": "731",
+     "name": "NABIHA THASIN"
+    },
+    {
+     "sid": "100707",
+     "roll": "732",
+     "name": "KHADIZA ISLAM POLY"
+    },
+    {
+     "sid": "100708",
+     "roll": "733",
+     "name": "NAZIA BINTA NUR MIM"
+    },
+    {
+     "sid": "100711",
+     "roll": "736",
+     "name": "MST. ADIBA EKRAM"
+    },
+    {
+     "sid": "100712",
+     "roll": "737",
+     "name": "SAMIHA NAWSIN"
+    },
+    {
+     "sid": "100714",
+     "roll": "739",
+     "name": "SUMAIYA HOSSAIN BUSHRA"
+    },
+    {
+     "sid": "100718",
+     "roll": "743",
+     "name": "ARSHI RAHMAN SARAH"
+    },
+    {
+     "sid": "100720",
+     "roll": "745",
+     "name": "ATIYA SARKAR"
+    },
+    {
+     "sid": "100721",
+     "roll": "746",
+     "name": "JEBA RAISA"
+    },
+    {
+     "sid": "100728",
+     "roll": "753",
+     "name": "SUBARNA"
+    },
+    {
+     "sid": "100738",
+     "roll": "764",
+     "name": "SADIYA AKTER JONAKI"
+    },
+    {
+     "sid": "100744",
+     "roll": "770",
+     "name": "NAWRIN TABASSUM BUSHRA"
+    },
+    {
+     "sid": "100746",
+     "roll": "772",
+     "name": "AFRIN AKTER"
+    },
+    {
+     "sid": "100749",
+     "roll": "777",
+     "name": "SAMIA AKTER TISHA"
+    },
+    {
+     "sid": "100753",
+     "roll": "781",
+     "name": "MD FAHIM SIKDER"
+    },
+    {
+     "sid": "100756",
+     "roll": "785",
+     "name": "NOYON CHANDRA GHOSH"
+    },
+    {
+     "sid": "100758",
+     "roll": "787",
+     "name": "JAHID HASAN"
+    },
+    {
+     "sid": "100762",
+     "roll": "791",
+     "name": "MD SAMIN SARWAR PIAL"
+    },
+    {
+     "sid": "100764",
+     "roll": "793",
+     "name": "MD: RAFIN SARKAR"
+    },
+    {
+     "sid": "100771",
+     "roll": "800",
+     "name": "ABU KAYSER MD. ARAFAT"
+    },
+    {
+     "sid": "100772",
+     "roll": "801",
+     "name": "MD ARIFUL ISLAM SHARKAR"
+    },
+    {
+     "sid": "100774",
+     "roll": "803",
+     "name": "AYMON SAMY"
+    },
+    {
+     "sid": "100777",
+     "roll": "808",
+     "name": "KAZI EMROL KAYES"
+    },
+    {
+     "sid": "100801",
+     "roll": "836",
+     "name": "ARSHI NOOR"
+    },
+    {
+     "sid": "100803",
+     "roll": "838",
+     "name": "ASIB RABI DAS"
+    },
+    {
+     "sid": "100805",
+     "roll": "840",
+     "name": "A. K. M SALMAN KHAN"
+    }
+   ]
+  },
+  {
+   "grade": "Eleven",
+   "section": "H1",
+   "title": "CLASS ELEVEN · HUMANITIES · SECTION H-1",
+   "students": [
+    {
+     "sid": "261339",
+     "roll": "701",
+     "name": "SABRINA MAHAJABIN"
+    },
+    {
+     "sid": "261341",
+     "roll": "801",
+     "name": "MOHAMMED KAMAL HOSSAIN NAFIZ"
+    },
+    {
+     "sid": "261342",
+     "roll": "703",
+     "name": "SABIKA AFRIN MOUMI"
+    },
+    {
+     "sid": "261353",
+     "roll": "707",
+     "name": "MARZIA TAWHID MOON"
+    },
+    {
+     "sid": "261367",
+     "roll": "713",
+     "name": "MAHIMA ISLAM"
+    },
+    {
+     "sid": "261378",
+     "roll": "715",
+     "name": "NUSRAT JAHAN"
+    },
+    {
+     "sid": "261382",
+     "roll": "807",
+     "name": "TAHIAT ISLAM DIHAN"
+    },
+    {
+     "sid": "261398",
+     "roll": "809",
+     "name": "MASHRAFI HOSSAIN MASUD"
+    },
+    {
+     "sid": "261399",
+     "roll": "723",
+     "name": "LAMISA HOSSAIN"
+    },
+    {
+     "sid": "261405",
+     "roll": "727",
+     "name": "DINA ISLAM"
+    },
+    {
+     "sid": "261413",
+     "roll": "729",
+     "name": "SAMIYA ISLAM BIBA"
+    },
+    {
+     "sid": "261428",
+     "roll": "733",
+     "name": "NUSRAT JAHAN"
+    },
+    {
+     "sid": "261442",
+     "roll": "731",
+     "name": "MANSURA AKTER"
+    },
+    {
+     "sid": "261460",
+     "roll": "741",
+     "name": "NANJIBA MEHJABIN"
+    },
+    {
+     "sid": "261479",
+     "roll": "743",
+     "name": "MAHAJABIN AKTER"
+    },
+    {
+     "sid": "261487",
+     "roll": "745",
+     "name": "SAMIYA BILLAL"
+    },
+    {
+     "sid": "261493",
+     "roll": "823",
+     "name": "MD. JAHIDUL ISLAM NAFIZ"
+    },
+    {
+     "sid": "261494",
+     "roll": "747",
+     "name": "RAIFA AFROZ RIPA"
+    },
+    {
+     "sid": "261499",
+     "roll": "748",
+     "name": "MST LAMIA AKTER TISHA"
+    },
+    {
+     "sid": "261501",
+     "roll": "749",
+     "name": "PARTHONA FARDHIN"
+    },
+    {
+     "sid": "261514",
+     "roll": "827",
+     "name": "MD WALID SHEIKH"
+    },
+    {
+     "sid": "261515",
+     "roll": "753",
+     "name": "SUMAIYA AKTER"
+    },
+    {
+     "sid": "261520",
+     "roll": "755",
+     "name": "SAUDA AKTER"
+    },
+    {
+     "sid": "261524",
+     "roll": "757",
+     "name": "TARANNUM BINTE SYED"
+    },
+    {
+     "sid": "261531",
+     "roll": "759",
+     "name": "MAHMUDA AFRIN"
+    },
+    {
+     "sid": "261544",
+     "roll": "763",
+     "name": "TASPIYA JAHAN"
+    },
+    {
+     "sid": "261549",
+     "roll": "765",
+     "name": "ANIKA JAHAN TUSHI"
+    },
+    {
+     "sid": "261551",
+     "roll": "835",
+     "name": "APURBA ADHIKARY"
+    },
+    {
+     "sid": "261571",
+     "roll": "767",
+     "name": "BUSHRA KAMAL"
+    },
+    {
+     "sid": "261573",
+     "roll": "841",
+     "name": "SULTAN ABDUL MOHAIMIN"
+    },
+    {
+     "sid": "261588",
+     "roll": "771",
+     "name": "MARIOM AKTER TANHA"
+    },
+    {
+     "sid": "261590",
+     "roll": "845",
+     "name": "ABDULLAH AL NAHIUN"
+    },
+    {
+     "sid": "261609",
+     "roll": "777",
+     "name": "SUBAITA KARIMA"
+    },
+    {
+     "sid": "261624",
+     "roll": "857",
+     "name": "HASAN ROHANI"
+    }
+   ]
+  },
+  {
+   "grade": "Eleven",
+   "section": "H2",
+   "title": "CLASS ELEVEN · HUMANITIES · SECTION H-2",
+   "students": [
+    {
+     "sid": "261340",
+     "roll": "702",
+     "name": "NAFISA JAHIN"
+    },
+    {
+     "sid": "261355",
+     "roll": "708",
+     "name": "TANJINA JAMAL MANISHA"
+    },
+    {
+     "sid": "261369",
+     "roll": "714",
+     "name": "JANNATUL KOBIR MAIAHA"
+    },
+    {
+     "sid": "261381",
+     "roll": "718",
+     "name": "ASHMITA"
+    },
+    {
+     "sid": "261393",
+     "roll": "720",
+     "name": "TANNIMA ISLAM"
+    },
+    {
+     "sid": "261389",
+     "roll": "722",
+     "name": "MST. IMA BHUIYAN"
+    },
+    {
+     "sid": "261415",
+     "roll": "724",
+     "name": "JANNATUL MAHI"
+    },
+    {
+     "sid": "261402",
+     "roll": "726",
+     "name": "SUMAIYA AKTER"
+    },
+    {
+     "sid": "261411",
+     "roll": "728",
+     "name": "MAHFUJA SIDDIKA MASHFI"
+    },
+    {
+     "sid": "261451",
+     "roll": "738",
+     "name": "IFTIAJ JAHAN MAHI"
+    },
+    {
+     "sid": "261467",
+     "roll": "740",
+     "name": "SADIKA JAHAN DINA"
+    },
+    {
+     "sid": "261470",
+     "roll": "742",
+     "name": "SANJIDA ISLAM"
+    },
+    {
+     "sid": "261491",
+     "roll": "746",
+     "name": "JAMILA AKTER SOUROVI"
+    },
+    {
+     "sid": "261505",
+     "roll": "750",
+     "name": "MRIDULA MAHJABIN"
+    },
+    {
+     "sid": "261512",
+     "roll": "752",
+     "name": "SUBHA ALAM"
+    },
+    {
+     "sid": "261517",
+     "roll": "754",
+     "name": "MST. SAMIYA AKTER"
+    },
+    {
+     "sid": "261522",
+     "roll": "756",
+     "name": "SHAILA FAHMIDA"
+    },
+    {
+     "sid": "261527",
+     "roll": "758",
+     "name": "TAQUA TAJNIN"
+    },
+    {
+     "sid": "261532",
+     "roll": "760",
+     "name": "FARIA ALAM JESIN"
+    },
+    {
+     "sid": "261534",
+     "roll": "762",
+     "name": "MOSFIKA MAHJABIN"
+    },
+    {
+     "sid": "261566",
+     "roll": "764",
+     "name": "SUMIYA AKTER"
+    },
+    {
+     "sid": "261553",
+     "roll": "766",
+     "name": "SAMIYA AHMED"
+    },
+    {
+     "sid": "261589",
+     "roll": "772",
+     "name": "ALFI SAHRIN"
+    },
+    {
+     "sid": "261605",
+     "roll": "776",
+     "name": "NAHIDA AKTER NILA"
+    },
+    {
+     "sid": "261344",
+     "roll": "802",
+     "name": "MD. MUHTASIM MUIN CHOWDHURY"
+    },
+    {
+     "sid": "261358",
+     "roll": "804",
+     "name": "MD. RIYAD ADNAN APU"
+    },
+    {
+     "sid": "261370",
+     "roll": "806",
+     "name": "RAFIUL AWAL CHOWDHURY"
+    },
+    {
+     "sid": "261439",
+     "roll": "813",
+     "name": "MOHAININ HOSSAIN"
+    },
+    {
+     "sid": "261447",
+     "roll": "814",
+     "name": "RAHIDUL ISLAM RATUL"
+    },
+    {
+     "sid": "261486",
+     "roll": "822",
+     "name": "KAZI HASIBUL HASAN"
+    },
+    {
+     "sid": "261518",
+     "roll": "828",
+     "name": "SHAKIBUL HASAN NILOY"
+    },
+    {
+     "sid": "261528",
+     "roll": "830",
+     "name": "MD. SAMIR KHAN"
+    },
+    {
+     "sid": "261547",
+     "roll": "834",
+     "name": "MOHIBUR RAHMAN MAHI"
+    },
+    {
+     "sid": "261554",
+     "roll": "836",
+     "name": "SAKIBUL HASAN"
+    },
+    {
+     "sid": "261561",
+     "roll": "838",
+     "name": "MD. IBRAHIM HOSEN EFAD"
+    },
+    {
+     "sid": "261595",
+     "roll": "846",
+     "name": "NAFIZ HASAN"
+    },
+    {
+     "sid": "261599",
+     "roll": "848",
+     "name": "MD. RAGIB ISRAQ"
+    },
+    {
+     "sid": "261640",
+     "roll": "859",
+     "name": "MD. NURUZZAMAN"
+    }
+   ]
+  }
+ ]
+}
