@@ -1141,13 +1141,15 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .glance-grid thead th small { display: block; font-size: .62rem; font-weight: 500; color: var(--text-3); white-space: nowrap; letter-spacing: -.2px; }
 .glance-grid .g-day { width: 34px; font-size: .8rem; color: var(--text); text-align: left; padding-left: 2px; }
 .glance-grid tr.is-holiday .g-day { color: var(--error); }
-.glance-grid td { padding: 0; height: 52px; vertical-align: middle; }
+.glance-grid td { padding: 0; height: var(--gh, 70px); vertical-align: middle; }
+.glance-total { text-align: center; margin: 10px 0 4px; font-weight: 600; font-size: .9rem; color: var(--text-2); }
 .glance-grid td.g-empty { background: color-mix(in srgb, var(--text-3) 7%, transparent); border-radius: 8px; }
 .glance-grid td.g-off { text-align: center; font-size: .78rem; color: var(--error); background: color-mix(in srgb, var(--error) 8%, transparent); border-radius: 8px; height: 30px; }
-.g-cell { width: 100%; height: 100%; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px 1px !important; border-radius: 8px !important; overflow: hidden; }
+.g-cell { width: 100%; height: 100%; min-height: var(--gh, 70px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px 1px !important; border-radius: 8px !important; overflow: hidden; }
 .g-cell + .g-cell { margin-top: 3px; }
-.g-cell b { font-size: .7rem !important; line-height: 1.15; white-space: nowrap; letter-spacing: -.2px; }
-.g-cell span { font-size: .68rem !important; line-height: 1.15; white-space: nowrap; color: var(--text) !important; font-weight: 600; }
+.g-cell b { font-size: .76rem !important; line-height: 1.25; white-space: nowrap; letter-spacing: -.2px; }
+.g-cell span { font-size: .74rem !important; line-height: 1.25; white-space: nowrap; color: var(--text) !important; font-weight: 600; max-width: 100%; overflow: hidden; }
+.g-cell.en span:nth-of-type(1) { font-size: .64rem !important; letter-spacing: -.3px; }
 .g-cell i { font-style: normal; font-size: .58rem; color: var(--text-2); white-space: nowrap; overflow: hidden; max-width: 100%; }
 .g-cell { border-left-width: 3px !important; text-align: center; }
 

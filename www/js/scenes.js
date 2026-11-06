@@ -77,8 +77,12 @@
     }
     return '<g transform="translate(' + x + ' ' + y + ') scale(' + s + ')">' +
       '<ellipse cx="6" cy="1" rx="24" ry="3.5" fill="rgba(120,80,30,.18)"/>' +
-      '<path d="M8 -2 l18 0 l5 -7" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '<path d="M10 -2 v3 M24 -2 v3" stroke="#B9A07A" stroke-width="1.6"/>' +
+      // শোবার চেয়ার পেছন থেকে দেখা: হেলান দেওয়ার দিকটা আমাদের দিকে, পা রাখার দিকটা সমুদ্রের দিকে
+      '<path d="M8 -13 L19 -13 L21 -6 L6 -6 Z" fill="#FFFFFF" stroke="#D6D3CE" stroke-width=".6"/>' +
+      '<path d="M7.5 -9.5 L19.5 -9.5" stroke="#D6D3CE" stroke-width=".6"/>' +
+      '<path d="M6 -1 v3.5 M21 -1 v3.5" stroke="#8C7A5E" stroke-width="1.4" stroke-linecap="round"/>' +
+      '<path d="M6.5 -8 L20.5 -8 L22 0 L5 0 Z" fill="' + c1 + '" stroke="#FFFFFF" stroke-width=".8"/>' +
+      '<path d="M9.5 -7.5 L9 -.5 M13.5 -7.5 L13.5 -.5 M17.5 -7.5 L18 -.5" stroke="#FFFFFF" stroke-width=".9" opacity=".85"/>' +
       '<g class="sc-umb" style="animation-delay:' + delay + 's">' +
       '<line x1="0" y1="0" x2="0" y2="' + (top + 2) + '" stroke="#8B5E34" stroke-width="2"/>' +
       canopy + '<circle cx="0" cy="' + top + '" r="1.8" fill="#8B5E34"/></g></g>';

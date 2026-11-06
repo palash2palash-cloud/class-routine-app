@@ -874,6 +874,7 @@
     }
     if (S.settings.weekMode === 'glance') {
       body.innerHTML = weekGlanceHtml(q);
+      fitGlance();
       return;
     }
     let html = '';
@@ -985,9 +986,39 @@
     if (I.getLang() === 'bn') return g;
     return g.split(/\s+/).map(function (w) { return ROMAN[w.toLowerCase()] || w; }).join(' ');
   }
-  function shortSection(c) {
-    return L(c.section).replace(/মানবিক/g, 'মা').replace(/বিজ্ঞান/g, 'বি').replace(/ব্যবসায়/g, 'ব্য');
+  // শাখা দুই ভাগে: বিভাগ (মানবিক / Arts) আর নম্বর (১ / 1)
+  const GROUP_EN = { h: 'Arts', s: 'Science', b: 'Business', c: 'Business' };
+  function sectionParts(c) {
+    const txt = L(c.section).trim();
+    if (I.getLang() === 'bn') {
+      const m = /^(.*?)\s*-\s*([0-9০-৯]{1,2})$/.exec(txt);
+      return m ? [m[1], m[2]] : [txt, ''];
+    }
+    const m = /^([HSBC])\s*-?\s*(\d{1,2})$/i.exec(txt);
+    if (m) return [GROUP_EN[m[1].toLowerCase()], m[2]];
+    const m2 = /^(.*?)\s*-\s*(\d{1,2})$/.exec(txt);
+    return m2 ? [m2[1], m2[2]] : [txt, ''];
   }
+
+
+  // এক নজরের রুটিন নিচের নেভিগেশন পর্যন্ত পুরো জায়গা জুড়ে বসে
+  function fitGlance() {
+    const box = $('.glance');
+    if (!box) return;
+    const nav = $('#bottomNav');
+    const bottom = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+    const top = box.getBoundingClientRect().top;
+    const head = box.querySelector('thead').offsetHeight;
+    const total = box.querySelector('.glance-total').offsetHeight;
+    const rows = $$('.glance-grid tbody tr', box);
+    const off = rows.filter(function (r) { return !!r.querySelector('.g-off'); }).length;
+    const work = rows.length - off;
+    if (!work) return;
+    const avail = bottom - top - head - total - 34 - off * 34 - rows.length * 4;
+    const h = Math.max(64, Math.min(130, Math.floor(avail / work)));
+    box.style.setProperty('--gh', h + 'px');
+  }
+  window.addEventListener('resize', function () { if (state.view === 'week') fitGlance(); });
 
   function weekGlanceHtml(q) {
     const rows = S.DAYS.map(function (d) {
@@ -1015,14 +1046,14 @@
         const here = r.list.filter(function (c) { return c.start === sl.start; });
         if (!here.length) { html += '<td class="g-empty"></td>'; return; }
         html += '<td>' + here.map(function (c) {
-          return '<button type="button" class="grid-cell g-cell" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + '">' +
+          return '<button type="button" class="grid-cell g-cell' + (I.getLang() === 'bn' ? '' : ' en') + '" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + '">' +
             (manySubjects ? '<i>' + esc((L(c.subject) || '').slice(0, 6)) + '</i>' : '') +
-            '<b>' + esc(shortGrade(c)) + '</b><span>' + esc(shortSection(c)) + '</span></button>';
+            '<b>' + esc(shortGrade(c)) + '</b>' + sectionParts(c).filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</button>';
         }).join('') + '</td>';
       });
       html += '</tr>';
     });
-    html += '</tbody></table></div><p class="hint">' + esc(t('week.glanceHint', { n: total })) + '</p>';
+    html += '</tbody></table><p class="glance-total">' + esc(t('week.glanceTotal', { n: I.num(total) })) + '</p></div>';
     return html;
   }
 
