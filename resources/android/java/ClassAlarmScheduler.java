@@ -27,7 +27,10 @@ import org.json.JSONObject;
  */
 public class ClassAlarmScheduler {
 
+    // আগের সংস্করণের channel; নিজের বাছাই করা শব্দ হলে channel id বদলায় (channel তৈরি হলে শব্দ আর বদলানো যায় না)
     public static final String CHANNEL_ID = "class-alarm-v2";
+    static final String KEY_SOUND = "sound_uri";
+    static final String KEY_SOUND_TITLE = "sound_title";
     // ক্যালেন্ডারের দিনের কাজ: শব্দ ছাড়া, সারাদিন নোটিফিকেশন বারে থাকে
     public static final String PIN_CHANNEL_ID = "day-tasks-v1";
     static final int PIN_BASE = 70000;
@@ -60,9 +63,15 @@ public class ClassAlarmScheduler {
             pin.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             nm.createNotificationChannel(pin);
         }
-        if (nm.getNotificationChannel(CHANNEL_ID) != null) return;
+        String cid = channelId(ctx);
+        // শব্দ বদলালে পুরোনো রিমাইন্ডার channel গুলো সরিয়ে ফেলা
+        for (NotificationChannel old : nm.getNotificationChannels()) {
+            String id = old.getId();
+            if (id.startsWith("class-alarm-") && !id.equals(cid)) nm.deleteNotificationChannel(id);
+        }
+        if (nm.getNotificationChannel(cid) != null) return;
         NotificationChannel channel = new NotificationChannel(
-            CHANNEL_ID,
+            cid,
             "ক্লাস রিমাইন্ডার / Class reminders",
             NotificationManager.IMPORTANCE_HIGH
         );
@@ -73,13 +82,39 @@ public class ClassAlarmScheduler {
         channel.setLightColor(Color.BLUE);
         channel.setBypassDnd(true);
         channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        Uri sound = Uri.parse("android.resource://" + ctx.getPackageName() + "/raw/class_beep");
+        Uri sound = soundUri(ctx);
         AudioAttributes attrs = new AudioAttributes.Builder()
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .setUsage(AudioAttributes.USAGE_ALARM)
             .build();
         channel.setSound(sound, attrs);
         nm.createNotificationChannel(channel);
+    }
+
+    /* ব্যবহারকারীর বাছাই করা শব্দ (ফোনের নিজের রিংটোন/নোটিফিকেশন টোন); ফাঁকা থাকলে অ্যাপের বিপ */
+    public static String savedSound(Context ctx) {
+        return prefs(ctx).getString(KEY_SOUND, "");
+    }
+
+    public static String savedSoundTitle(Context ctx) {
+        return prefs(ctx).getString(KEY_SOUND_TITLE, "");
+    }
+
+    public static Uri soundUri(Context ctx) {
+        String u = savedSound(ctx);
+        if (u != null && !u.isEmpty()) return Uri.parse(u);
+        return Uri.parse("android.resource://" + ctx.getPackageName() + "/raw/class_beep");
+    }
+
+    public static String channelId(Context ctx) {
+        String u = savedSound(ctx);
+        if (u == null || u.isEmpty()) return CHANNEL_ID;
+        return "class-alarm-s" + Integer.toHexString(u.hashCode());
+    }
+
+    public static void setSound(Context ctx, String uri, String title) {
+        prefs(ctx).edit().putString(KEY_SOUND, uri == null ? "" : uri).putString(KEY_SOUND_TITLE, title == null ? "" : title).apply();
+        ensureChannel(ctx);
     }
 
     static SharedPreferences prefs(Context ctx) {
@@ -274,7 +309,7 @@ public class ClassAlarmScheduler {
 
     public static void show(Context ctx, int id, String title, String body, String color) {
         ensureChannel(ctx);
-        NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL_ID)
+        NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, channelId(ctx))
             .setSmallIcon(R.drawable.ic_stat_class)
             .setContentTitle(title)
             .setContentText(body)
@@ -289,7 +324,7 @@ public class ClassAlarmScheduler {
             .setContentIntent(openAppPending(ctx));
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             // পুরোনো Android-এ channel নেই, তাই সরাসরি শব্দ দেওয়া
-            b.setSound(Uri.parse("android.resource://" + ctx.getPackageName() + "/raw/class_beep"), android.media.AudioManager.STREAM_ALARM);
+            b.setSound(soundUri(ctx), android.media.AudioManager.STREAM_ALARM);
             b.setVibrate(new long[] { 0, 600, 250, 600, 250, 600 });
         }
         try {

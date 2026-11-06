@@ -3,6 +3,12 @@ package com.palash.classroutine;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import androidx.activity.result.ActivityResult;
+import com.getcapacitor.annotation.ActivityCallback;
 import android.os.Build;
 import androidx.core.app.NotificationManagerCompat;
 import com.getcapacitor.JSArray;
@@ -60,6 +66,69 @@ public class ClassAlarmPlugin extends Plugin {
         call.resolve(status(ctx));
     }
 
+    /* ফোনের নিজের শব্দের তালিকা খুলে একটা বাছাই করা (Android-এর রিংটোন পিকার) */
+    @PluginMethod
+    public void pickSound(PluginCall call) {
+        Intent i = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
+        i.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL);
+        i.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, call.getString("title", "Reminder sound"));
+        i.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false);
+        i.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false);
+        String cur = ClassAlarmScheduler.savedSound(getContext());
+        if (cur != null && !cur.isEmpty()) i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(cur));
+        startActivityForResult(call, i, "onSoundPicked");
+    }
+
+    @ActivityCallback
+    private void onSoundPicked(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        Context ctx = getContext();
+        Intent data = result.getData();
+        Uri uri = data != null ? data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI) : null;
+        if (result.getResultCode() != android.app.Activity.RESULT_OK || uri == null) {
+            JSObject r = soundInfo(ctx);
+            r.put("cancelled", true);
+            call.resolve(r);
+            return;
+        }
+        String title = "";
+        try {
+            Ringtone rt = RingtoneManager.getRingtone(ctx, uri);
+            if (rt != null) title = rt.getTitle(ctx);
+        } catch (Exception ignored) {}
+        ClassAlarmScheduler.setSound(ctx, uri.toString(), title);
+        call.resolve(soundInfo(ctx));
+    }
+
+    /* অ্যাপের নিজের বিপে ফিরে যাওয়া */
+    @PluginMethod
+    public void resetSound(PluginCall call) {
+        ClassAlarmScheduler.setSound(getContext(), "", "");
+        call.resolve(soundInfo(getContext()));
+    }
+
+    @PluginMethod
+    public void getSound(PluginCall call) {
+        call.resolve(soundInfo(getContext()));
+    }
+
+    /* বাছাই করা শব্দ একবার বাজিয়ে শোনানো */
+    @PluginMethod
+    public void previewSound(PluginCall call) {
+        try {
+            Ringtone rt = RingtoneManager.getRingtone(getContext(), ClassAlarmScheduler.soundUri(getContext()));
+            if (rt != null) rt.play();
+        } catch (Exception ignored) {}
+        call.resolve();
+    }
+
+    private JSObject soundInfo(Context ctx) {
+        JSObject r = new JSObject();
+        r.put("uri", ClassAlarmScheduler.savedSound(ctx));
+        r.put("title", ClassAlarmScheduler.savedSoundTitle(ctx));
+        return r;
+    }
+
     @PluginMethod
     public void status(PluginCall call) {
         call.resolve(status(getContext()));
@@ -74,7 +143,7 @@ public class ClassAlarmPlugin extends Plugin {
         int importance = -1;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager nm = ctx.getSystemService(NotificationManager.class);
-            NotificationChannel ch = nm != null ? nm.getNotificationChannel(ClassAlarmScheduler.CHANNEL_ID) : null;
+            NotificationChannel ch = nm != null ? nm.getNotificationChannel(ClassAlarmScheduler.channelId(ctx)) : null;
             if (ch != null) importance = ch.getImportance();
         }
         r.put("channelImportance", importance);

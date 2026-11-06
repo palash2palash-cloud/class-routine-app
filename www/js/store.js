@@ -46,7 +46,7 @@
   }
 
   function emptyData() {
-    return { version: 1, classes: [], settings: Object.assign({}, DEFAULT_SETTINGS), prepNotes: {}, events: [] };
+    return { version: 1, classes: [], settings: Object.assign({}, DEFAULT_SETTINGS), prepNotes: {}, events: [], students: {}, attendance: {} };
   }
 
   function isTime(s) {
@@ -187,13 +187,148 @@
     return save();
   }
 
+  /* ---------- শিক্ষার্থী ও হাজিরা ----------
+     students: { শ্রেণি-শাখার key: [{ id, sid (আইডি), roll, name }] }
+     attendance: { "তারিখ|ক্লাসের id": { date, classId, group, subject, start, end, marks: { শিক্ষার্থীর id: 'P' | 'A' | 'L' } } } */
+  const MARKS = ['P', 'A', 'L'];
+
+  function cleanStudent(x) {
+    if (!x || typeof x !== 'object') return null;
+    const name = cleanText(x.name, 80);
+    const roll = cleanText(x.roll, 20);
+    const sid = cleanText(x.sid, 30);
+    if (!name && !roll && !sid) return null;
+    return { id: typeof x.id === 'string' && x.id ? x.id.slice(0, 40) : uid(), sid: sid, roll: roll, name: name };
+  }
+
+  function cleanStudents(src) {
+    const out = {};
+    if (!src || typeof src !== 'object') return out;
+    Object.keys(src).slice(0, 200).forEach(function (k) {
+      if (!Array.isArray(src[k])) return;
+      const list = src[k].map(cleanStudent).filter(Boolean).slice(0, 500);
+      if (list.length) out[String(k).slice(0, 120)] = list;
+    });
+    return out;
+  }
+
+  function cleanAttendance(src) {
+    const out = {};
+    if (!src || typeof src !== 'object') return out;
+    Object.keys(src).slice(0, 20000).forEach(function (k) {
+      const r = src[k];
+      if (!r || typeof r !== 'object' || !/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return;
+      const marks = {};
+      if (r.marks && typeof r.marks === 'object') {
+        Object.keys(r.marks).forEach(function (sid) { if (MARKS.indexOf(r.marks[sid]) !== -1) marks[String(sid).slice(0, 40)] = r.marks[sid]; });
+      }
+      out[String(k).slice(0, 80)] = {
+        date: r.date, classId: String(r.classId || '').slice(0, 40), group: String(r.group || '').slice(0, 120),
+        subject: cleanText(r.subject, 60), start: isTime(r.start) ? r.start : '', end: isTime(r.end) ? r.end : '', marks: marks
+      };
+    });
+    return out;
+  }
+
+  function rollNum(s) {
+    const n = parseInt(String(s || '').replace(/[০-৯]/g, function (d) { return '০১২৩৪৫৬৭৮৯'.indexOf(d); }), 10);
+    return isNaN(n) ? 1e9 : n;
+  }
+
+  function studentsOf(group) {
+    const list = (data.students && data.students[group]) || [];
+    return list.slice().sort(function (a, b) { return rollNum(a.roll) - rollNum(b.roll) || String(a.roll).localeCompare(String(b.roll)) || a.name.localeCompare(b.name); });
+  }
+
+  function saveStudent(group, st) {
+    const clean = cleanStudent(st);
+    if (!clean) return false;
+    if (!data.students) data.students = {};
+    const list = data.students[group] || (data.students[group] = []);
+    const i = list.findIndex(function (x) { return x.id === clean.id; });
+    if (i === -1) list.push(clean); else list[i] = clean;
+    return save();
+  }
+
+  function addStudents(group, arr) {
+    if (!data.students) data.students = {};
+    const list = data.students[group] || (data.students[group] = []);
+    let n = 0;
+    arr.forEach(function (x) { const c = cleanStudent(x); if (c && list.length < 500) { list.push(c); n++; } });
+    return save() ? n : -1;
+  }
+
+  function deleteStudent(group, id) {
+    if (!data.students || !data.students[group]) return false;
+    data.students[group] = data.students[group].filter(function (x) { return x.id !== id; });
+    return save();
+  }
+
+  function attKey(iso, classId) { return iso + '|' + classId; }
+
+  function getAttendance(iso, classId) {
+    return (data.attendance && data.attendance[attKey(iso, classId)]) || null;
+  }
+
+  // ক্লাসের দিনের হাজিরা খোলা: না থাকলে নতুন (সবাই উপস্থিত ধরে) তৈরি হয়
+  function openAttendance(iso, c) {
+    if (!data.attendance) data.attendance = {};
+    const key = attKey(iso, c.id);
+    let r = data.attendance[key];
+    const group = sectionKey(c);
+    if (!r) {
+      r = data.attendance[key] = { date: iso, classId: c.id, group: group, subject: c.subject || '', start: c.start, end: c.end, marks: {} };
+    }
+    studentsOf(group).forEach(function (st) { if (!r.marks[st.id]) r.marks[st.id] = 'P'; });
+    save();
+    return r;
+  }
+
+  function setMark(iso, classId, studentId, mark) {
+    const r = getAttendance(iso, classId);
+    if (!r || MARKS.indexOf(mark) === -1) return false;
+    r.marks[studentId] = mark;
+    return save();
+  }
+
+  function setAllMarks(iso, classId, mark) {
+    const r = getAttendance(iso, classId);
+    if (!r) return false;
+    studentsOf(r.group).forEach(function (st) { r.marks[st.id] = mark; });
+    return save();
+  }
+
+  // একটা শ্রেণি-শাখার নির্দিষ্ট মাসের সব হাজিরা (তারিখ ও সময় অনুযায়ী সাজানো)
+  function attendanceFor(group, monthPrefix) {
+    const out = [];
+    Object.keys(data.attendance || {}).forEach(function (k) {
+      const r = data.attendance[k];
+      if (r.group === group && (!monthPrefix || r.date.indexOf(monthPrefix) === 0)) out.push(r);
+    });
+    return out.sort(function (a, b) { return a.date.localeCompare(b.date) || String(a.start).localeCompare(String(b.start)); });
+  }
+
+  // রুটিনে যত আলাদা শ্রেণি-শাখা আছে
+  function classGroups() {
+    const seen = {};
+    const out = [];
+    data.classes.forEach(function (c) {
+      const k = sectionKey(c);
+      if (!k || seen[k]) return;
+      seen[k] = 1;
+      out.push({ key: k, sample: c });
+    });
+    Object.keys(data.students || {}).forEach(function (k) { if (!seen[k]) { seen[k] = 1; out.push({ key: k, sample: null }); } });
+    return out;
+  }
+
   // বাইরের (backup) ডেটা যাচাই করে পরিষ্কার করা। ভুল হলে null দেয়।
   function sanitize(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const src = raw.data && raw.data.classes ? raw.data : raw;
     if (!Array.isArray(src.classes)) return null;
     const classes = src.classes.map(cleanClass).filter(Boolean);
-    return { version: 1, classes: classes, settings: cleanSettings(src.settings), prepNotes: cleanNotes(src.prepNotes), events: cleanEvents(src.events) };
+    return { version: 1, classes: classes, settings: cleanSettings(src.settings), prepNotes: cleanNotes(src.prepNotes), events: cleanEvents(src.events), students: cleanStudents(src.students), attendance: cleanAttendance(src.attendance) };
   }
 
   function load() {
@@ -539,9 +674,13 @@
   function clearAll() {
     const keepSettings = data.settings;
     const keepEvents = data.events;
+    const keepStudents = data.students;
+    const keepAtt = data.attendance;
     data = emptyData();
     data.settings = keepSettings;
     data.events = keepEvents;
+    data.students = keepStudents || {};
+    data.attendance = keepAtt || {};
     save();
   }
 
@@ -579,6 +718,16 @@
     toggleEventDone: toggleEventDone,
     parseIso: parseIso,
     get events() { return data.events || []; },
+    studentsOf: studentsOf,
+    saveStudent: saveStudent,
+    addStudents: addStudents,
+    deleteStudent: deleteStudent,
+    getAttendance: getAttendance,
+    openAttendance: openAttendance,
+    setMark: setMark,
+    setAllMarks: setAllMarks,
+    attendanceFor: attendanceFor,
+    classGroups: classGroups,
     periods: periods,
     mergedSlots: mergedSlots,
     setPeriods: setPeriods,

@@ -256,7 +256,23 @@
     await reschedule();
   }
 
+  // রিমাইন্ডারের শব্দ: ফোনের নিজের শব্দ বাছাই / অ্যাপের বিপে ফেরা / শুনে দেখা
+  async function sound(action, title) {
+    const al = AL();
+    if (!al) return null;
+    try {
+      if (action === 'pick') return await al.pickSound({ title: title || '' });
+      if (action === 'reset') return await al.resetSound();
+      if (action === 'preview') { await al.previewSound(); return null; }
+      return await al.getSound();
+    } catch (e) {
+      console.warn('sound', e);
+      return null;
+    }
+  }
+
   window.Notify = {
+    sound: sound,
     isNative: isNative,
     init: init,
     createChannel: createChannel,

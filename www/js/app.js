@@ -324,6 +324,7 @@
       (c.note ? '<p class="card-note">' + ICON.note + '<span>' + esc(L(c.note)) + '</span></p>' : '') +
       (opts.live && S.getNote(S.sectionKey(c)) ? '<p class="card-prep">' + ICON.edit + '<span><b>' + esc(t('prep.cardLabel')) + '</b> ' + esc(S.getNote(S.sectionKey(c))) + '</span></p>' : '') +
       (opts.live ? '<div class="card-progress" hidden><span></span></div>' : '') +
+      (opts.live ? attButtonHtml(c) : '') +
       '</div>' +
       (opts.drag ? '<button type="button" class="drag-handle" aria-label="' + esc(t('week.drag')) + '">' + ICON.drag + '</button>' : '') +
       '</article>';
@@ -1055,6 +1056,299 @@
     });
     html += '</tbody></table><p class="glance-total">' + esc(t('week.glanceTotal', { n: I.num(total) })) + '</p></div>';
     return html;
+  }
+
+  /* ---------------- হাজিরা ----------------
+     লাইভ ক্লাসের কার্ডে "হাজিরা নিন" বোতাম। ক্লাস শেষ হলে খোলা হাজিরার পাতা নিজে থেকে বন্ধ হয়।
+     শিক্ষার্থীর তালিকা শ্রেণি-শাখা অনুযায়ী (যেমন দ্বাদশ মানবিক-২ এর সব ক্লাসে একই তালিকা)। */
+
+  function groupLabel(key) {
+    const g = S.classGroups().filter(function (x) { return x.key === key; })[0];
+    return g && g.sample ? classSec(g.sample) : key;
+  }
+
+  function attCounts(rec) {
+    const out = { P: 0, A: 0, L: 0 };
+    if (!rec) return out;
+    S.studentsOf(rec.group).forEach(function (st) { const m = rec.marks[st.id]; if (out[m] !== undefined) out[m]++; });
+    return out;
+  }
+
+  function attButtonHtml(c) {
+    const rec = S.getAttendance(S.isoDate(new Date()), c.id);
+    const n = attCounts(rec);
+    const taken = rec && S.studentsOf(rec.group).length;
+    return '<button type="button" class="att-btn" data-action="attendance" data-id="' + esc(c.id) + '">' +
+      '<span class="att-btn-ic">' + ICON.check + '</span>' +
+      '<span class="att-btn-tx"><b>' + esc(taken ? t('att.btnTaken') : t('att.btn')) + '</b><small>' + esc(taken ? t('att.btnSub', { p: I.num(n.P + n.L), n: I.num(n.P + n.A + n.L) }) : t('att.btnHint')) + '</small></span>' +
+      (taken ? '<span class="att-btn-ct"><i class="p">' + I.num(n.P) + '</i><i class="a">' + I.num(n.A) + '</i><i class="l">' + I.num(n.L) + '</i></span>' : '<span class="att-btn-go">›</span>') + '</button>';
+  }
+
+  function isLiveNow(c) {
+    const info = todayInfo();
+    if (info.holiday && !info.classes.length) return false;
+    const m = nowMin();
+    return info.classes.some(function (x) { return x.id === c.id; }) && S.toMin(c.start) <= m && m < S.toMin(c.end);
+  }
+
+  function monthLabel(ym) {
+    const p = ym.split('-');
+    const months = t('months');
+    return (Array.isArray(months) ? months[+p[1] - 1] : p[1]) + ' ' + I.num(p[0]);
+  }
+
+  // উপরের হিসাব: উপস্থিত, অনুপস্থিত, দেরি, আর উপস্থিতির হার
+  function statsHtml(n, total) {
+    const pct = total ? Math.round((n.P + n.L) * 100 / total) : 0;
+    return '<div class="att-stats">' +
+      '<div class="st p"><b>' + I.num(n.P) + '</b><span>' + esc(t('att.markP')) + '</span></div>' +
+      '<div class="st a"><b>' + I.num(n.A) + '</b><span>' + esc(t('att.markA')) + '</span></div>' +
+      '<div class="st l"><b>' + I.num(n.L) + '</b><span>' + esc(t('att.markL')) + '</span></div>' +
+      '<div class="st t"><b>' + I.num(pct) + '%</b><span>' + esc(t('att.total', { n: I.num(total) })) + '</span></div>' +
+      '<div class="att-bar"><i class="p" style="width:' + (total ? n.P * 100 / total : 0) + '%"></i><i class="l" style="width:' + (total ? n.L * 100 / total : 0) + '%"></i><i class="a" style="width:' + (total ? n.A * 100 / total : 0) + '%"></i></div></div>';
+  }
+
+  function studentRowsHtml(group, rec) {
+    const list = S.studentsOf(group);
+    if (!list.length) return '<p class="att-empty">' + esc(t('att.noStudents')) + '</p>';
+    return list.map(function (st) {
+      const m = rec ? rec.marks[st.id] || '' : '';
+      return '<div class="att-row" data-sid="' + esc(st.id) + '">' +
+        '<span class="att-roll">' + esc(I.num(st.roll || '–')) + '</span>' +
+        '<button type="button" class="att-name" data-edit="' + esc(st.id) + '"><b>' + esc(st.name || '–') + '</b>' +
+        (st.sid ? '<small>' + esc(t('att.colId')) + ': ' + esc(I.num(st.sid)) + '</small>' : '') + '</button>' +
+        (rec ? '<div class="att-marks">' + ['P', 'A', 'L'].map(function (k) {
+          return '<button type="button" class="m-' + k.toLowerCase() + (m === k ? ' on' : '') + '" data-mark="' + k + '" aria-label="' + esc(t('att.mark' + k)) + '">' + k + '</button>';
+        }).join('') + '</div>' : '<span class="att-edit-ic">' + ICON.edit + '</span>') +
+        '</div>';
+    }).join('');
+  }
+
+  function exportRowHtml(ym) {
+    return '<div class="att-export"><div class="att-export-head"><span>' + esc(t('att.register')) + '</span>' +
+      '<div class="att-month"><button type="button" data-att="prevMonth" aria-label="‹">‹</button><b>' + esc(monthLabel(ym)) + '</b><button type="button" data-att="nextMonth" aria-label="›">›</button></div></div>' +
+      '<div class="att-export-btns"><button type="button" class="xl" data-att="xlsx"><i>XLS</i><span>' + esc(t('att.excel')) + '</span></button>' +
+      '<button type="button" class="pd" data-att="pdf"><i>PDF</i><span>' + esc(t('att.pdf')) + '</span></button></div></div>';
+  }
+
+  function shiftYm(ym, d) {
+    const p = ym.split('-');
+    const dt = new Date(+p[0], +p[1] - 1 + d, 1);
+    return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
+  }
+
+  async function exportAttendance(group, ym, kind) {
+    const recs = S.attendanceFor(group, ym);
+    if (!S.studentsOf(group).length) { toast(t('att.noStudentsShort')); return; }
+    if (!recs.length) { toast(t('att.noRecords', { month: monthLabel(ym) })); return; }
+    const sample = S.classGroups().filter(function (x) { return x.key === group; })[0];
+    const info = { group: group, label: groupLabel(group), subject: sample && sample.sample ? L(sample.sample.subject) : '', month: ym, monthLabel: monthLabel(ym) };
+    await runExport(function () { return kind === 'xlsx' ? E.saveAttendanceXlsx(info) : E.saveAttendancePdf(info); }, t('att.sheetTitle'));
+  }
+
+  // হাজিরার পাতা (লাইভ ক্লাস থেকে)
+  function openAttendanceSheet(classId) {
+    const c = S.getClass(classId);
+    if (!c) return;
+    if (!isLiveNow(c)) { toast(t('att.notLive')); return; }
+    const iso = S.isoDate(new Date());
+    const group = S.sectionKey(c);
+    let ym = iso.slice(0, 7);
+    S.openAttendance(iso, c);
+    const entry = openOverlay('sheet', '<div class="att-sheet"></div>', function () { state.att = null; if (state.view === 'today') renderToday(); });
+    entry.el.classList.add('overlay-att');
+    state.att = { entry: entry, classId: c.id, iso: iso };
+    const box = $('.att-sheet', entry.el);
+    function draw() {
+      const rec = S.getAttendance(iso, c.id) || S.openAttendance(iso, c);
+      const n = attCounts(rec);
+      const total = S.studentsOf(group).length;
+      const sc = box.querySelector('.att-list') ? box.querySelector('.att-list').scrollTop : 0;
+      box.innerHTML = '<div class="sheet-handle"></div>' +
+        '<div class="att-hero" style="' + colorVars(c.color) + '">' +
+        '<div class="att-hero-top"><span class="att-live"><i></i>' + esc(t('today.now')) + '</span><span class="att-date">' + esc(I.formatDate ? I.formatDate(new Date()) : iso) + '</span></div>' +
+        '<h2>' + esc(classSec(c) || L(c.subject)) + '</h2>' +
+        '<p>' + esc([L(c.subject), fmtTime(c.start) + ' – ' + fmtTime(c.end), c.room ? t('card.room') + ' ' + L(c.room) : ''].filter(Boolean).join('  ·  ')) + '</p></div>' +
+        statsHtml(n, total) +
+        '<div class="att-tools">' +
+        (total ? '<button type="button" class="att-tool" data-att="allP">' + ICON.check + '<span>' + esc(t('att.allP')) + '</span></button>' : '') +
+        '<button type="button" class="att-tool" data-att="add">' + ICON.plus + '<span>' + esc(t('att.addStudent')) + '</span></button>' +
+        '<button type="button" class="att-tool" data-att="bulk">' + ICON.list + '<span>' + esc(t('att.bulk')) + '</span></button></div>' +
+        (total ? '<div class="att-listhead"><span>' + esc(t('att.colRoll')) + '</span><span>' + esc(t('att.colName')) + '</span><span>' + esc(t('att.marksHead')) + '</span></div>' : '') +
+        '<div class="att-list">' + studentRowsHtml(group, rec) + '</div>' +
+        exportRowHtml(ym) +
+        '<p class="att-note">' + esc(t('att.autoClose')) + '</p>' +
+        '<div class="sheet-actions"><button type="button" class="btn btn-primary btn-block" data-att="done">' + ICON.check + esc(t('att.done')) + '</button></div>';
+      const list = box.querySelector('.att-list');
+      if (list) list.scrollTop = sc;
+    }
+    draw();
+    box.addEventListener('click', async function (e) {
+      const mk = e.target.closest('[data-mark]');
+      if (mk) {
+        const sid = mk.closest('.att-row').getAttribute('data-sid');
+        S.setMark(iso, c.id, sid, mk.getAttribute('data-mark'));
+        $$('[data-mark]', mk.parentNode).forEach(function (b) { b.classList.toggle('on', b === mk); });
+        const old = $('.att-stats', box);
+        old.outerHTML = statsHtml(attCounts(S.getAttendance(iso, c.id)), S.studentsOf(group).length);
+        return;
+      }
+      const ed = e.target.closest('[data-edit]');
+      if (ed) { openStudentForm(group, ed.getAttribute('data-edit'), function () { S.openAttendance(iso, c); draw(); }); return; }
+      const b = e.target.closest('[data-att]');
+      if (!b) return;
+      const act = b.getAttribute('data-att');
+      if (act === 'done') { closeOverlay(entry); toast(t('att.saved')); }
+      else if (act === 'allP') { S.setAllMarks(iso, c.id, 'P'); draw(); }
+      else if (act === 'add') openStudentForm(group, null, function () { S.openAttendance(iso, c); draw(); });
+      else if (act === 'bulk') openBulkStudents(group, function () { S.openAttendance(iso, c); draw(); });
+      else if (act === 'prevMonth' || act === 'nextMonth') { ym = shiftYm(ym, act === 'prevMonth' ? -1 : 1); draw(); }
+      else if (act === 'xlsx' || act === 'pdf') exportAttendance(group, ym, act);
+    });
+  }
+
+  // ক্লাস শেষ হলে খোলা হাজিরার পাতা বন্ধ
+  function checkAttendanceSheet() {
+    if (!state.att) return;
+    const c = S.getClass(state.att.classId);
+    if (c && S.isoDate(new Date()) === state.att.iso && isLiveNow(c)) return;
+    // উপরে শিক্ষার্থী যোগের ফর্ম খোলা থাকলে সেগুলোও বন্ধ
+    state.overlays.slice().reverse().forEach(function (o) { if (o !== state.att.entry && o.el.classList.contains('overlay-student')) closeOverlay(o, true); });
+    closeOverlay(state.att.entry);
+    toast(t('att.endedClosed'));
+  }
+
+  // শিক্ষার্থী যোগ বা সম্পাদনা
+  function openStudentForm(group, id, onDone) {
+    const cur = id ? S.studentsOf(group).filter(function (x) { return x.id === id; })[0] : null;
+    const entry = openOverlay('sheet',
+      '<div class="sheet-handle"></div><h2 class="sheet-title">' + esc(cur ? t('att.editStudent') : t('att.addStudent')) + '</h2>' +
+      '<p class="sheet-sub">' + esc(groupLabel(group)) + '</p>' +
+      '<div class="att-form">' +
+      '<label class="field"><span class="field-label">' + esc(t('att.colId')) + '</span><input id="stSid" maxlength="30" autocomplete="off"/></label>' +
+      '<label class="field"><span class="field-label">' + esc(t('att.colRoll')) + '</span><input id="stRoll" maxlength="20" inputmode="numeric" autocomplete="off"/></label>' +
+      '<label class="field att-form-name"><span class="field-label">' + esc(t('att.colName')) + '</span><input id="stName" maxlength="80" autocomplete="off"/></label></div>' +
+      '<div class="sheet-actions">' +
+      (cur ? '<button type="button" class="btn btn-text danger-text" data-act="del">' + esc(t('att.delete')) + '</button><span class="flex-1"></span>' : '') +
+      '<button type="button" class="btn btn-text" data-act="cancel">' + esc(t('common.cancel')) + '</button>' +
+      (cur ? '' : '<button type="button" class="btn btn-tonal" data-act="more">' + esc(t('att.saveMore')) + '</button>') +
+      '<button type="button" class="btn btn-primary" data-act="ok">' + esc(t('common.save')) + '</button></div>');
+    entry.el.classList.add('overlay-student');
+    const el = entry.el;
+    const f = { sid: $('#stSid', el), roll: $('#stRoll', el), name: $('#stName', el) };
+    if (cur) { f.sid.value = cur.sid; f.roll.value = cur.roll; f.name.value = cur.name; }
+    setTimeout(function () { (cur ? f.name : f.roll).focus(); }, 250);
+    function save(more) {
+      const st = { id: cur ? cur.id : undefined, sid: I.toAsciiDigits(f.sid.value.trim()), roll: I.toAsciiDigits(f.roll.value.trim()), name: f.name.value.trim() };
+      if (!st.name && !st.roll) { toast(t('att.needName')); f.name.focus(); return; }
+      if (!S.saveStudent(group, st)) { toast(t('settings.saveFail')); return; }
+      if (onDone) onDone();
+      if (more) {
+        toast(t('att.addedOne', { name: st.name || st.roll }));
+        f.sid.value = ''; f.name.value = '';
+        const r = parseInt(st.roll, 10);
+        f.roll.value = isNaN(r) ? '' : String(r + 1);
+        f.name.focus();
+        return;
+      }
+      closeOverlay(entry, true);
+    }
+    $('[data-act="cancel"]', el).onclick = function () { closeOverlay(entry, true); };
+    $('[data-act="ok"]', el).onclick = function () { save(false); };
+    const more = $('[data-act="more"]', el);
+    if (more) more.onclick = function () { save(true); };
+    const del = $('[data-act="del"]', el);
+    if (del) del.onclick = async function () {
+      const ok = await confirmDialog({ title: t('att.delTitle'), message: t('att.delText', { name: cur.name || cur.roll }), okText: t('att.delete'), danger: true });
+      if (!ok) return;
+      S.deleteStudent(group, cur.id);
+      closeOverlay(entry, true);
+      if (onDone) onDone();
+      toast(t('att.deleted'));
+    };
+  }
+
+  // একসাথে অনেক শিক্ষার্থী: প্রতি লাইনে "আইডি, রোল, নাম" (বা শুধু "রোল, নাম")
+  function openBulkStudents(group, onDone) {
+    const entry = openOverlay('sheet',
+      '<div class="sheet-handle"></div><h2 class="sheet-title">' + esc(t('att.bulk')) + '</h2>' +
+      '<p class="sheet-sub">' + esc(groupLabel(group)) + '</p>' +
+      '<p class="group-help">' + esc(t('att.bulkHelp')) + '</p>' +
+      '<label class="field"><textarea id="bulkText" rows="8" placeholder="' + esc(t('att.bulkPh')) + '"></textarea></label>' +
+      '<div class="sheet-actions"><button type="button" class="btn btn-text" data-act="cancel">' + esc(t('common.cancel')) + '</button>' +
+      '<button type="button" class="btn btn-primary" data-act="ok">' + esc(t('att.bulkAdd')) + '</button></div>');
+    entry.el.classList.add('overlay-student');
+    const el = entry.el;
+    $('[data-act="cancel"]', el).onclick = function () { closeOverlay(entry, true); };
+    $('[data-act="ok"]', el).onclick = function () {
+      const rows = $('#bulkText', el).value.split(/\n/).map(function (line) {
+        const parts = line.split(/\t|,|;|\|/).map(function (x) { return x.trim(); }).filter(function (x, i, a) { return x || i < a.length - 1; });
+        if (!parts.length || !parts.join('')) return null;
+        if (parts.length >= 3) return { sid: I.toAsciiDigits(parts[0]), roll: I.toAsciiDigits(parts[1]), name: parts.slice(2).join(', ') };
+        if (parts.length === 2) return { roll: I.toAsciiDigits(parts[0]), name: parts[1] };
+        return { name: parts[0] };
+      }).filter(Boolean);
+      if (!rows.length) { toast(t('att.bulkEmpty')); return; }
+      const n = S.addStudents(group, rows);
+      if (n < 0) { toast(t('settings.saveFail')); return; }
+      closeOverlay(entry, true);
+      if (onDone) onDone();
+      toast(t('att.bulkDone', { n: I.num(n) }));
+    };
+  }
+
+  // সেটিংস থেকে: সব শ্রেণি-শাখার তালিকা, শিক্ষার্থী সম্পাদনা আর খাতা সংরক্ষণ
+  function openStudentsHub() {
+    const entry = openOverlay('sheet', '<div class="att-sheet"></div>');
+    const box = $('.att-sheet', entry.el);
+    function draw() {
+      const groups = S.classGroups();
+      box.innerHTML = '<div class="sheet-handle"></div><h2 class="sheet-title">' + esc(t('att.hubTitle')) + '</h2>' +
+        '<p class="sheet-sub">' + esc(t('att.hubSub')) + '</p>' +
+        (groups.length ? '<div class="att-groups">' + groups.map(function (g) {
+          const n = S.studentsOf(g.key).length;
+          const r = S.attendanceFor(g.key).length;
+          return '<button type="button" class="att-group" data-group="' + esc(g.key) + '"' + (g.sample ? ' style="' + colorVars(g.sample.color) + '"' : '') + '>' +
+            '<b>' + esc(groupLabel(g.key)) + '</b><span>' + esc(t('att.groupLine', { n: I.num(n), r: I.num(r) })) + '</span></button>';
+        }).join('') + '</div>' : '<p class="att-empty">' + esc(t('att.noGroups')) + '</p>') +
+        '<div class="sheet-actions"><button type="button" class="btn btn-primary" data-act="close">' + esc(t('common.ok')) + '</button></div>';
+    }
+    draw();
+    box.addEventListener('click', function (e) {
+      if (e.target.closest('[data-act="close"]')) { closeOverlay(entry, true); return; }
+      const g = e.target.closest('[data-group]');
+      if (g) openGroupSheet(g.getAttribute('data-group'), draw);
+    });
+  }
+
+  function openGroupSheet(group, onBack) {
+    let ym = S.isoDate(new Date()).slice(0, 7);
+    const entry = openOverlay('sheet', '<div class="att-sheet"></div>', onBack);
+    entry.el.classList.add('overlay-student');
+    const box = $('.att-sheet', entry.el);
+    function draw() {
+      const total = S.studentsOf(group).length;
+      box.innerHTML = '<div class="sheet-handle"></div><h2 class="sheet-title">' + esc(groupLabel(group)) + '</h2>' +
+        '<p class="sheet-sub">' + esc(t('att.total', { n: I.num(total) })) + ' · ' + esc(t('att.liveOnly')) + '</p>' +
+        '<div class="att-tools"><button type="button" class="att-tool" data-att="add">' + ICON.plus + '<span>' + esc(t('att.addStudent')) + '</span></button>' +
+        '<button type="button" class="att-tool" data-att="bulk">' + ICON.list + '<span>' + esc(t('att.bulk')) + '</span></button></div>' +
+        '<div class="att-list">' + studentRowsHtml(group, null) + '</div>' +
+        exportRowHtml(ym) +
+        '<div class="sheet-actions"><button type="button" class="btn btn-primary" data-att="done">' + esc(t('common.ok')) + '</button></div>';
+    }
+    draw();
+    box.addEventListener('click', function (e) {
+      const row = e.target.closest('.att-row');
+      if (row) { openStudentForm(group, row.getAttribute('data-sid'), draw); return; }
+      const b = e.target.closest('[data-att]');
+      if (!b) return;
+      const act = b.getAttribute('data-att');
+      if (act === 'done') closeOverlay(entry);
+      else if (act === 'add') openStudentForm(group, null, draw);
+      else if (act === 'bulk') openBulkStudents(group, draw);
+      else if (act === 'prevMonth' || act === 'nextMonth') { ym = shiftYm(ym, act === 'prevMonth' ? -1 : 1); draw(); }
+      else if (act === 'xlsx' || act === 'pdf') exportAttendance(group, ym, act);
+    });
   }
 
   /* ---------------- ক্যালেন্ডার: কাজের রিমাইন্ডার ---------------- */
@@ -1914,12 +2208,22 @@
       '<p class="group-help">' + esc(t('settings.mutedDaysHelp')) + '</p>' +
       '<div class="chips day-chips" data-daylist="mutedDays">' +
       S.DAYS.map(function (d) { return '<button type="button" class="chip-btn' + (st.mutedDays.indexOf(d) !== -1 ? ' on warn' : '') + '" data-day="' + d + '">' + esc(I.dayShort(d)) + '</button>'; }).join('') + '</div>' +
+      '<div class="field-label">' + esc(t('sound.title')) + '</div>' +
+      (N.isNative() ? '<div class="sound-box"><div class="sound-name">' + ICON.bell + '<span id="soundName">' + esc(t('sound.default')) + '</span></div>' +
+        '<div class="sound-btns"><button type="button" class="btn btn-tonal" data-action="sound-pick">' + esc(t('sound.pick')) + '</button>' +
+        '<button type="button" class="btn btn-text" data-action="sound-preview">' + esc(t('sound.preview')) + '</button>' +
+        '<button type="button" class="btn btn-text" data-action="sound-reset" id="soundReset" hidden>' + esc(t('sound.reset')) + '</button></div>' +
+        '<p class="group-help">' + esc(t('sound.help')) + '</p></div>'
+        : '<p class="group-help">' + esc(t('perm.webOnly')) + '</p>') +
       '</div>' +
       '<div id="permBlock" class="perm-block">' + (N.isNative() ? '<div class="loading-line"></div>' : '<p class="group-help">' + esc(t('perm.webOnly')) + '</p>') + '</div>');
 
     html += group(t('words.title'),
       '<p class="group-help">' + esc(t('words.help')) + '</p>' +
       '<textarea id="s-words" class="words-box" rows="4" maxlength="4000" placeholder="' + esc(t('words.ph')) + '">' + esc(st.wordMap || '') + '</textarea>');
+
+    html += group(t('att.hubTitle'),
+      actionRow('students', t('att.hubRow'), t('att.hubHelp')));
 
     html += group(t('period.title'),
       actionRow('edit-periods', t('period.edit'), t('period.settingsHelp')));
@@ -2007,6 +2311,14 @@
   }
 
   // সেটিংসে কিছু বদলালে তা খসড়ায় থাকে; "সংরক্ষণ করুন" চাপলে তবেই কাজে লাগে
+  function updateSoundLabel(r) {
+    const el = $('#soundName');
+    if (!el || !r) return;
+    el.textContent = r.uri ? (r.title || t('sound.custom')) : t('sound.default');
+    const reset = $('#soundReset');
+    if (reset) reset.hidden = !r.uri;
+  }
+
   function changeDraft(fn) {
     fn(state.draft);
     state.dirty = true;
@@ -2017,6 +2329,7 @@
 
   function bindSettings() {
     const view = $('#view');
+    if (N.isNative()) N.sound('get').then(updateSoundLabel);
     $$('.seg[data-setting]', view).forEach(function (seg) {
       seg.addEventListener('click', function (e) {
         const b = e.target.closest('button');
@@ -2271,6 +2584,28 @@
       case 'ask-exact':
         await N.openExactAlarmSettings();
         setTimeout(function () { N.reschedule(); fillPermBlock(); }, 800);
+        break;
+      case 'attendance':
+        openAttendanceSheet(el.getAttribute('data-id'));
+        break;
+      case 'students':
+        openStudentsHub();
+        break;
+      case 'sound-pick': {
+        const r = await N.sound('pick', t('sound.pickTitle'));
+        updateSoundLabel(r);
+        if (r && !r.cancelled) { toast(t('sound.changed')); N.reschedule(); }
+        break;
+      }
+      case 'sound-reset': {
+        const r = await N.sound('reset');
+        updateSoundLabel(r);
+        toast(t('sound.resetDone'));
+        N.reschedule();
+        break;
+      }
+      case 'sound-preview':
+        await N.sound('preview');
         break;
       case 'test-notif': {
         const r = await N.test();
@@ -2749,6 +3084,7 @@
     };
     setTimeout(tickMinute, 60000 - (Date.now() % 60000) + 200);
     setInterval(updateLive, 15000);
+    setInterval(checkAttendanceSheet, 3000);
     setInterval(function () {
       if (state.view !== 'today' || document.hidden || (!$('#deClock') && !$('#nowClock'))) return;
       // রাত ১২টা পার হলে নতুন দিনের ক্লাস দেখানো
