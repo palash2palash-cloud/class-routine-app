@@ -1038,9 +1038,10 @@
     });
     html += '</tr></thead><tbody>';
     let total = 0;
+    const todayKey = todayInfo().dayKey;
     rows.forEach(function (r) {
       total += r.list.length;
-      html += '<tr class="' + (r.holiday ? 'is-holiday' : '') + '"><th class="g-day">' + esc(I.dayShort(r.day)) + '</th>';
+      html += '<tr data-day="' + r.day + '" class="' + (r.holiday ? 'is-holiday' : '') + (r.day === todayKey ? ' is-today' : '') + '"><th class="g-day">' + esc(I.dayShort(r.day)) + '</th>';
       if (r.holiday && !r.list.length) {
         html += '<td class="g-off" colspan="' + Math.max(1, slots.length) + '">' + esc(t('week.holiday')) + '</td></tr>';
         return;
@@ -1049,7 +1050,7 @@
         const here = r.list.filter(function (c) { return c.start === sl.start; });
         if (!here.length) { html += '<td class="g-empty"></td>'; return; }
         html += '<td>' + here.map(function (c) {
-          return '<button type="button" class="grid-cell g-cell' + (I.getLang() === 'bn' ? '' : ' en') + '" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + '">' +
+          return '<button type="button" class="grid-cell g-cell' + (I.getLang() === 'bn' ? '' : ' en') + (r.day === todayKey && isLiveNow(c) ? ' is-live' : '') + '" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + '">' +
             (manySubjects ? '<i>' + esc((L(c.subject) || '').slice(0, 6)) + '</i>' : '') +
             '<b>' + esc(shortGrade(c)) + '</b>' + sectionParts(c).filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</button>';
         }).join('') + '</td>';
@@ -1084,6 +1085,20 @@
       '<span class="att-btn-ic">' + ICON.check + '</span>' +
       '<span class="att-btn-tx"><b>' + esc(taken ? t('att.btnTaken') : t('att.btn')) + '</b><small>' + esc(taken ? t('att.btnSub', { p: I.num(n.P + n.L), n: I.num(n.P + n.A + n.L) }) : t('att.btnHint')) + '</small></span>' +
       (taken ? '<span class="att-btn-ct"><i class="p">' + I.num(n.P) + '</i><i class="a">' + I.num(n.A) + '</i><i class="l">' + I.num(n.L) + '</i></span>' : '<span class="att-btn-go">›</span>') + '</button>';
+  }
+
+  // এক নজরে রুটিন: আজকের বার সারাদিন, আর চলমান ক্লাসের ঘর যতক্ষণ ক্লাস চলে ততক্ষণ হাইলাইট
+  function tickGlance() {
+    if (!$('.glance-grid') || document.hidden) return;
+    const key = todayInfo().dayKey;
+    $$('.glance-grid tbody tr').forEach(function (tr) {
+      const on = tr.getAttribute('data-day') === key;
+      tr.classList.toggle('is-today', on);
+      tr.querySelectorAll('.g-cell').forEach(function (b) {
+        const c = S.data.classes.filter(function (x) { return x.id === b.getAttribute('data-id'); })[0];
+        b.classList.toggle('is-live', on && !!c && isLiveNow(c));
+      });
+    });
   }
 
   function isLiveNow(c) {
@@ -3239,6 +3254,7 @@
     setTimeout(tickMinute, 60000 - (Date.now() % 60000) + 200);
     setInterval(updateLive, 15000);
     setInterval(checkAttendanceSheet, 3000);
+    setInterval(tickGlance, 5000);
     // ছুটির দিনে এলোমেলো দৃশ্য: ৩০ সেকেন্ড পরপর ধীরে মিলিয়ে নতুন দৃশ্য
     setInterval(function () {
       if (!state.sceneRandom || state.view !== 'today' || document.hidden) return;
