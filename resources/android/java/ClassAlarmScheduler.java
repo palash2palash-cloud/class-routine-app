@@ -10,8 +10,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.media.AudioAttributes;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import org.json.JSONArray;
@@ -28,7 +31,7 @@ import org.json.JSONObject;
 public class ClassAlarmScheduler {
 
     // আগের সংস্করণের channel; নিজের বাছাই করা শব্দ হলে channel id বদলায় (channel তৈরি হলে শব্দ আর বদলানো যায় না)
-    public static final String CHANNEL_ID = "class-alarm-v2";
+    public static final String CHANNEL_ID = "class-alarm-v3";
     static final String KEY_SOUND = "sound_uri";
     static final String KEY_SOUND_TITLE = "sound_title";
     // ক্যালেন্ডারের দিনের কাজ: শব্দ ছাড়া, সারাদিন নোটিফিকেশন বারে থাকে
@@ -50,6 +53,7 @@ public class ClassAlarmScheduler {
         // আগের channel গুলো (কোনো সেটিং ভুলভাবে বদলে গিয়ে থাকলে) মুছে নতুন করে তৈরি
         nm.deleteNotificationChannel("class-reminders");
         nm.deleteNotificationChannel("class-alarm-v1");
+        nm.deleteNotificationChannel("class-alarm-v2");
         if (nm.getNotificationChannel(PIN_CHANNEL_ID) == null) {
             NotificationChannel pin = new NotificationChannel(
                 PIN_CHANNEL_ID,
@@ -82,12 +86,8 @@ public class ClassAlarmScheduler {
         channel.setLightColor(Color.BLUE);
         channel.setBypassDnd(true);
         channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        Uri sound = soundUri(ctx);
-        AudioAttributes attrs = new AudioAttributes.Builder()
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .setUsage(AudioAttributes.USAGE_ALARM)
-            .build();
-        channel.setSound(sound, attrs);
+        // শব্দ channel দিয়ে নয়, অ্যাপ নিজে বাজায় (playSound), যাতে যেকোনো ফোনে বাছাই করা শব্দই বাজে
+        channel.setSound(null, null);
         nm.createNotificationChannel(channel);
     }
 
@@ -102,14 +102,65 @@ public class ClassAlarmScheduler {
 
     public static Uri soundUri(Context ctx) {
         String u = savedSound(ctx);
+        if (u != null && u.matches("android\\.resource://.*/raw/tone_[a-z]+")) return rawUri(ctx, u.substring(u.lastIndexOf('/') + 1));
         if (u != null && !u.isEmpty()) return Uri.parse(u);
-        return Uri.parse("android.resource://" + ctx.getPackageName() + "/raw/class_beep");
+        return rawUri(ctx, "class_beep");
     }
 
     public static String channelId(Context ctx) {
-        String u = savedSound(ctx);
-        if (u == null || u.isEmpty()) return CHANNEL_ID;
-        return "class-alarm-s" + Integer.toHexString(u.hashCode());
+        return CHANNEL_ID;
+    }
+
+    /* অ্যাপের raw শব্দের ঠিকানা resource id দিয়ে (নাম দিয়ে ঠিকানা কিছু ফোনে খোলে না) */
+    public static Uri rawUri(Context ctx, String name) {
+        int rid = ctx.getResources().getIdentifier(name, "raw", ctx.getPackageName());
+        if (rid == 0) rid = ctx.getResources().getIdentifier("class_beep", "raw", ctx.getPackageName());
+        return Uri.parse("android.resource://" + ctx.getPackageName() + "/" + rid);
+    }
+
+    private static MediaPlayer player;
+    private static final Handler main = new Handler(Looper.getMainLooper());
+
+    public static synchronized void stopSound() {
+        if (player != null) {
+            try { player.stop(); } catch (Exception ignored) {}
+            try { player.release(); } catch (Exception ignored) {}
+            player = null;
+        }
+    }
+
+    /* শব্দ একবার বাজানো (সর্বোচ্চ maxMs), অ্যালার্মের ভলিউমে; done শেষে ডাকা হয় */
+    public static synchronized void playSound(Context ctx, Uri uri, long maxMs, Runnable done) {
+        stopSound();
+        Context app = ctx.getApplicationContext();
+        MediaPlayer mp = new MediaPlayer();
+        try {
+            mp.setAudioAttributes(new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .build());
+            mp.setDataSource(app, uri);
+            mp.prepare();
+        } catch (Exception e) {
+            try { mp.release(); } catch (Exception ignored) {}
+            // বাছাই করা শব্দ খুলতে না পারলে অ্যাপের বিপ
+            mp = MediaPlayer.create(app, rawUri(app, "class_beep"));
+            if (mp == null) { if (done != null) done.run(); return; }
+        }
+        player = mp;
+        final MediaPlayer cur = mp;
+        final Runnable fin = new Runnable() {
+            boolean ran = false;
+            public void run() {
+                if (ran) return;
+                ran = true;
+                synchronized (ClassAlarmScheduler.class) { if (player == cur) stopSound(); }
+                if (done != null) done.run();
+            }
+        };
+        cur.setOnCompletionListener(m -> fin.run());
+        cur.start();
+        main.postDelayed(fin, maxMs);
     }
 
     public static void setSound(Context ctx, String uri, String title) {
@@ -324,7 +375,6 @@ public class ClassAlarmScheduler {
             .setContentIntent(openAppPending(ctx));
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             // পুরোনো Android-এ channel নেই, তাই সরাসরি শব্দ দেওয়া
-            b.setSound(soundUri(ctx), android.media.AudioManager.STREAM_ALARM);
             b.setVibrate(new long[] { 0, 600, 250, 600, 250, 600 });
         }
         try {
@@ -335,5 +385,6 @@ public class ClassAlarmScheduler {
         } catch (SecurityException e) {
             // নোটিফিকেশনের অনুমতি বন্ধ
         }
+        playSound(ctx, soundUri(ctx), 8000, null);
     }
 }

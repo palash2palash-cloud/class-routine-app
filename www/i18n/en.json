@@ -623,5 +623,31 @@
     "d_piano": "A calm piano phrase",
     "changedTo": "Reminders will now play: {name}",
     "builtinHead": "App sounds"
+  },
+  "setmenu": {
+    "sec_general": "General",
+    "sec_look": "Home screen look",
+    "sec_class": "Classes & students",
+    "sec_data": "Data & app",
+    "days": "Holidays & break",
+    "reminders": "Reminders & sound",
+    "dayend": "Day-end clock & text",
+    "data": "Backup & export",
+    "holidayIs": "Off: {d}",
+    "noHoliday": "No weekly holiday",
+    "remOn": "On · {m} min before",
+    "remOff": "Off",
+    "sub_appearance": "Language, theme and time format",
+    "sub_days": "Weekly holidays and tiffin break",
+    "sub_reminders": "When to remind, which sound, permissions",
+    "sub_scene": "Animated picture on Friday and Saturday",
+    "sub_hg": "Hourglass shown during a class",
+    "sub_dayend": "Big clock after classes and the scrolling text colour",
+    "sub_students": "Student lists, Excel import, attendance",
+    "sub_edit-periods": "Set the period times",
+    "sub_edit-profile": "Photo, name and other details",
+    "sub_words": "How routine words look in Bangla/English",
+    "sub_data": "Backup, restore, image and PDF",
+    "sub_about": "Version and privacy"
   }
 }

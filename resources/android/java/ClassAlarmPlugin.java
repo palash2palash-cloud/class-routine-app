@@ -129,13 +129,9 @@ public class ClassAlarmPlugin extends Plugin {
     public void previewSound(PluginCall call) {
         Context ctx = getContext();
         try {
-            if (playing != null && playing.isPlaying()) playing.stop();
             String name = call.getString("name", "");
-            Uri uri = name.matches("tone_[a-z]+")
-                ? Uri.parse("android.resource://" + ctx.getPackageName() + "/raw/" + name)
-                : ClassAlarmScheduler.soundUri(ctx);
-            playing = RingtoneManager.getRingtone(ctx, uri);
-            if (playing != null) playing.play();
+            Uri uri = name.matches("tone_[a-z]+") ? ClassAlarmScheduler.rawUri(ctx, name) : ClassAlarmScheduler.soundUri(ctx);
+            ClassAlarmScheduler.playSound(ctx, uri, 8000, null);
         } catch (Exception ignored) {}
         call.resolve();
     }

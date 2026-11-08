@@ -373,6 +373,7 @@
       state.presetDay = opts.day || null;
     }
     if (view === 'settings' && state.view !== 'settings') { state.draft = null; state.dirty = false; state.leadCustomOpen = false; }
+    if (view === 'settings') state.setPage = null;
     state.view = view;
     render();
     $('#view').scrollTop = 0;
@@ -382,6 +383,7 @@
   function goBack() {
     if (state.overlays.length) { closeOverlay(); return true; }
     if (state.view === 'form') { navigate(state.prevView || 'today'); return true; }
+    if (state.view === 'settings' && state.setPage) { state.setPage = null; renderSettings(); window.scrollTo(0, 0); return true; }
     if (state.view === 'settings' && state.dirty) {
       canLeaveSettings().then(function (ok) { if (ok) navigate('today'); });
       return true;
@@ -825,7 +827,7 @@
     if (next) {
       const wait = Math.ceil(S.toMin(next.start) - m);
       const where = [classSec(next), next.room ? t('card.room') + ' ' + L(next.room) : ''].filter(Boolean).join(' · ');
-      html += '<div class="status-row status-next">' +
+      html += '<div class="status-row status-next" style="' + colorVars(next.color) + '">' +
         '<div class="countdown"><b>' + esc(I.num(wait >= 60 ? Math.floor(wait / 60) : wait)) + '</b><small>' + esc(wait >= 60 ? t('today.hourShort') : t('today.minShort')) + '</small></div>' +
         '<div><small>' + esc(t('today.nextClass')) + '</small><strong>' + esc(L(next.subject) || t('form.untitled')) + '</strong>' +
         '<span>' + esc(t('today.startsIn', { d: I.duration(wait) })) + (where ? ' · ' + esc(where) : '') + '</span></div></div>';
@@ -2273,9 +2275,9 @@
     const leadOpts = [5, 10, 15, 30];
     const leadCustom = leadOpts.indexOf(st.leadMinutes) === -1;
 
-    let html = '';
+    const pages = {};
 
-    html += group(t('settings.appearance'),
+    pages.appearance = group(null,
       row(t('settings.language'), null,
         '<div class="seg" data-setting="lang">' +
         '<button type="button" data-val="bn" class="' + (st.lang === 'bn' ? 'on' : '') + '">বাংলা</button>' +
@@ -2288,12 +2290,12 @@
         '<button type="button" data-val="12" class="' + (st.timeFormat === '12' ? 'on' : '') + '">' + esc(t('settings.h12')) + '</button>' +
         '<button type="button" data-val="24" class="' + (st.timeFormat === '24' ? 'on' : '') + '">' + esc(t('settings.h24')) + '</button></div>'));
 
-    html += group(t('settings.holidays'),
+    pages.days = group(t('settings.holidays'),
       '<p class="group-help">' + esc(t('settings.holidaysHelp')) + '</p>' +
       '<div class="chips day-chips" data-daylist="holidays">' +
       S.DAYS.map(function (d) { return '<button type="button" class="chip-btn' + (st.holidays.indexOf(d) !== -1 ? ' on danger' : '') + '" data-day="' + d + '">' + esc(I.dayShort(d)) + '</button>'; }).join('') + '</div>');
 
-    html += group(t('settings.break'),
+    pages.days += group(t('settings.break'),
       row(t('settings.breakOn'), t('settings.breakHelp'),
         '<label class="switch"><input type="checkbox" id="s-break"' + (st.breakEnabled ? ' checked' : '') + '/><span></span></label>') +
       '<div class="sub-block break-times' + (st.breakEnabled ? '' : ' is-disabled') + '">' +
@@ -2301,7 +2303,7 @@
       '<label class="field"><span class="field-label">' + esc(t('form.end')) + '</span><input id="s-breakEnd" type="time" value="' + esc(st.breakEnd) + '"/></label>' +
       '</div>');
 
-    html += group(t('hg.title'),
+    pages.hg = group(null,
       '<p class="group-help">' + esc(t('hg.help')) + '</p>' +
       '<div class="hg-options" id="s-hg">' +
       HG_STYLES.map(function (k) {
@@ -2313,7 +2315,7 @@
     const SC_LIST = ['random'].concat(window.Scenes ? window.Scenes.LIST : []);
     const scDay = state.sceneDay || 'fri';
     const scSel = (st.scenes || {})[scDay] || 'random';
-    html += group(t('scene.title'),
+    pages.scene = group(null,
       '<p class="group-help">' + esc(t('scene.help')) + '</p>' +
       '<div class="scene-days" id="s-sceneDay">' + ['fri', 'sat', 'other'].map(function (d) {
         return '<button type="button" data-day="' + d + '" class="' + (d === scDay ? 'on' : '') + '">' + esc(t('scene.day_' + d)) + '</button>';
@@ -2324,7 +2326,7 @@
           '<span class="hg-name">' + esc(t('scene.' + k)) + '</span></button>';
       }).join('') + '</div>');
 
-    html += group(t('dayEnd.title'),
+    pages.dayend = group(null,
       '<p class="group-help">' + esc(t('dayEnd.help')) + '</p>' +
       '<div class="hg-options de-options" id="s-dayend">' +
       DAYEND_STYLES.map(function (k) {
@@ -2341,7 +2343,7 @@
       }).join('') +
       '<button type="button" class="swatch swatch-custom" data-action="mq-custom" style="--sw:transparent" aria-label="' + esc(t('form.customColor')) + '">' + ICON.palette + '</button></div>');
 
-    html += group(t('settings.reminders'),
+    pages.reminders = group(null,
       row(t('settings.notifEnabled'), t('settings.notifEnabledHelp'),
         '<label class="switch"><input type="checkbox" id="s-notif"' + (st.notifEnabled ? ' checked' : '') + '/><span></span></label>') +
       '<div class="sub-block' + (st.notifEnabled ? '' : ' is-disabled') + '">' +
@@ -2368,44 +2370,89 @@
       '</div>' +
       '<div id="permBlock" class="perm-block">' + (N.isNative() ? '<div class="loading-line"></div>' : '<p class="group-help">' + esc(t('perm.webOnly')) + '</p>') + '</div>');
 
-    html += group(t('words.title'),
+    pages.words = group(null,
       '<p class="group-help">' + esc(t('words.help')) + '</p>' +
       '<textarea id="s-words" class="words-box" rows="4" maxlength="4000" placeholder="' + esc(t('words.ph')) + '">' + esc(st.wordMap || '') + '</textarea>');
 
-    html += group(t('att.hubTitle'),
-      actionRow('students', t('att.hubRow'), t('att.hubHelp')));
-
-    html += group(t('period.title'),
-      actionRow('edit-periods', t('period.edit'), t('period.settingsHelp')));
-
-    html += group(t('profile.title'),
-      actionRow('edit-profile', t('profile.settingsRow'), t('profile.settingsHelp')));
-
-    html += group(t('settings.data'),
+    pages.data = group(null,
       actionRow('backup', t('settings.backup'), t('settings.backupHelp')) +
       actionRow('restore', t('settings.restore'), t('settings.restoreHelp')) +
       actionRow('save-image', t('settings.saveImage'), t('settings.saveImageHelp')) +
       actionRow('save-pdf', t('settings.savePdf'), t('settings.savePdfHelp')) +
       actionRow('clear-all', t('settings.clearAll'), t('settings.clearAllHelp'), true));
 
-    html += group(t('settings.about'),
+    pages.about = group(null,
       '<div class="about"><div class="about-logo"></div><div><strong>' + esc(t('app.name')) + '</strong>' +
       '<span id="appVersion">' + esc(t('settings.version', { v: '1.0' })) + '</span></div></div>' +
       '<p class="group-help">' + esc(t('settings.privacy')) + '</p>' +
       '<p class="group-help small">' + esc(t('settings.fontCredit')) + '</p>');
 
-    html += '<div class="save-bar' + (state.dirty ? ' is-dirty' : '') + '">' +
+    // সেটিংসের মূল পাতা: আইকনসহ ছোট মেনু, চাপ দিলে ভেতরের পাতা
+    let html = '';
+    const page = state.setPage && pages[state.setPage] ? state.setPage : null;
+    if (page) {
+      const m = SET_MENU.filter(function (x) { return x.k === page; })[0];
+      setTop(t(m.title), t('setmenu.sub_' + page), '', true);
+      html += '<div class="set-page">' + pages[page] + '</div>';
+    } else {
+      state.setPage = null;
+      html += setMenuHtml(st);
+    }
+    if (page || state.dirty) html += '<div class="save-bar' + (state.dirty ? ' is-dirty' : '') + '">' +
       '<span>' + esc(state.dirty ? t('settings.unsaved') : t('settings.allSaved')) + '</span>' +
       '<button type="button" class="btn btn-primary" data-action="save-settings"' + (state.dirty ? '' : ' disabled') + '>' + ICON.check + esc(t('settings.saveBtn')) + '</button></div>';
 
     $('#view').innerHTML = html;
     bindSettings();
-    if (N.isNative()) fillPermBlock();
-    fillVersion();
+    if (N.isNative() && $('#permBlock')) fillPermBlock();
+    if ($('#appVersion')) fillVersion();
   }
 
   function group(title, inner) {
-    return '<section class="settings-group"><h2>' + esc(title) + '</h2><div class="settings-card">' + inner + '</div></section>';
+    return '<section class="settings-group">' + (title ? '<h2>' + esc(title) + '</h2>' : '') + '<div class="settings-card">' + inner + '</div></section>';
+  }
+
+  /* সেটিংসের মেনু: k = ভেতরের পাতা, a = সরাসরি কোনো কাজ (শিট খোলে) */
+  const SI = function (d) { return '<svg viewBox="0 0 24 24"><path d="' + d + '"/></svg>'; };
+  const SET_MENU = [
+    { sec: 'general', k: 'appearance', title: 'settings.appearance', c: '#6366F1', i: SI('M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z') },
+    { sec: 'general', k: 'days', title: 'setmenu.days', c: '#EF4444', i: SI('M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z') },
+    { sec: 'general', k: 'reminders', title: 'setmenu.reminders', c: '#F59E0B', i: SI('M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z') },
+    { sec: 'look', k: 'scene', title: 'scene.title', c: '#0EA5E9', i: SI('M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22L14 6z') },
+    { sec: 'look', k: 'hg', title: 'hg.title', c: '#14B8A6', i: SI('M6 2v6h.01L6 8.01 10 12l-4 4 .01.01H6V22h12v-5.99h-.01L18 16l-4-4 4-3.99-.01-.01H18V2H6zm10 14.5V20H8v-3.5l4-4 4 4zm-4-5l-4-4V4h8v3.5l-4 4z') },
+    { sec: 'look', k: 'dayend', title: 'setmenu.dayend', c: '#8B5CF6', i: SI('M12.34 2.02C6.59 1.82 2 6.42 2 12c0 5.52 4.48 10 10 10 3.71 0 6.93-2.02 8.66-5.02-7.51-.25-12.09-8.43-8.32-14.96z') },
+    { sec: 'class', a: 'students', title: 'att.hubTitle', c: '#10B981', i: SI('M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z') },
+    { sec: 'class', a: 'edit-periods', title: 'period.title', c: '#3B82F6', i: SI('M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z') },
+    { sec: 'class', a: 'edit-profile', title: 'profile.title', c: '#EC4899', i: SI('M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2a7.2 7.2 0 0 1-6-3.22c.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08a7.2 7.2 0 0 1-6 3.22z') },
+    { sec: 'class', k: 'words', title: 'words.title', c: '#F97316', i: SI('M3 10h11v2H3zm0-2h11V6H3zm0 8h7v-2H3zm15.01-3.13l.71-.71a.996.996 0 0 1 1.41 0l.71.71c.39.39.39 1.02 0 1.41l-.71.71-2.12-2.12zm-.71.71l-5.3 5.3V21h2.12l5.3-5.3-2.12-2.12z') },
+    { sec: 'data', k: 'data', title: 'setmenu.data', c: '#0D9488', i: SI('M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z') },
+    { sec: 'data', k: 'about', title: 'settings.about', c: '#64748B', i: SI('M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z') }
+  ];
+
+  function setMenuValue(k, st) {
+    if (k === 'appearance') return (st.lang === 'bn' ? 'বাংলা' : 'English') + ' · ' + t('settings.theme_' + st.theme) + ' · ' + t(st.timeFormat === '24' ? 'settings.h24' : 'settings.h12');
+    if (k === 'days') return st.holidays.length ? t('setmenu.holidayIs', { d: S.DAYS.filter(function (d) { return st.holidays.indexOf(d) !== -1; }).map(function (d) { return I.dayShort(d); }).join(', ') }) : t('setmenu.noHoliday');
+    if (k === 'reminders') return st.notifEnabled ? t('setmenu.remOn', { m: I.num(st.leadMinutes) }) : t('setmenu.remOff');
+    if (k === 'scene') return t('scene.' + ((st.scenes || {}).fri || 'random'));
+    if (k === 'hg') return t('hg.' + st.hgStyle);
+    if (k === 'dayend') return t('hg.' + st.dayEndStyle);
+    return t('setmenu.sub_' + k);
+  }
+
+  function setMenuHtml(st) {
+    let html = '';
+    ['general', 'look', 'class', 'data'].forEach(function (sec) {
+      html += '<section class="settings-group set-menu-group"><h2>' + esc(t('setmenu.sec_' + sec)) + '</h2><div class="settings-card set-menu">';
+      SET_MENU.filter(function (m) { return m.sec === sec; }).forEach(function (m) {
+        html += '<button type="button" class="set-item" ' + (m.k ? 'data-action="set-page" data-page="' + m.k + '"' : 'data-action="' + m.a + '"') + '>' +
+          '<span class="set-ic" style="--ic:' + m.c + '">' + m.i + '</span>' +
+          '<span class="set-tx"><b>' + esc(t(m.title)) + '</b><small>' + esc(m.k ? setMenuValue(m.k, st) : t('setmenu.sub_' + m.a)) + '</small></span>' +
+          '<span class="chev">›</span></button>';
+      });
+      html += '</div></section>';
+    });
+    html += '<p class="set-foot">' + esc(t('settings.privacy')) + '</p>';
+    return html;
   }
 
   function row(label, help, control) {
@@ -2481,6 +2528,11 @@
     window.scrollTo(0, y);
   }
 
+  function bindIf(sel, ev, fn) {
+    const el = $(sel);
+    if (el) el.addEventListener(ev, fn);
+  }
+
   function bindSettings() {
     const view = $('#view');
     if (N.isNative()) N.sound('get').then(updateSoundLabel);
@@ -2508,18 +2560,18 @@
       });
     });
 
-    $('#s-notif').addEventListener('change', function (e) {
+    bindIf('#s-notif', 'change', function (e) {
       const on = e.target.checked;
       changeDraft(function (d) { d.notifEnabled = on; });
     });
 
-    $('#s-sceneDay').addEventListener('click', function (e) {
+    bindIf('#s-sceneDay', 'click', function (e) {
       const b = e.target.closest('button[data-day]');
       if (!b || state.sceneDay === b.getAttribute('data-day')) return;
       state.sceneDay = b.getAttribute('data-day');
       const y = window.scrollY; renderSettings(); window.scrollTo(0, y);
     });
-    $('#s-scene').addEventListener('click', function (e) {
+    bindIf('#s-scene', 'click', function (e) {
       const b = e.target.closest('.hg-option');
       if (!b) return;
       const v = b.getAttribute('data-val'), day = state.sceneDay || 'fri';
@@ -2527,7 +2579,7 @@
       changeDraft(function (d) { d.scenes = Object.assign({ fri: 'random', sat: 'random', other: 'random' }, d.scenes); d.scenes[day] = v; });
     });
 
-    $('#s-dayend').addEventListener('click', function (e) {
+    bindIf('#s-dayend', 'click', function (e) {
       const b = e.target.closest('.hg-option');
       if (!b) return;
       const v = b.getAttribute('data-val');
@@ -2535,7 +2587,7 @@
       changeDraft(function (d) { d.dayEndStyle = v; });
     });
 
-    $('#s-words').addEventListener('input', function (e) {
+    bindIf('#s-words', 'input', function (e) {
       state.draft.wordMap = e.target.value;
       if (!state.dirty) {
         state.dirty = true;
@@ -2546,7 +2598,7 @@
       }
     });
 
-    $('#s-mq').addEventListener('click', function (e) {
+    bindIf('#s-mq', 'click', function (e) {
       const b = e.target.closest('.swatch');
       if (!b) return;
       if (b.getAttribute('data-action') === 'mq-custom') {
@@ -2558,7 +2610,7 @@
       changeDraft(function (d) { d.marqueeColor = v; });
     });
 
-    $('#s-hg').addEventListener('click', function (e) {
+    bindIf('#s-hg', 'click', function (e) {
       const b = e.target.closest('.hg-option');
       if (!b) return;
       const v = b.getAttribute('data-val');
@@ -2566,12 +2618,12 @@
       changeDraft(function (d) { d.hgStyle = v; });
     });
 
-    $('#s-break').addEventListener('change', function (e) {
+    bindIf('#s-break', 'change', function (e) {
       const on = e.target.checked;
       changeDraft(function (d) { d.breakEnabled = on; });
     });
     ['#s-breakStart', '#s-breakEnd'].forEach(function (sel) {
-      $(sel).addEventListener('change', function () {
+      bindIf(sel, 'change', function () {
         const a = $('#s-breakStart').value, b = $('#s-breakEnd').value;
         if (!a || !b) return;
         if (S.toMin(b) <= S.toMin(a)) { toast(t('form.endBeforeStart')); return; }
@@ -2579,7 +2631,7 @@
       });
     });
 
-    $('#s-lead').addEventListener('click', function (e) {
+    bindIf('#s-lead', 'click', function (e) {
       const b = e.target.closest('.chip-btn');
       if (!b) return;
       const v = b.getAttribute('data-val');
@@ -2594,7 +2646,7 @@
       changeDraft(function (d) { d.leadMinutes = parseInt(v, 10); });
     });
 
-    $('#s-leadCustom').addEventListener('input', function (e) {
+    bindIf('#s-leadCustom', 'input', function (e) {
       const n = parseInt(I.toAsciiDigits(e.target.value), 10);
       if (isNaN(n) || n < 0 || n > 720) return;
       state.draft.leadMinutes = n;
@@ -2668,6 +2720,11 @@
         break;
       case 'edit-periods':
         openPeriodSheet();
+        break;
+      case 'set-page':
+        state.setPage = el.getAttribute('data-page');
+        renderSettings();
+        window.scrollTo(0, 0);
         break;
       case 'cal-today': {
         const d = new Date();
