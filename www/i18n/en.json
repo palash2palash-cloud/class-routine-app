@@ -510,7 +510,8 @@
     "otherHelp": "If you choose another teacher, what is here now stays as it is. Change it from Settings.",
     "meDone": "Your photo and details are in place",
     "otherDone": "OK, set it up your way",
-    "restore": "Restore everything from an earlier backup file"
+    "restore": "Restore everything from an earlier backup file",
+    "routineUpdated": "New routine ({v}) has been set"
   },
   "scene": {
     "title": "Holiday scene",

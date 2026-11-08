@@ -3227,9 +3227,34 @@
     S.data.settings.profile = next;
     S.save();
   }
+  /* আপনার ফোনে নতুন রুটিন (default-routine.json এর routine নাম বদলালে) একবার বসে যায়।
+     শুধু ক্লাসগুলো বদলায়; শিক্ষার্থী, হাজিরা, প্রস্তুতির নোট, সেটিংস যেমন ছিল তেমনই থাকে। */
+  const ROUTINE_FLAG = 'classRoutine.ownerRoutine';
+  async function applyOwnerRoutineUpdate() {
+    try {
+      const r = await fetch('data/default-routine.json', { cache: 'no-cache' });
+      if (!r.ok) return;
+      const raw = await r.json();
+      const ver = raw.routine || '';
+      if (!ver || localStorage.getItem(ROUTINE_FLAG) === ver) return;
+      const parsed = S.sanitize(raw);
+      if (!parsed || !parsed.classes.length) return;
+      // আগের সংস্করণে বসানো রুটিন ছাড়া নিজের হাতে যোগ করা ক্লাস থাকলে সেগুলো রেখে দেওয়া
+      const mine = S.data.classes.filter(function (c) { return !/^ec(26[a-z])?-/.test(c.id); });
+      S.data.classes = parsed.classes.concat(mine);
+      S.save();
+      localStorage.setItem(ROUTINE_FLAG, ver);
+      N.reschedule();
+      render();
+      toast(t('owner.routineUpdated', { v: ver }));
+    } catch (e) {
+      console.warn('routine update failed', e);
+    }
+  }
+
   async function askOwner() {
     // আগেই "আমি নিজে" বেছে থাকলে (আগের সংস্করণে) শিক্ষার্থীর তালিকাও একবার বসে যায়
-    if (localStorage.getItem(OWNER_FLAG) === 'owner') { importOwnerStudents(); return; }
+    if (localStorage.getItem(OWNER_FLAG) === 'owner') { await applyOwnerRoutineUpdate(); importOwnerStudents(); return; }
     if (localStorage.getItem(OWNER_FLAG)) return;
     const own = await ownerProfile();
     if (!own) return;
@@ -3257,6 +3282,7 @@
       if (b.getAttribute('data-owner') === 'me') {
         applyOwnerProfile(own);
         localStorage.setItem(OWNER_FLAG, 'owner');
+        applyOwnerRoutineUpdate();
         importOwnerStudents();
         toast(t('owner.meDone'));
       } else {
