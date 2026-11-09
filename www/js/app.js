@@ -2524,7 +2524,7 @@
   function updateSoundLabel(r) {
     const el = $('#soundName');
     if (!el || !r) return;
-    const m = /\/raw\/tone_([a-z]+)$/.exec(r.uri || '');
+    const m = /\/raw\/tone_([a-z]+)$/.exec(r.uri || '') || (!r.uri ? [0, 'dingdong'] : null);
     el.textContent = m ? t('sound.t_' + m[1]) : r.uri ? (r.title || t('sound.custom')) : t('sound.default');
     $$('#toneList .tone').forEach(function (x) { x.classList.toggle('on', !!m && x.getAttribute('data-tone') === m[1]); });
     const reset = $('#soundReset');

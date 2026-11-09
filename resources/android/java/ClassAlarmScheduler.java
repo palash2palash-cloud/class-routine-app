@@ -33,6 +33,8 @@ public class ClassAlarmScheduler {
     // আগের সংস্করণের channel; নিজের বাছাই করা শব্দ হলে channel id বদলায় (channel তৈরি হলে শব্দ আর বদলানো যায় না)
     public static final String CHANNEL_ID = "class-alarm-v3";
     static final String KEY_SOUND = "sound_uri";
+    // কিছু বাছাই না করলে এই শব্দ বাজে
+    static final String DEFAULT_TONE = "tone_dingdong";
     static final String KEY_SOUND_TITLE = "sound_title";
     // ক্যালেন্ডারের দিনের কাজ: শব্দ ছাড়া, সারাদিন নোটিফিকেশন বারে থাকে
     public static final String PIN_CHANNEL_ID = "day-tasks-v1";
@@ -103,8 +105,9 @@ public class ClassAlarmScheduler {
     public static Uri soundUri(Context ctx) {
         String u = savedSound(ctx);
         if (u != null && u.matches("android\\.resource://.*/raw/tone_[a-z]+")) return rawUri(ctx, u.substring(u.lastIndexOf('/') + 1));
+        if (u != null && u.contains("/raw/class_beep")) return rawUri(ctx, DEFAULT_TONE);
         if (u != null && !u.isEmpty()) return Uri.parse(u);
-        return rawUri(ctx, "class_beep");
+        return rawUri(ctx, DEFAULT_TONE);
     }
 
     public static String channelId(Context ctx) {
@@ -114,7 +117,7 @@ public class ClassAlarmScheduler {
     /* অ্যাপের raw শব্দের ঠিকানা resource id দিয়ে (নাম দিয়ে ঠিকানা কিছু ফোনে খোলে না) */
     public static Uri rawUri(Context ctx, String name) {
         int rid = ctx.getResources().getIdentifier(name, "raw", ctx.getPackageName());
-        if (rid == 0) rid = ctx.getResources().getIdentifier("class_beep", "raw", ctx.getPackageName());
+        if (rid == 0) rid = ctx.getResources().getIdentifier(DEFAULT_TONE, "raw", ctx.getPackageName());
         return Uri.parse("android.resource://" + ctx.getPackageName() + "/" + rid);
     }
 
@@ -144,8 +147,20 @@ public class ClassAlarmScheduler {
         } catch (Exception e) {
             try { mp.release(); } catch (Exception ignored) {}
             // বাছাই করা শব্দ খুলতে না পারলে অ্যাপের বিপ
-            mp = MediaPlayer.create(app, rawUri(app, "class_beep"));
-            if (mp == null) { if (done != null) done.run(); return; }
+            mp = MediaPlayer.create(app, rawUri(app, DEFAULT_TONE));
+            if (mp == null) {
+                // শেষ চেষ্টা: Android-এর Ringtone দিয়ে বাজানো
+                try {
+                    android.media.Ringtone rt = android.media.RingtoneManager.getRingtone(app, uri);
+                    if (rt != null) {
+                        rt.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+                        rt.play();
+                        main.postDelayed(rt::stop, maxMs);
+                    }
+                } catch (Exception ignored) {}
+                if (done != null) done.run();
+                return;
+            }
         }
         player = mp;
         final MediaPlayer cur = mp;
