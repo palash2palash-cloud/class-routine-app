@@ -1134,24 +1134,6 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .scene-pv.none svg { width: 34px; height: 34px; }
 
 /* ---------- সাপ্তাহিক রুটিন এক নজরে (পুরো সপ্তাহ এক পর্দায়) ---------- */
-.glance { background: var(--surface); border-radius: 18px; padding: 8px 6px; box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, .06)); }
-.glance-grid { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 3px; }
-.glance-grid th { font-weight: 600; color: var(--text-2); text-align: center; padding: 2px 0 4px; }
-.glance-grid thead th b { display: block; font-size: .9rem; color: var(--primary); line-height: 1.1; }
-.glance-grid thead th small { display: block; font-size: .62rem; font-weight: 500; color: var(--text-3); white-space: nowrap; letter-spacing: -.2px; }
-.glance-grid .g-day { width: 34px; font-size: .8rem; color: var(--text); text-align: left; padding-left: 2px; }
-.glance-grid tr.is-holiday .g-day { color: var(--error); }
-.glance-grid td { padding: 0; height: var(--gh, 70px); vertical-align: middle; }
-.glance-total { text-align: center; margin: 10px 0 4px; font-weight: 600; font-size: .9rem; color: var(--text-2); }
-.glance-grid td.g-empty { background: color-mix(in srgb, var(--text-3) 7%, transparent); border-radius: 8px; }
-.glance-grid td.g-off { text-align: center; font-size: .78rem; color: var(--error); background: color-mix(in srgb, var(--error) 8%, transparent); border-radius: 8px; height: 30px; }
-.g-cell { width: 100%; height: 100%; min-height: var(--gh, 70px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px 1px !important; border-radius: 8px !important; overflow: hidden; }
-.g-cell + .g-cell { margin-top: 3px; }
-.g-cell b { font-size: .76rem !important; line-height: 1.25; white-space: nowrap; letter-spacing: -.2px; }
-.g-cell span { font-size: .74rem !important; line-height: 1.25; white-space: nowrap; color: var(--text) !important; font-weight: 600; max-width: 100%; overflow: hidden; }
-.g-cell.en span:nth-of-type(1) { font-size: .64rem !important; letter-spacing: -.3px; }
-.g-cell i { font-style: normal; font-size: .58rem; color: var(--text-2); white-space: nowrap; overflow: hidden; max-width: 100%; }
-.g-cell { border-left-width: 3px !important; text-align: center; }
 
 /* ---------- দৃশ্যের নতুন চলন ---------- */
 .sc-sunbody { animation: scSunPulse 3.2s ease-in-out infinite; transform-origin: center; }
@@ -1297,14 +1279,6 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .tone-pick b { font-size: .86rem; }
 .tone-pick small { font-size: .68rem; color: var(--text-3); line-height: 1.2; }
 
-/* এক নজরে রুটিন: আজকের বার ও চলমান ক্লাস */
-.glance-grid tr.is-today th.g-day { color: var(--primary); font-weight: 800; position: relative; }
-.glance-grid tr.is-today th.g-day::before { content: ''; position: absolute; left: -4px; top: 18%; bottom: 18%; width: 3px; border-radius: 3px; background: var(--primary); }
-.glance-grid tr.is-today td { background: color-mix(in srgb, var(--primary) 24%, transparent); border-radius: 8px; }
-.glance-grid tr.is-today td.g-off { color: var(--primary); font-weight: 700; }
-.glance-grid .g-cell.is-live { position: relative; z-index: 1; outline: 2.5px solid var(--primary); outline-offset: 1px; animation: gLive 1.8s ease-in-out infinite; }
-.glance-grid .g-cell.is-live::after { content: ''; position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: #22C55E; box-shadow: 0 0 0 2px rgba(34, 197, 94, .35); }
-@keyframes gLive { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 55%, transparent); } 50% { box-shadow: 0 0 12px 3px color-mix(in srgb, var(--primary) 55%, transparent); } }
 
 /* সেটিংসের আইকন মেনু */
 .set-menu { padding: 4px 0; overflow: hidden; }
@@ -1337,3 +1311,51 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .class-card .card-head h3 { color: var(--c); }
 .class-card.is-now { border-style: solid; }
 .class-card.is-now::before { width: 5px; }
+
+/* ---------- এক নজরে রুটিন (এক পাতায়, স্ক্রল ছাড়া) ---------- */
+body.glance-mode .view { padding-bottom: calc(var(--nav-h) + 10px + var(--safe-bottom)); }
+body.glance-mode .topbar p { display: none; }
+.glance { background: var(--surface); border-radius: 20px; padding: 8px 6px 6px; box-shadow: var(--shadow); }
+.glance-grid { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 4px; }
+.glance-grid thead th { text-align: center; padding: 3px 0 5px; border-radius: 10px; transition: background .3s; }
+.glance-grid thead th b { display: block; margin: 0 auto; width: 24px; height: 24px; line-height: 24px; border-radius: 50%; font-size: .82rem; font-weight: 700; color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); }
+.glance-grid thead th small { display: block; margin-top: 3px; font-size: .6rem; font-weight: 600; color: var(--text-3); white-space: nowrap; letter-spacing: -.2px; }
+.glance-grid thead th.is-live-col { background: color-mix(in srgb, var(--primary) 14%, transparent); }
+.glance-grid thead th.is-live-col b { background: var(--primary); color: #fff; box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 60%, transparent); }
+.glance-grid thead th.is-live-col small { color: var(--primary); }
+.glance-grid .g-day { width: 40px; padding: 0; text-align: left; }
+.glance-grid .g-day span { display: block; font-size: .78rem; font-weight: 700; color: var(--text); line-height: 1.15; overflow-wrap: anywhere; letter-spacing: -.3px; }
+.glance-grid tr.is-holiday .g-day span { color: var(--error); }
+.glance-grid td { padding: 0; height: var(--gh, 70px); vertical-align: middle; }
+.glance-grid td.g-empty { background: color-mix(in srgb, var(--text-3) 7%, transparent); border-radius: 10px; }
+.glance-grid td.g-off { height: 26px; text-align: center; border-radius: 10px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--error) 9%, transparent) 0 8px, color-mix(in srgb, var(--error) 4%, transparent) 8px 16px); }
+.glance-grid td.g-off span { font-size: .74rem; font-weight: 700; color: var(--error); letter-spacing: .1em; }
+.glance-total { text-align: center; margin: 6px 0 2px; font-weight: 600; font-size: .82rem; color: var(--text-3); }
+.g-cell { --p: 0; position: relative; width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 2px 1px 4px !important; border: 0 !important; border-radius: 10px !important; overflow: hidden; text-align: center; color: var(--text);
+  background: linear-gradient(160deg, rgba(var(--c-rgb), .30), rgba(var(--c-rgb), .14)) !important; box-shadow: inset 0 0 0 1px rgba(var(--c-rgb), .35); transition: opacity .3s, transform .2s; }
+.g-cell::before { content: ''; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: var(--c); }
+.g-cell + .g-cell { margin-top: 3px; }
+.g-cell b { font-size: min(.74rem, 3vw) !important; font-weight: 700; line-height: 1.2; white-space: nowrap; letter-spacing: -.2px; }
+.g-cell span { font-size: min(.68rem, 2.8vw) !important; line-height: 1.2; white-space: nowrap; color: var(--text-2) !important; font-weight: 600; max-width: 100%; overflow: hidden; }
+.g-cell.en span { font-size: .62rem !important; letter-spacing: -.3px; }
+.g-cell em { font-style: normal; margin-top: 2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: .74rem; font-weight: 800; color: #fff; background: var(--c); }
+.g-cell i { font-style: normal; font-size: .56rem; color: var(--text-2); white-space: nowrap; overflow: hidden; max-width: 100%; }
+.g-cell .g-prog { display: none; }
+/* আজকের বার: সারাদিন */
+.glance-grid tr.is-today .g-day span { display: inline-block; padding: 3px 5px; border-radius: 8px; color: #fff; background: var(--primary); box-shadow: 0 3px 10px color-mix(in srgb, var(--primary) 45%, transparent); }
+.glance-grid tr.is-today td.g-empty { background: color-mix(in srgb, var(--primary) 18%, transparent); }
+.glance-grid tr.is-today td.g-off { background: color-mix(in srgb, var(--primary) 16%, transparent); }
+.glance-grid tr.is-today td.g-off span { color: var(--primary); }
+.glance-grid tr.is-today .g-cell { box-shadow: inset 0 0 0 1.5px rgba(var(--c-rgb), .7); }
+.g-cell.is-past { opacity: .5; }
+/* চলমান ক্লাস: ক্লাসের রঙে ভরা, জ্বলজ্বলে, নিচে কতটা সময় গেল */
+.glance-grid .g-cell.is-live { z-index: 1; color: #fff; transform: scale(1.04); background: linear-gradient(160deg, color-mix(in srgb, var(--c) 80%, #fff), var(--c)) !important; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--c); animation: gLive 1.6s ease-in-out infinite; }
+.glance-grid .g-cell.is-live::before { display: none; }
+.g-cell.is-live b, .g-cell.is-live span, .g-cell.is-live i { color: #fff !important; }
+.g-cell.is-live em { background: #fff; color: var(--c); }
+.g-cell.is-live .g-prog { display: block; position: absolute; left: 4px; right: 4px; bottom: 3px; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, .35); text-decoration: none; overflow: hidden; }
+.g-cell.is-live .g-prog s { display: block; height: 100%; width: calc(var(--p) * 100%); background: #fff; border-radius: 3px; transition: width .6s; }
+.g-cell.is-live::after { content: ''; position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 0 2px rgba(255, 255, 255, .7); animation: pulse 1.8s infinite; }
+@keyframes gLive { 0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--c), 0 0 8px 2px rgba(var(--c-rgb), .45); } 50% { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--c), 0 0 22px 8px rgba(var(--c-rgb), .6); } }
+[data-theme="dark"] .glance-grid .g-cell.is-live { box-shadow: 0 0 0 2px #0B1220, 0 0 0 4px var(--c); }
+@media (prefers-reduced-motion: reduce) { .glance-grid .g-cell.is-live { animation: none; } }

@@ -408,6 +408,7 @@
     destroySortables();
     const view = $('#view');
     view.className = 'view view-' + state.view;
+    document.body.classList.remove('glance-mode');
     view.classList.remove('enter');
     void view.offsetWidth;
     view.classList.add('enter');
@@ -824,18 +825,11 @@
         '<strong>' + esc(L(current.subject) || t('form.untitled')) + '</strong>' +
         '<span>' + esc(t('today.endsIn', { d: I.duration(left) })) + '</span></div></div>';
     }
-    if (next) {
-      const wait = Math.ceil(S.toMin(next.start) - m);
-      const where = [classSec(next), next.room ? t('card.room') + ' ' + L(next.room) : ''].filter(Boolean).join(' · ');
-      html += '<div class="status-row status-next" style="' + colorVars(next.color) + '">' +
-        '<div class="countdown"><b>' + esc(I.num(wait >= 60 ? Math.floor(wait / 60) : wait)) + '</b><small>' + esc(wait >= 60 ? t('today.hourShort') : t('today.minShort')) + '</small></div>' +
-        '<div><small>' + esc(t('today.nextClass')) + '</small><strong>' + esc(L(next.subject) || t('form.untitled')) + '</strong>' +
-        '<span>' + esc(t('today.startsIn', { d: I.duration(wait) })) + (where ? ' · ' + esc(where) : '') + '</span></div></div>';
-    }
     if (!current && !next) {
       html += '<div class="status-row status-done"><div class="done-icon">' + ICON.check + '</div><div><strong>' + esc(t('today.allDone')) + '</strong><span>' + esc(t('today.allDoneText')) + '</span></div></div>';
     }
     card.innerHTML = html;
+    card.hidden = !html;
   }
 
   /* ---------------- সপ্তাহ (Week) ---------------- */
@@ -851,12 +845,16 @@
       '<button type="button" class="' + (mode === 'glance' ? 'on' : '') + '" data-action="week-mode" data-mode="glance" aria-label="' + esc(t('week.glanceView')) + '">' + ICON.glance + '</button>' +
       '</div>');
 
-    let html = '<div class="search-box">' + ICON.search +
+    // এক নজরে রুটিন: খোঁজার ঘর ছাড়া, পুরো রুটিন এক পাতায় (স্ক্রল ছাড়া)
+    const glance = mode === 'glance';
+    document.body.classList.toggle('glance-mode', glance);
+    if (glance) state.search = '';
+    let html = glance ? '' : '<div class="search-box">' + ICON.search +
       '<input type="search" id="weekSearch" autocomplete="off" placeholder="' + esc(t('week.searchPh')) + '" value="' + esc(state.search) + '"/></div>';
     html += '<div id="weekBody"></div>';
     $('#view').innerHTML = html;
     const input = $('#weekSearch');
-    input.addEventListener('input', function () {
+    if (input) input.addEventListener('input', function () {
       state.search = input.value;
       renderWeekBody();
     });
@@ -1010,17 +1008,16 @@
   function fitGlance() {
     const box = $('.glance');
     if (!box) return;
+    box.style.setProperty('--gh', '40px');
     const nav = $('#bottomNav');
-    const bottom = nav ? nav.getBoundingClientRect().top : window.innerHeight;
-    const top = box.getBoundingClientRect().top;
-    const head = box.querySelector('thead').offsetHeight;
-    const total = box.querySelector('.glance-total').offsetHeight;
+    const bottom = (nav ? nav.getBoundingClientRect().top : window.innerHeight) - 10;
+    const top = box.getBoundingClientRect().top + window.scrollY - (document.scrollingElement.scrollTop || 0);
     const rows = $$('.glance-grid tbody tr', box);
-    const off = rows.filter(function (r) { return !!r.querySelector('.g-off'); }).length;
-    const work = rows.length - off;
+    const work = rows.filter(function (r) { return !r.querySelector('.g-off'); }).length;
     if (!work) return;
-    const avail = bottom - top - head - total - 34 - off * 34 - rows.length * 4;
-    const h = Math.max(64, Math.min(130, Math.floor(avail / work)));
+    const rowsH = rows.filter(function (r) { return !r.querySelector('.g-off'); }).reduce(function (n, r) { return n + r.offsetHeight; }, 0);
+    const used = box.offsetHeight - rowsH;
+    const h = Math.max(40, Math.min(150, Math.floor((bottom - top - used) / work)));
     box.style.setProperty('--gh', h + 'px');
   }
   window.addEventListener('resize', function () { if (state.view === 'week') fitGlance(); });
@@ -1034,32 +1031,36 @@
     const subjects = {};
     S.data.classes.forEach(function (c) { subjects[(c.subject || '').trim().toLowerCase()] = 1; });
     const manySubjects = Object.keys(subjects).length > 1;
+    const hm = function (x) { return I.num(((+x.slice(0, 2) % 12) || 12) + ':' + x.slice(3, 5)); };
     let html = '<div class="glance"><table class="glance-grid"><thead><tr><th class="g-day"></th>';
     slots.forEach(function (sl, i) {
-      html += '<th><b>' + esc(I.num(i + 1)) + '</b><small>' + esc(I.num(((+sl.start.slice(0, 2) % 12) || 12) + ':' + sl.start.slice(3, 5))) + '</small></th>';
+      html += '<th data-start="' + sl.start + '"><b>' + esc(I.num(i + 1)) + '</b><small>' + esc(hm(sl.start)) + '</small></th>';
     });
     html += '</tr></thead><tbody>';
     let total = 0;
-    const todayKey = todayInfo().dayKey;
     rows.forEach(function (r) {
       total += r.list.length;
-      html += '<tr data-day="' + r.day + '" class="' + (r.holiday ? 'is-holiday' : '') + (r.day === todayKey ? ' is-today' : '') + '"><th class="g-day">' + esc(I.dayShort(r.day)) + '</th>';
+      html += '<tr data-day="' + r.day + '" class="' + (r.holiday ? 'is-holiday' : '') + '"><th class="g-day"><span>' + esc(I.dayShort(r.day)) + '</span></th>';
       if (r.holiday && !r.list.length) {
-        html += '<td class="g-off" colspan="' + Math.max(1, slots.length) + '">' + esc(t('week.holiday')) + '</td></tr>';
+        html += '<td class="g-off" colspan="' + Math.max(1, slots.length) + '"><span>' + esc(t('week.holiday')) + '</span></td></tr>';
         return;
       }
       slots.forEach(function (sl) {
         const here = r.list.filter(function (c) { return c.start === sl.start; });
         if (!here.length) { html += '<td class="g-empty"></td>'; return; }
         html += '<td>' + here.map(function (c) {
-          return '<button type="button" class="grid-cell g-cell' + (I.getLang() === 'bn' ? '' : ' en') + (r.day === todayKey && isLiveNow(c) ? ' is-live' : '') + '" data-id="' + esc(c.id) + '" style="' + colorVars(c.color) + '">' +
+          const parts = sectionParts(c);
+          return '<button type="button" class="grid-cell g-cell' + (I.getLang() === 'bn' ? '' : ' en') + '" data-id="' + esc(c.id) + '" data-start="' + c.start + '" data-end="' + c.end + '" style="' + colorVars(c.color) + '">' +
             (manySubjects ? '<i>' + esc((L(c.subject) || '').slice(0, 6)) + '</i>' : '') +
-            '<b>' + esc(shortGrade(c)) + '</b>' + sectionParts(c).filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</button>';
+            '<b>' + esc(shortGrade(c)) + '</b>' + (parts[0] ? '<span>' + esc(parts[0]) + '</span>' : '') +
+            (parts[1] ? '<em>' + esc(parts[1]) + '</em>' : '') +
+            '<ins class="g-prog"><s></s></ins></button>';
         }).join('') + '</td>';
       });
       html += '</tr>';
     });
     html += '</tbody></table><p class="glance-total">' + esc(t('week.glanceTotal', { n: I.num(total) })) + '</p></div>';
+    setTimeout(tickGlance, 0);
     return html;
   }
 
@@ -1092,15 +1093,25 @@
   // এক নজরে রুটিন: আজকের বার সারাদিন, আর চলমান ক্লাসের ঘর যতক্ষণ ক্লাস চলে ততক্ষণ হাইলাইট
   function tickGlance() {
     if (!$('.glance-grid') || document.hidden) return;
-    const key = todayInfo().dayKey;
+    const info = todayInfo();
+    const m = nowMin();
+    const liveStarts = {};
     $$('.glance-grid tbody tr').forEach(function (tr) {
-      const on = tr.getAttribute('data-day') === key;
+      const on = tr.getAttribute('data-day') === info.dayKey;
       tr.classList.toggle('is-today', on);
       tr.querySelectorAll('.g-cell').forEach(function (b) {
         const c = S.data.classes.filter(function (x) { return x.id === b.getAttribute('data-id'); })[0];
-        b.classList.toggle('is-live', on && !!c && isLiveNow(c));
+        const live = on && !!c && isLiveNow(c);
+        b.classList.toggle('is-live', live);
+        b.classList.toggle('is-past', on && !!c && !live && S.toMin(c.end) <= m);
+        if (live) {
+          liveStarts[c.start] = 1;
+          const st = S.toMin(c.start), en = S.toMin(c.end);
+          b.style.setProperty('--p', Math.min(1, Math.max(0, (m - st) / Math.max(1, en - st))).toFixed(3));
+        }
       });
     });
+    $$('.glance-grid thead th[data-start]').forEach(function (th) { th.classList.toggle('is-live-col', !!liveStarts[th.getAttribute('data-start')]); });
   }
 
   function isLiveNow(c) {
