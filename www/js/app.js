@@ -1017,7 +1017,7 @@
     if (!work) return;
     const rowsH = rows.filter(function (r) { return !r.querySelector('.g-off'); }).reduce(function (n, r) { return n + r.offsetHeight; }, 0);
     const used = box.offsetHeight - rowsH;
-    const h = Math.max(40, Math.min(150, Math.floor((bottom - top - used) / work)));
+    const h = Math.max(40, Math.min(74, Math.floor((bottom - top - used) / work)));
     box.style.setProperty('--gh', h + 'px');
   }
   window.addEventListener('resize', function () { if (state.view === 'week') fitGlance(); });
@@ -1032,7 +1032,7 @@
     S.data.classes.forEach(function (c) { subjects[(c.subject || '').trim().toLowerCase()] = 1; });
     const manySubjects = Object.keys(subjects).length > 1;
     const hm = function (x) { return I.num(((+x.slice(0, 2) % 12) || 12) + ':' + x.slice(3, 5)); };
-    let html = '<div class="glance"><table class="glance-grid"><thead><tr><th class="g-day"></th>';
+    let html = '<div class="glance gv-b"><table class="glance-grid"><thead><tr><th class="g-day"></th>';
     slots.forEach(function (sl, i) {
       html += '<th data-start="' + sl.start + '"><b>' + esc(I.num(i + 1)) + '</b><small>' + esc(hm(sl.start)) + '</small></th>';
     });
@@ -1042,7 +1042,7 @@
       total += r.list.length;
       html += '<tr data-day="' + r.day + '" class="' + (r.holiday ? 'is-holiday' : '') + '"><th class="g-day"><span>' + esc(I.dayShort(r.day)) + '</span></th>';
       if (r.holiday && !r.list.length) {
-        html += '<td class="g-off" colspan="' + Math.max(1, slots.length) + '"><span>' + esc(t('week.holiday')) + '</span></td></tr>';
+        html += '<td class="g-off" colspan="' + Math.max(1, slots.length) + '"><span><svg class="g-off-ic" viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0-5 1.2 3h-2.4L12 2Zm0 20-1.2-3h2.4L12 22ZM2 12l3-1.2v2.4L2 12Zm20 0-3 1.2v-2.4l3 1.2ZM4.9 4.9l3 1.3-1.7 1.7-1.3-3Zm14.2 14.2-3-1.3 1.7-1.7 1.3 3Zm0-14.2-1.3 3-1.7-1.7 3-1.3ZM4.9 19.1l1.3-3 1.7 1.7-3 1.3Z"/></svg>' + esc(t('week.holidayDay')) + '</span></td></tr>';
         return;
       }
       slots.forEach(function (sl) {

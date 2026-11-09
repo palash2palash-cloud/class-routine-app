@@ -118,7 +118,8 @@
     "addHere": "Add a class here",
     "glanceView": "At a glance",
     "glanceHint": "All {n} classes of the week at a glance. Top number is the period, below it the start time. Tap any cell to edit.",
-    "glanceTotal": "Total classes: {n}"
+    "glanceTotal": "Total classes: {n}",
+    "holidayDay": "Weekly holiday"
   },
   "card": {
     "class": "Class",
