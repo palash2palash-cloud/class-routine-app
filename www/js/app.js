@@ -362,7 +362,8 @@
 
   function navigate(view, opts) {
     opts = opts || {};
-    if (view === 'today' || view === 'week' || view === 'settings' || view === 'calendar') state.prevView = view;
+    if (view === 'today' || view === 'week' || view === 'settings' || view === 'calendar' || view === 'notes') state.prevView = view;
+    if (view === 'notes' && state.view !== 'notes') { nt.folder = 'all'; nt.searchOpen = false; nt.q = ''; }
     if (view === 'add') {
       view = 'form';
       state.editId = null;
@@ -382,6 +383,9 @@
 
   function goBack() {
     if (state.overlays.length) { closeOverlay(); return true; }
+    if (nt.ed) { ntClose(); return true; }
+    if (state.view === 'notes' && nt.folder !== 'all') { nt.folder = 'all'; renderNotes(); window.scrollTo(0, 0); return true; }
+    if (state.view === 'notes' && nt.searchOpen) { nt.searchOpen = false; nt.q = ''; renderNotes(); return true; }
     if (state.view === 'form') { navigate(state.prevView || 'today'); return true; }
     if (state.view === 'settings' && state.setPage) { state.setPage = null; renderSettings(); window.scrollTo(0, 0); return true; }
     if (state.view === 'settings' && state.dirty) {
@@ -417,6 +421,8 @@
     else if (state.view === 'form') renderForm();
     else if (state.view === 'settings') renderSettings();
     else if (state.view === 'calendar') renderCalendar();
+    else if (state.view === 'notes') renderNotes();
+    ntFab();
     highlightNav();
   }
 
@@ -2722,9 +2728,520 @@
     return discard;
   }
 
+  /* ---------------- রঙিন নোট (নিচের মেনুর "নোট" ঘর) ---------------- */
+
+  const NT_HEX = { yellow: '#EAB308', pink: '#EC4899', green: '#16A34A', blue: '#2563EB', purple: '#7C3AED', orange: '#EA580C', gray: '#94A3B8' };
+  const NT_SORTS = ['updated', 'created', 'color', 'title'];
+  const NT_SORT_LABEL = { updated: 'notes.sortUpdated', created: 'notes.sortCreated', color: 'notes.sortColor', title: 'notes.sortTitleAz' };
+  const NT_SORT_KEY = 'classRoutine.notesSort';
+  const NI = {
+    pin: '<svg viewBox="0 0 24 24"><path d="M16 3a1 1 0 0 1 .7 1.7L15.4 6l2.6 6 1.3 1.3a1 1 0 0 1-.7 1.7H13v6l-1 1-1-1v-6H5.4a1 1 0 0 1-.7-1.7L6 12l2.6-6-1.3-1.3A1 1 0 0 1 8 3h8Z"/></svg>',
+    sort: '<svg viewBox="0 0 24 24"><path d="M3 6h18v2H3zm3 5h12v2H6zm4 5h4v2h-4z"/></svg>',
+    down: '<svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>',
+    more: '<svg viewBox="0 0 24 24"><path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg>',
+    all: '<svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5V3Zm9 1.5V8h3.5L14 4.5ZM8 11h8v1.6H8V11Zm0 3.5h8v1.6H8v-1.6Z"/></svg>',
+    arch: '<svg viewBox="0 0 24 24"><path d="M20.5 5.2 19.1 3.5A1.5 1.5 0 0 0 18 3H6c-.5 0-.9.2-1.2.5L3.5 5.2A2 2 0 0 0 3 6.5V19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.5c0-.5-.2-.9-.5-1.3ZM12 17.5 6.5 12H10v-2h4v2h3.5L12 17.5ZM5.1 5l.8-1h12l.9 1H5.1Z"/></svg>',
+    unarch: '<svg viewBox="0 0 24 24"><path d="M20.5 5.2 19.1 3.5A1.5 1.5 0 0 0 18 3H6c-.5 0-.9.2-1.2.5L3.5 5.2A2 2 0 0 0 3 6.5V19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.5c0-.5-.2-.9-.5-1.3ZM12 9.5l5.5 5.5H14v2h-4v-2H6.5L12 9.5ZM5.1 5l.8-1h12l.9 1H5.1Z"/></svg>',
+    trash: '<svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z"/></svg>',
+    restore: '<svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.9 3.9.1.1L9 12H6a7 7 0 1 1 2.1 5l-1.4 1.4A9 9 0 1 0 13 3Zm-1 5v5l4.3 2.5.7-1.2-3.5-2.1V8H12Z"/></svg>',
+    check: '<svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>',
+    list: '<svg viewBox="0 0 24 24"><path d="M3 5h2v2H3V5Zm4 0h14v2H7V5ZM3 11h2v2H3v-2Zm4 0h14v2H7v-2Zm-4 6h2v2H3v-2Zm4 0h14v2H7v-2Z"/></svg>',
+    back: '<svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>',
+    x: '<svg viewBox="0 0 24 24"><path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z" transform="translate(1.2 0)"/></svg>',
+    plus: '<svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>'
+  };
+
+  function ntReadSort() {
+    try { const v = localStorage.getItem(NT_SORT_KEY); return NT_SORTS.indexOf(v) !== -1 ? v : 'updated'; } catch (e) { return 'updated'; }
+  }
+
+  const nt = { folder: 'all', color: '', q: '', searchOpen: false, sort: ntReadSort(), ed: null, timer: null };
+
+  function ntInFolder(n, f) {
+    if (f === 'bin') return !!n.deletedAt;
+    return !n.deletedAt && (f === 'archive' ? n.archived : !n.archived);
+  }
+
+  function ntFirstLine(s) {
+    const lines = String(s || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+    return lines[0] || '';
+  }
+
+  function ntTitle(n) {
+    if (n.title.trim()) return n.title.trim();
+    if (n.type === 'check') {
+      const it = n.items.filter(function (x) { return x.text.trim(); })[0];
+      return it ? it.text.trim() : t('notes.untitled');
+    }
+    return ntFirstLine(n.body) || t('notes.untitled');
+  }
+
+  function ntItems(n) { return n.items.filter(function (x) { return x.text.trim(); }); }
+
+  function ntSub(n) {
+    if (n.type === 'check') {
+      const its = ntItems(n);
+      if (!its.length) return '';
+      return its.slice(0, 4).map(function (x) { return (x.done ? '✓ ' : '○ ') + x.text.trim(); }).join(' · ');
+    }
+    const lines = String(n.body || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+    const rest = n.title.trim() ? lines : lines.slice(1);
+    return rest.join(' ').slice(0, 160);
+  }
+
+  function ntHm(d) { return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+
+  function ntWhen(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const tm = I.formatTime(ntHm(d), S.settings.timeFormat);
+    if (S.isoDate(d) === S.isoDate(now)) return t('notes.today', { t: tm });
+    const y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    if (S.isoDate(d) === S.isoDate(y)) return t('notes.yesterday', { t: tm });
+    const months = t('months');
+    const m = Array.isArray(months) ? months[d.getMonth()] : d.getMonth() + 1;
+    return I.num(d.getDate()) + ' ' + m + (d.getFullYear() !== now.getFullYear() ? ' ' + I.num(d.getFullYear()) : '');
+  }
+
+  function ntSorted(list) {
+    const ci = function (n) { return S.MEMO_COLORS.indexOf(n.color); };
+    const coll = S.collator();
+    const by = {
+      updated: function (a, b) { return b.updated - a.updated; },
+      created: function (a, b) { return b.created - a.created; },
+      color: function (a, b) { return ci(a) - ci(b) || b.updated - a.updated; },
+      title: function (a, b) { return coll.compare(ntTitle(a), ntTitle(b)); }
+    }[nt.sort];
+    return list.slice().sort(function (a, b) {
+      if (nt.folder === 'bin') return b.deletedAt - a.deletedAt;
+      return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || by(a, b);
+    });
+  }
+
+  function ntRowHtml(n) {
+    const sub = nt.folder === 'bin' ? t('notes.daysLeft', { n: I.num(S.binDaysLeft(n)) }) : ntSub(n);
+    const its = ntItems(n);
+    const badge = n.type === 'check' && its.length
+      ? '<span class="nt-badge">' + NI.check + I.num(its.filter(function (x) { return x.done; }).length + '/' + its.length) + '</span>' : '';
+    return '<button type="button" class="nt-row' + (n.type === 'check' ? ' is-check' : '') + '" data-nt="' + esc(n.id) + '" style="--k:' + NT_HEX[n.color] + '">' +
+      '<span class="nt-tx"><b>' + esc(ntTitle(n)) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
+      '<span class="nt-meta"><time>' + esc(ntWhen(nt.folder === 'bin' ? n.deletedAt : n.updated)) + '</time>' +
+      '<span class="nt-marks">' + badge + (n.pinned && nt.folder !== 'bin' ? NI.pin : '') + '</span></span></button>';
+  }
+
+  function ntListHtml() {
+    const inFolder = S.memos().filter(function (n) { return ntInFolder(n, nt.folder); });
+    const list = ntSorted(inFolder.filter(function (n) { return (!nt.color || n.color === nt.color) && S.memoMatches(n, nt.q); }));
+    if (!list.length) {
+      if (inFolder.length) return emptyHtml('search', t('notes.noMatch'), '');
+      if (nt.folder === 'archive') return emptyHtml('search', t('notes.emptyArchive'), t('notes.emptyArchiveSub'));
+      if (nt.folder === 'bin') return emptyHtml('search', t('notes.emptyBinList'), t('notes.emptyBinSub'));
+      return emptyHtml('empty', t('notes.emptyAll'), t('notes.emptyAllSub'));
+    }
+    return list.map(ntRowHtml).join('');
+  }
+
+  function renderNotes() {
+    S.purgeMemos();
+    const active = S.memos().filter(function (n) { return ntInFolder(n, 'all'); });
+    const here = S.memos().filter(function (n) { return ntInFolder(n, nt.folder); });
+    const pins = active.filter(function (n) { return n.pinned; }).length;
+    const title = nt.folder === 'all' ? t('notes.title') : nt.folder === 'archive' ? t('notes.archiveTitle') : t('notes.binTitle');
+    const sub = nt.folder === 'all' && pins ? t('notes.subPinned', { n: I.num(active.length), p: I.num(pins) }) : t('notes.sub', { n: I.num(here.length) });
+    setTop(title, sub, '', nt.folder !== 'all');
+    const tools = nt.searchOpen
+      ? '<label class="nt-search">' + ICON.search + '<input type="search" id="ntQ" autocomplete="off" placeholder="' + esc(t('notes.search')) + '" value="' + esc(nt.q) + '"><button type="button" class="nt-ib flat" data-action="nt-search-close" aria-label="' + esc(t('common.cancel')) + '">' + NI.x + '</button></label>'
+      : '<button type="button" class="nt-sort" data-action="nt-sort">' + NI.sort + '<span>' + esc(t('notes.sort', { s: t(NT_SORT_LABEL[nt.sort]) })) + '</span>' + NI.down + '</button>' +
+        '<button type="button" class="nt-ib" data-action="nt-search" aria-label="' + esc(t('notes.searchBtn')) + '">' + ICON.search + '</button>';
+    const colors = '<div class="nt-colors"><span>' + esc(t('notes.color')) + '</span>' +
+      '<button type="button" class="nt-dot nt-dot-all' + (!nt.color ? ' on' : '') + '" data-action="nt-color" data-c="" aria-label="' + esc(t('notes.allColors')) + '"></button>' +
+      S.MEMO_COLORS.map(function (c) {
+        return '<button type="button" class="nt-dot' + (nt.color === c ? ' on' : '') + '" data-action="nt-color" data-c="' + c + '" style="--k:' + NT_HEX[c] + '" aria-label="' + esc(t('notes.colorNames.' + c)) + '"></button>';
+      }).join('') + '</div>';
+    const binBar = nt.folder === 'bin' && here.length
+      ? '<div class="nt-binbar"><p>' + esc(t('notes.binHint')) + '</p><button type="button" class="btn btn-danger" data-action="nt-empty-bin">' + ICON.trash + esc(t('notes.emptyBin')) + '</button></div>' : '';
+    $('#view').innerHTML = '<div class="nt-tools">' + tools + '<button type="button" class="nt-ib" data-action="nt-more" aria-label="' + esc(t('notes.more')) + '">' + NI.more + '</button></div>' +
+      colors + binBar + '<div class="nt-list" id="ntList">' + ntListHtml() + '</div>';
+    const q = $('#ntQ');
+    if (q) {
+      q.addEventListener('input', function () { nt.q = q.value; $('#ntList').innerHTML = ntListHtml(); });
+    }
+    ntFab();
+  }
+
+  function ntFab() {
+    const f = $('#ntFab');
+    if (!f) return;
+    f.hidden = state.view !== 'notes' || nt.folder !== 'all';
+    f.setAttribute('aria-label', t('notes.add'));
+  }
+
+  function ntRefresh() {
+    if (state.view !== 'notes') return;
+    const y = window.scrollY;
+    renderNotes();
+    window.scrollTo(0, y);
+  }
+
+  function ntSortOptions() {
+    return '<h3 class="sheet-title nt-sh">' + esc(t('notes.sortTitle')) + '</h3>' +
+      NT_SORTS.map(function (s) {
+        return '<button type="button" class="nt-opt' + (nt.sort === s ? ' on' : '') + '" data-action="nt-sort-pick" data-s="' + s + '"><i></i>' + esc(t(NT_SORT_LABEL[s])) + '</button>';
+      }).join('');
+  }
+
+  function ntMoreSheet() {
+    const cnt = function (f) { return S.memos().filter(function (n) { return ntInFolder(n, f); }).length; };
+    const tile = function (f, col, ic, label, small) {
+      return '<button type="button" class="nt-tile' + (nt.folder === f ? ' on' : '') + '" data-action="nt-folder" data-f="' + f + '" style="--k:' + col + '"><span>' + ic + '</span>' + esc(label) + '<small>' + esc(small) + '</small></button>';
+    };
+    openOverlay('sheet', '<div class="sheet-handle"></div><h3 class="sheet-title nt-sh">' + esc(t('notes.more')) + '</h3>' +
+      '<div class="nt-grid">' +
+      tile('all', '#4F46E5', NI.all, t('notes.all'), t('notes.count', { n: I.num(cnt('all')) })) +
+      tile('archive', '#0D9488', NI.arch, t('notes.archive'), t('notes.count', { n: I.num(cnt('archive')) })) +
+      tile('bin', '#DC2626', NI.trash, t('notes.bin'), cnt('bin') ? t('notes.count', { n: I.num(cnt('bin')) }) : t('notes.binKeeps')) +
+      '</div>' + ntSortOptions());
+  }
+
+  function ntNewSheet() {
+    openOverlay('sheet', '<div class="sheet-handle"></div><h3 class="sheet-title nt-sh">' + esc(t('notes.newTitle')) + '</h3><div class="nt-choose">' +
+      '<button type="button" class="nt-ch" data-action="nt-create" data-type="text" style="--k:#4F46E5"><span>' + NI.all + '</span>' + esc(t('notes.typeText')) + '<small>' + esc(t('notes.typeTextSub')) + '</small></button>' +
+      '<button type="button" class="nt-ch" data-action="nt-create" data-type="check" style="--k:#16A34A"><span>' + NI.check + '</span>' + esc(t('notes.typeCheck')) + '<small>' + esc(t('notes.typeCheckSub')) + '</small></button>' +
+      '</div>');
+  }
+
+  function ntBinSheet(id) {
+    const n = S.getMemo(id);
+    if (!n) return;
+    const sub = ntSub(n);
+    openOverlay('sheet', '<div class="sheet-handle"></div><div class="nt-binnote" style="--k:' + NT_HEX[n.color] + '"><b>' + esc(ntTitle(n)) + '</b>' + (sub ? '<p>' + esc(sub) + '</p>' : '') + '<small>' + esc(t('notes.daysLeft', { n: I.num(S.binDaysLeft(n)) })) + '</small></div>' +
+      '<div class="nt-binacts"><button type="button" class="btn btn-primary" data-action="nt-restore" data-id="' + esc(id) + '">' + NI.restore + esc(t('notes.restore')) + '</button>' +
+      '<button type="button" class="btn btn-danger" data-action="nt-del" data-id="' + esc(id) + '">' + ICON.trash + esc(t('notes.deleteForever')) + '</button></div>');
+  }
+
+  async function ntAction(action, el) {
+    switch (action) {
+      case 'nt-sort':
+        openOverlay('sheet', '<div class="sheet-handle"></div>' + ntSortOptions());
+        break;
+      case 'nt-sort-pick':
+        nt.sort = el.getAttribute('data-s');
+        try { localStorage.setItem(NT_SORT_KEY, nt.sort); } catch (e) { /* ignore */ }
+        closeOverlay();
+        ntRefresh();
+        break;
+      case 'nt-more':
+        ntMoreSheet();
+        break;
+      case 'nt-folder':
+        nt.folder = el.getAttribute('data-f');
+        closeOverlay();
+        renderNotes();
+        window.scrollTo(0, 0);
+        break;
+      case 'nt-color': {
+        const c = el.getAttribute('data-c');
+        nt.color = nt.color === c ? '' : c;
+        ntRefresh();
+        break;
+      }
+      case 'nt-search':
+        nt.searchOpen = true;
+        renderNotes();
+        $('#ntQ').focus();
+        break;
+      case 'nt-search-close':
+        nt.searchOpen = false;
+        nt.q = '';
+        renderNotes();
+        break;
+      case 'nt-new':
+        ntNewSheet();
+        break;
+      case 'nt-create': {
+        closeOverlay();
+        const n = S.newMemo(el.getAttribute('data-type'), nt.color || 'yellow');
+        ntOpen(n.id, true);
+        break;
+      }
+      case 'nt-restore': {
+        closeOverlay();
+        S.updateMemo(el.getAttribute('data-id'), { deletedAt: 0 }, false);
+        toast(t('notes.restored'));
+        ntRefresh();
+        break;
+      }
+      case 'nt-del': {
+        const id = el.getAttribute('data-id');
+        closeOverlay();
+        const ok = await confirmDialog({ title: t('notes.deleteTitle'), message: t('notes.deleteText'), okText: t('notes.deleteForever'), danger: true });
+        if (!ok) return;
+        S.removeMemo(id);
+        toast(t('notes.deleted'));
+        ntRefresh();
+        break;
+      }
+      case 'nt-empty-bin': {
+        const n = S.memos().filter(function (x) { return x.deletedAt; }).length;
+        const ok = await confirmDialog({ title: t('notes.emptyBinTitle'), message: t('notes.emptyBinText', { n: I.num(n) }), okText: t('notes.emptyBin'), danger: true });
+        if (!ok) return;
+        S.emptyBin();
+        toast(t('notes.binEmptied'));
+        ntRefresh();
+        break;
+      }
+    }
+  }
+
+  function ntRowTap(id) {
+    if (nt.folder === 'bin') ntBinSheet(id);
+    else ntOpen(id);
+  }
+
+  /* ---- নোট খোলা (পুরো পাতা নোটের রঙে) ---- */
+
+  function ntCur() { return nt.ed ? S.getMemo(nt.ed) : null; }
+
+  function ntTouch() {
+    const n = ntCur();
+    if (!n) return;
+    n.updated = Date.now();
+    clearTimeout(nt.timer);
+    nt.timer = setTimeout(function () { nt.timer = null; S.save(); }, 400);
+    const w = $('#ntEd .nt-ed-when');
+    if (w) w.textContent = t('notes.edUpdated', { d: ntWhen(n.updated) });
+  }
+
+  function ntFlush() {
+    if (nt.timer) { clearTimeout(nt.timer); nt.timer = null; S.save(); }
+  }
+
+  function ntItemHtml(it) {
+    return '<div class="nt-it' + (it.done ? ' done' : '') + '" data-i="' + esc(it.id) + '">' +
+      '<button type="button" class="nt-box" data-ed="tick" aria-pressed="' + (it.done ? 'true' : 'false') + '">' + NI.check + '</button>' +
+      '<textarea class="nt-it-in" rows="1" maxlength="500">' + esc(it.text) + '</textarea>' +
+      '<button type="button" class="nt-x" data-ed="rm" aria-label="' + esc(t('notes.removeItem')) + '">' + NI.x + '</button></div>';
+  }
+
+  function ntProgHtml(n) {
+    const its = ntItems(n);
+    if (!its.length) return '';
+    const d = its.filter(function (x) { return x.done; }).length;
+    return '<span>' + esc(t('notes.progress', { n: I.num(its.length), d: I.num(d) })) + '</span><b><i style="width:' + Math.round(d * 100 / its.length) + '%"></i></b>';
+  }
+
+  function ntUpdProg() {
+    const n = ntCur();
+    const p = $('#ntEd .nt-prog');
+    if (n && p) { p.innerHTML = ntProgHtml(n); p.hidden = !p.innerHTML; }
+  }
+
+  function ntGrow(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+  }
+
+  function ntEdTopHtml(n) {
+    return '<button type="button" class="nt-eb" data-ed="close" aria-label="' + esc(t('common.back')) + '">' + NI.back + '</button>' +
+      '<b>' + esc(n.type === 'check' ? t('notes.typeCheck') : t('notes.typeText')) + '</b>' +
+      '<button type="button" class="nt-eb' + (n.pinned ? ' on' : '') + '" data-ed="pin" aria-pressed="' + (n.pinned ? 'true' : 'false') + '" aria-label="' + esc(n.pinned ? t('notes.unpin') : t('notes.pin')) + '">' + NI.pin + '</button>' +
+      '<button type="button" class="nt-eb" data-ed="archive" aria-label="' + esc(n.archived ? t('notes.unarchive') : t('notes.toArchive')) + '">' + (n.archived ? NI.unarch : NI.arch) + '</button>' +
+      '<button type="button" class="nt-eb" data-ed="bin" aria-label="' + esc(t('notes.toBin')) + '">' + NI.trash + '</button>';
+  }
+
+  function ntDrawEd() {
+    const n = ntCur();
+    const el = $('#ntEd');
+    if (!n || !el) return;
+    el.style.setProperty('--k', NT_HEX[n.color]);
+    el.innerHTML = '<div class="nt-ed-top">' + ntEdTopHtml(n) + '</div>' +
+      '<div class="nt-ed-body">' +
+      '<textarea class="nt-ed-title" rows="1" maxlength="200" placeholder="' + esc(t('notes.edTitle')) + '">' + esc(n.title) + '</textarea>' +
+      (n.type === 'check'
+        ? '<div class="nt-prog"></div><div class="nt-items">' + n.items.map(ntItemHtml).join('') + '</div>' +
+          '<div class="nt-add"><i class="nt-box nt-box-new">' + NI.plus + '</i><textarea class="nt-add-in" rows="1" maxlength="500" placeholder="' + esc(t('notes.edItem')) + '"></textarea></div>'
+        : '<textarea class="nt-ed-text" placeholder="' + esc(t('notes.edBody')) + '">' + esc(n.body) + '</textarea>') +
+      '<p class="nt-ed-when">' + esc(t('notes.edUpdated', { d: ntWhen(n.updated) })) + '</p></div>' +
+      '<div class="nt-ed-cols">' + S.MEMO_COLORS.map(function (c) {
+        return '<button type="button" class="nt-cdot' + (n.color === c ? ' on' : '') + '" data-ed="color" data-c="' + c + '" style="--c:' + NT_HEX[c] + '" aria-label="' + esc(t('notes.colorNames.' + c)) + '"></button>';
+      }).join('') + '<small>' + esc(t('notes.edChange')) + '</small></div>';
+    ntUpdProg();
+    $$('#ntEd textarea').forEach(ntGrow);
+  }
+
+  function ntOpen(id, fresh) {
+    if (!S.getMemo(id)) return;
+    nt.ed = id;
+    let el = $('#ntEd');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'ntEd';
+      el.className = 'nt-ed';
+      document.body.appendChild(el);
+      ntBindEd(el);
+    }
+    el.hidden = false;
+    ntDrawEd();
+    el.classList.remove('closing');
+    requestAnimationFrame(function () { el.classList.add('open'); });
+    if (fresh) setTimeout(function () { const tt = $('#ntEd .nt-ed-title'); if (tt) tt.focus(); }, 260);
+  }
+
+  function ntClose() {
+    const el = $('#ntEd');
+    const n = ntCur();
+    ntFlush();
+    if (n && S.memoEmpty(n)) S.removeMemo(n.id);
+    else if (n && n.type === 'check' && n.items.some(function (x) { return !x.text.trim(); })) {
+      n.items = n.items.filter(function (x) { return x.text.trim(); });
+      S.save();
+    }
+    nt.ed = null;
+    if (document.activeElement && el && el.contains(document.activeElement)) document.activeElement.blur();
+    if (el) {
+      el.classList.remove('open');
+      setTimeout(function () { if (!nt.ed) el.hidden = true; }, 230);
+    }
+    ntRefresh();
+  }
+
+  function ntItemOf(row) {
+    const n = ntCur();
+    const id = row && row.getAttribute('data-i');
+    return n ? n.items.filter(function (x) { return x.id === id; })[0] : null;
+  }
+
+  function ntInsertItem(afterRow, text) {
+    const n = ntCur();
+    const it = { id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: text || '', done: false };
+    const box = $('#ntEd .nt-items');
+    if (afterRow) {
+      const idx = n.items.indexOf(ntItemOf(afterRow));
+      n.items.splice(idx + 1, 0, it);
+      afterRow.insertAdjacentHTML('afterend', ntItemHtml(it));
+    } else {
+      n.items.push(it);
+      box.insertAdjacentHTML('beforeend', ntItemHtml(it));
+    }
+    ntTouch();
+    ntUpdProg();
+    return $('#ntEd [data-i="' + it.id + '"]');
+  }
+
+  function ntBindEd(el) {
+    el.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-ed]');
+      if (!b) return;
+      const act = b.getAttribute('data-ed');
+      const n = ntCur();
+      if (!n) return;
+      if (act === 'close') { ntClose(); return; }
+      if (act === 'pin') {
+        n.pinned = !n.pinned;
+        S.save();
+        $('#ntEd .nt-ed-top').innerHTML = ntEdTopHtml(n);
+        return;
+      }
+      if (act === 'archive' || act === 'bin') {
+        const id = n.id;
+        const was = { archived: n.archived, deletedAt: n.deletedAt };
+        if (act === 'archive') n.archived = !n.archived;
+        else n.deletedAt = Date.now();
+        S.save();
+        const msg = act === 'bin' ? t('notes.binned') : (n.archived ? t('notes.archived') : t('notes.unarchived'));
+        ntClose();
+        toast(msg, { label: t('notes.undo'), run: function () { S.updateMemo(id, was, false); ntRefresh(); } });
+        return;
+      }
+      if (act === 'color') {
+        n.color = b.getAttribute('data-c');
+        ntTouch();
+        el.style.setProperty('--k', NT_HEX[n.color]);
+        $$('#ntEd .nt-cdot').forEach(function (d) { d.classList.toggle('on', d === b); });
+        return;
+      }
+      if (act === 'tick') {
+        const row = b.closest('.nt-it');
+        const it = ntItemOf(row);
+        if (!it) return;
+        it.done = !it.done;
+        row.classList.toggle('done', it.done);
+        b.setAttribute('aria-pressed', it.done ? 'true' : 'false');
+        ntTouch();
+        ntUpdProg();
+        return;
+      }
+      if (act === 'rm') {
+        const row = b.closest('.nt-it');
+        const it = ntItemOf(row);
+        if (!it) return;
+        n.items.splice(n.items.indexOf(it), 1);
+        row.remove();
+        ntTouch();
+        ntUpdProg();
+      }
+    });
+
+    el.addEventListener('input', function (e) {
+      const ta = e.target;
+      const n = ntCur();
+      if (!n || ta.tagName !== 'TEXTAREA') return;
+      ntGrow(ta);
+      if (ta.classList.contains('nt-ed-title')) { n.title = ta.value.replace(/\n/g, ' ').slice(0, 200); ntTouch(); }
+      else if (ta.classList.contains('nt-ed-text')) { n.body = ta.value.slice(0, 20000); ntTouch(); }
+      else if (ta.classList.contains('nt-it-in')) {
+        const it = ntItemOf(ta.closest('.nt-it'));
+        if (it) { it.text = ta.value.replace(/\n/g, ' '); ntTouch(); ntUpdProg(); }
+      } else if (ta.classList.contains('nt-add-in') && /\n/.test(ta.value)) {
+        // কিছু কিবোর্ডে Enter এর keydown আসে না, তাই লেখায় নতুন লাইন এলেই কাজ যোগ হয়
+        const parts = ta.value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+        ta.value = '';
+        ntGrow(ta);
+        parts.forEach(function (p) { ntInsertItem(null, p); });
+      }
+    });
+
+    el.addEventListener('keydown', function (e) {
+      const ta = e.target;
+      if (ta.tagName !== 'TEXTAREA') return;
+      if (e.key === 'Enter' && ta.classList.contains('nt-ed-title')) {
+        e.preventDefault();
+        const next = $('#ntEd .nt-ed-text') || $('#ntEd .nt-add-in');
+        if (next) next.focus();
+        return;
+      }
+      if (e.key === 'Enter' && ta.classList.contains('nt-add-in')) {
+        e.preventDefault();
+        const v = ta.value.trim();
+        if (v) { ntInsertItem(null, v); ta.value = ''; ntGrow(ta); }
+        return;
+      }
+      if (ta.classList.contains('nt-it-in')) {
+        const row = ta.closest('.nt-it');
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const nr = ntInsertItem(row, '');
+          if (nr) $('.nt-it-in', nr).focus();
+        } else if (e.key === 'Backspace' && !ta.value) {
+          e.preventDefault();
+          const prev = row.previousElementSibling;
+          const n = ntCur();
+          const it = ntItemOf(row);
+          if (it) n.items.splice(n.items.indexOf(it), 1);
+          row.remove();
+          ntTouch();
+          ntUpdProg();
+          const target = prev ? $('.nt-it-in', prev) : $('#ntEd .nt-add-in');
+          if (target) { target.focus(); target.setSelectionRange(target.value.length, target.value.length); }
+        }
+      }
+    });
+  }
+
   /* ---------------- বোতামের কাজ (event delegation) ---------------- */
 
   async function handleAction(action, el) {
+    if (action.indexOf('nt-') === 0) { ntAction(action, el); return; }
     switch (action) {
       case 'add':
         navigate('add', { day: el.getAttribute('data-day'), start: el.getAttribute('data-start'), end: el.getAttribute('data-end') });
@@ -2947,6 +3464,8 @@
         handleAction(a.getAttribute('data-action'), a);
         return;
       }
+      const ntr = e.target.closest('[data-nt]');
+      if (ntr) { ntRowTap(ntr.getAttribute('data-nt')); return; }
       const prep = e.target.closest('[data-prep]');
       if (prep) {
         openPrepSheet(prep.getAttribute('data-prep'), prep.getAttribute('data-label'));
@@ -2967,6 +3486,7 @@
     document.addEventListener('focusin', function (e) {
       if (!isTextInput(e.target)) return;
       document.body.classList.add('kb-open');
+      if (e.target.closest('#ntEd')) return;
       const target = e.target;
       [150, 450].forEach(function (ms) {
         setTimeout(function () {
@@ -2984,7 +3504,7 @@
         const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
         document.documentElement.style.setProperty('--kb', kb + 'px');
         const a = document.activeElement;
-        if (kb > 0 && isTextInput(a)) a.scrollIntoView({ block: 'center' });
+        if (kb > 0 && isTextInput(a) && !a.closest('#ntEd')) a.scrollIntoView({ block: 'center' });
       };
       vv.addEventListener('resize', upd);
     }
@@ -2996,7 +3516,7 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
         const a = document.activeElement;
-        if (isTextInput(a)) a.scrollIntoView({ block: 'center' });
+        if (isTextInput(a) && !a.closest('#ntEd')) a.scrollIntoView({ block: 'center' });
       }, 60);
     });
 
@@ -3011,6 +3531,7 @@
     }
 
     document.addEventListener('visibilitychange', function () {
+      if (document.hidden) ntFlush();
       if (!document.hidden) onResume();
     });
 

@@ -46,7 +46,7 @@
   }
 
   function emptyData() {
-    return { version: 1, classes: [], settings: Object.assign({}, DEFAULT_SETTINGS), prepNotes: {}, events: [], students: {}, attendance: {} };
+    return { version: 1, classes: [], settings: Object.assign({}, DEFAULT_SETTINGS), prepNotes: {}, events: [], students: {}, attendance: {}, notes: [] };
   }
 
   function isTime(s) {
@@ -344,7 +344,7 @@
     const src = raw.data && raw.data.classes ? raw.data : raw;
     if (!Array.isArray(src.classes)) return null;
     const classes = src.classes.map(cleanClass).filter(Boolean);
-    return { version: 1, classes: classes, settings: cleanSettings(src.settings), prepNotes: cleanNotes(src.prepNotes), events: cleanEvents(src.events), students: cleanStudents(src.students), attendance: cleanAttendance(src.attendance) };
+    return { version: 1, classes: classes, settings: cleanSettings(src.settings), prepNotes: cleanNotes(src.prepNotes), events: cleanEvents(src.events), students: cleanStudents(src.students), attendance: cleanAttendance(src.attendance), notes: Array.isArray(src.notes) ? cleanMemos(src.notes) : undefined };
   }
 
   function load() {
@@ -358,6 +358,7 @@
       if (!parsed) throw new Error('bad data');
       data = parsed;
       cleanupMutedDates();
+      purgeMemos();
       return { ok: true, fresh: false };
     } catch (e) {
       data = emptyData();
@@ -682,7 +683,100 @@
     return q.split(' ').every(function (part) { return hay.indexOf(part) !== -1; });
   }
 
+
+  /* ---------------- রঙিন নোট (নিচের মেনুর "নোট" ঘর) ---------------- */
+  // type: text (লেখা) | check (চেকলিস্ট)। মুছলে আগে রিসাইকেল বিনে যায়, ৩০ দিন পর নিজে থেকে মুছে যায়।
+  const MEMO_COLORS = ['yellow', 'pink', 'green', 'blue', 'purple', 'orange', 'gray'];
+  const BIN_DAYS = 30;
+
+  function cleanMemo(x) {
+    if (!x || typeof x !== 'object') return null;
+    const now = Date.now();
+    const num = function (v, d) { return typeof v === 'number' && isFinite(v) && v > 0 ? v : d; };
+    const items = Array.isArray(x.items) ? x.items.slice(0, 300).map(function (it) {
+      if (!it || typeof it !== 'object') return null;
+      return { id: typeof it.id === 'string' && it.id ? it.id.slice(0, 40) : uid(), text: String(it.text || '').normalize('NFC').slice(0, 500), done: !!it.done };
+    }).filter(Boolean) : [];
+    return {
+      id: typeof x.id === 'string' && x.id ? x.id.slice(0, 40) : uid(),
+      type: x.type === 'check' ? 'check' : 'text',
+      title: cleanText(x.title, 200),
+      body: String(x.body || '').normalize('NFC').slice(0, 20000),
+      items: items,
+      color: MEMO_COLORS.indexOf(x.color) !== -1 ? x.color : 'yellow',
+      pinned: !!x.pinned,
+      archived: !!x.archived,
+      deletedAt: num(x.deletedAt, 0),
+      created: num(x.created, now),
+      updated: num(x.updated, now)
+    };
+  }
+
+  function cleanMemos(arr) {
+    return Array.isArray(arr) ? arr.slice(0, 2000).map(cleanMemo).filter(Boolean) : [];
+  }
+
+  function memos() {
+    if (!data.notes) data.notes = [];
+    return data.notes;
+  }
+
+  function getMemo(id) {
+    return memos().filter(function (n) { return n.id === id; })[0] || null;
+  }
+
+  function newMemo(type, color) {
+    const n = cleanMemo({ type: type, color: color });
+    memos().push(n);
+    save();
+    return n;
+  }
+
+  // patch দিয়ে বদলানো; touch=false হলে "শেষ পরিবর্তন" এর সময় বদলায় না (যেমন পিন করা)
+  function updateMemo(id, patch, touch) {
+    const n = getMemo(id);
+    if (!n) return null;
+    Object.keys(patch).forEach(function (k) { n[k] = patch[k]; });
+    if (touch !== false) n.updated = Date.now();
+    save();
+    return n;
+  }
+
+  function memoEmpty(n) {
+    return !n.title.trim() && !n.body.trim() && !n.items.some(function (it) { return it.text.trim(); });
+  }
+
+  function removeMemo(id) {
+    data.notes = memos().filter(function (n) { return n.id !== id; });
+    save();
+  }
+
+  function emptyBin() {
+    data.notes = memos().filter(function (n) { return !n.deletedAt; });
+    save();
+  }
+
+  function binDaysLeft(n) {
+    return Math.max(0, BIN_DAYS - Math.floor((Date.now() - n.deletedAt) / 86400000));
+  }
+
+  function purgeMemos() {
+    const limit = Date.now() - BIN_DAYS * 86400000;
+    const before = memos().length;
+    data.notes = memos().filter(function (n) { return !n.deletedAt || n.deletedAt > limit; });
+    if (data.notes.length !== before) save();
+  }
+
+  function memoMatches(n, q) {
+    q = normalize(q);
+    if (!q) return true;
+    const hay = normalize([n.title, n.body].concat(n.items.map(function (it) { return it.text; })).join(' '));
+    return q.split(' ').every(function (part) { return hay.indexOf(part) !== -1; });
+  }
+
   function replaceAll(newData) {
+    // পুরোনো ব্যাকআপে নোট না থাকলে এখনকার নোটগুলো রেখে দেওয়া
+    if (!Array.isArray(newData.notes)) newData.notes = data && Array.isArray(data.notes) ? data.notes : [];
     data = newData;
     save();
   }
@@ -692,7 +786,9 @@
     const keepEvents = data.events;
     const keepStudents = data.students;
     const keepAtt = data.attendance;
+    const keepMemos = data.notes;
     data = emptyData();
+    data.notes = keepMemos || [];
     data.settings = keepSettings;
     data.events = keepEvents;
     data.students = keepStudents || {};
@@ -757,6 +853,17 @@
     getNote: getNote,
     setNote: setNote,
     clearAll: clearAll,
+    MEMO_COLORS: MEMO_COLORS,
+    memos: memos,
+    getMemo: getMemo,
+    newMemo: newMemo,
+    updateMemo: updateMemo,
+    memoEmpty: memoEmpty,
+    removeMemo: removeMemo,
+    emptyBin: emptyBin,
+    binDaysLeft: binDaysLeft,
+    purgeMemos: purgeMemos,
+    memoMatches: memoMatches,
     isColor: isColor
   };
 })();
