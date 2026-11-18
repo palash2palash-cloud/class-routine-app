@@ -401,7 +401,75 @@
     $$('.nav-btn').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-nav') === active);
     });
+    navBall.update();
   }
+
+  /* নিচের মেনু: কাচের পাতে খাঁজ, বাছাই করা আইকন গোল বলে উঠে খাঁজে বসে।
+     অন্য ট্যাবে চাপলে বল লাফিয়ে গড়িয়ে নতুন জায়গায় যায়, খাঁজও সাথে সরে। */
+  const navBall = (function () {
+    const NS = 'http://www.w3.org/2000/svg';
+    let nav, svg, plate, hole, ball, cx = null, key = '', raf = 0;
+    function setup() {
+      if (svg) return true;
+      nav = $('#bottomNav');
+      if (!nav) return false;
+      svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('class', 'nav-shape');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.innerHTML = '<defs><mask id="navNotch" maskUnits="userSpaceOnUse"><rect x="-50" y="-60" width="2000" height="300" fill="#fff"/><circle r="34" cy="0" fill="#000"/></mask></defs>' +
+        '<rect class="nav-plate" x="0.6" y="0.6" rx="24" mask="url(#navNotch)"/>';
+      plate = svg.querySelector('.nav-plate');
+      hole = svg.querySelector('circle');
+      nav.insertBefore(svg, nav.firstChild);
+      ball = document.createElement('div');
+      ball.className = 'nav-ball';
+      nav.appendChild(ball);
+      if (window.ResizeObserver) new ResizeObserver(function () { cx = null; update(); }).observe(nav);
+      return true;
+    }
+    function target() {
+      const a = nav.querySelector('.nav-btn.active');
+      if (!a || !nav.clientWidth) return null;
+      const r = a.getBoundingClientRect(), n = nav.getBoundingClientRect();
+      return { a: a, x: r.left - n.left + r.width / 2 };
+    }
+    function place(x, lift) {
+      if (x == null || !nav.clientWidth) return;
+      const W = nav.clientWidth, H = nav.clientHeight;
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      plate.setAttribute('width', W - 1.2);
+      plate.setAttribute('height', H - 1.2);
+      hole.setAttribute('cx', x);
+      ball.style.transform = 'translate(' + x + 'px,' + (-lift) + 'px)';
+    }
+    function update() {
+      if (!setup()) return;
+      const t = target();
+      if (!t) { ball.style.display = 'none'; return; }
+      ball.style.display = '';
+      const k = t.a.getAttribute('data-nav');
+      if (k !== key) {
+        const ic = t.a.querySelector('.nav-add-circle svg') || t.a.querySelector('svg');
+        ball.innerHTML = ic ? ic.outerHTML : '';
+        ball.classList.toggle('pop', false);
+        void ball.offsetWidth;
+        ball.classList.toggle('pop', true);
+      }
+      const from = cx, to = t.x;
+      key = k; cx = to;
+      cancelAnimationFrame(raf);
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (from == null || reduce || Math.abs(from - to) < 1) { place(to, 0); return; }
+      const t0 = performance.now(), dur = 460;
+      (function step(now) {
+        const u = Math.min(1, Math.max(0, (now - t0) / dur));
+        const e = 1 - Math.pow(1 - u, 3) + Math.sin(u * Math.PI) * 0.06; // শেষে সামান্য ছিটকে পড়া
+        place(from + (to - from) * e, Math.sin(u * Math.PI) * 14);
+        if (u < 1) raf = requestAnimationFrame(step);
+      })(t0);
+    }
+    return { update: update };
+  })();
 
   function destroySortables() {
     state.sortables.forEach(function (s) { try { s.destroy(); } catch (e) { /* ignore */ } });
@@ -528,7 +596,7 @@
     const svg = $('.big-hg svg', sec);
     const nav = $('#bottomNav');
     const top = sec.getBoundingClientRect().top + window.scrollY;
-    const navH = nav ? nav.getBoundingClientRect().height : 70;
+    const navH = nav ? window.innerHeight - nav.getBoundingClientRect().top + 28 : 100;
     const clock = $('.de-clock', sec);
     const mq = $('.de-marquee', sec);
     const below = (clock ? clock.getBoundingClientRect().height : 110) + (mq ? mq.getBoundingClientRect().height + 16 : 0);

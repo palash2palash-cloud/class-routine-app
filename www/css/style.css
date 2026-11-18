@@ -170,7 +170,7 @@ svg { fill: currentColor; }
 .topbar-actions { display: flex; gap: 6px; align-items: center; }
 
 .view {
-  padding: 4px 16px calc(var(--nav-h) + 28px + var(--safe-bottom));
+  padding: 4px 16px calc(var(--nav-h) + 44px + var(--safe-bottom));
   max-width: 760px; margin: 0 auto;
 }
 .view.enter { animation: viewIn .28s ease both; }
@@ -589,7 +589,7 @@ input[type="time"] { -webkit-appearance: none; appearance: none; }
 
 /* ---------- Toast ---------- */
 .toast {
-  position: fixed; left: 16px; right: 16px; bottom: calc(var(--nav-h) + 16px + var(--safe-bottom)); z-index: 80;
+  position: fixed; left: 16px; right: 16px; bottom: calc(var(--nav-h) + 40px + var(--safe-bottom)); z-index: 80;
   max-width: 520px; margin: 0 auto; display: flex; align-items: center; gap: 12px;
   background: #1E293B; color: #F8FAFC; padding: 12px 16px; border-radius: 16px; box-shadow: var(--shadow-lg);
   transform: translateY(20px); opacity: 0; pointer-events: none; transition: transform .25s, opacity .25s; font-size: .94rem;
@@ -630,7 +630,7 @@ body.kb-open .save-bar { bottom: 12px; }
 
 /* ---------- Settings save bar ---------- */
 .save-bar {
-  position: sticky; bottom: calc(var(--nav-h) + 12px + var(--safe-bottom)); z-index: 15;
+  position: sticky; bottom: calc(var(--nav-h) + 40px + var(--safe-bottom)); z-index: 15;
   display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 10px 10px 10px 16px;
   background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-lg); border: 1px solid var(--border);
 }
@@ -1313,7 +1313,7 @@ body.kb-open .toast { top: calc(12px + var(--safe-top)); bottom: auto; }
 .class-card.is-now::before { width: 5px; }
 
 /* ---------- এক নজরে রুটিন (এক পাতায়, স্ক্রল ছাড়া) ---------- */
-body.glance-mode .view { padding-bottom: calc(var(--nav-h) + 10px + var(--safe-bottom)); }
+body.glance-mode .view { padding-bottom: calc(var(--nav-h) + 22px + var(--safe-bottom)); }
 body.glance-mode .topbar p { display: none; }
 .glance { background: var(--surface); border-radius: 20px; padding: 8px 6px 6px; box-shadow: var(--shadow); }
 .glance-grid { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 4px; }
@@ -1437,7 +1437,7 @@ body.glance-mode .topbar p { display: none; }
 .nt-binbar .btn { align-self: flex-start; }
 
 .nt-fab {
-  position: fixed; z-index: 31; right: 18px; bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  position: fixed; z-index: 31; right: 18px; bottom: calc(var(--nav-h) + var(--safe-bottom) + 26px);
   width: 58px; height: 58px; border: 0; border-radius: 18px; background: var(--primary); color: var(--on-primary);
   display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(var(--primary-rgb), .45);
   transition: transform .15s;
@@ -1519,3 +1519,91 @@ body.kb-open .nt-fab { display: none; }
 .nt-box-new { border-style: dashed; }
 .nt-box-new svg { opacity: 1; fill: var(--k); }
 .nt-add { border-bottom: 0; }
+
+/* ================= স্বচ্ছ কাচের নকশা (Palash, ২০২৬-১১-১৯) =================
+   পেছনে হালকা রঙিন গ্রেডিয়েন্ট, কার্ডগুলো আধা-স্বচ্ছ কাচ।
+   নিচের মেনু ভাসমান কাচের পাত, বাছাই করা আইকন গোল বলে উঠে খাঁজে বসে। */
+:root {
+  --surface: rgba(255, 255, 255, .62);
+  --glass-line: rgba(255, 255, 255, .78);
+  --glass-shadow: 0 8px 24px rgba(79, 70, 229, .10), inset 0 1px 0 rgba(255, 255, 255, .85);
+  --glass-solid: rgba(255, 255, 255, .9);
+  --nav-h: 66px;
+  --nav-gap: 10px;
+}
+[data-theme="dark"] {
+  --surface: rgba(24, 30, 50, .62);
+  --glass-line: rgba(148, 163, 255, .16);
+  --glass-shadow: 0 8px 24px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06);
+  --glass-solid: rgba(22, 28, 46, .92);
+}
+body { background: transparent; }
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(70vw 50vh at 8% 6%, rgba(129, 140, 248, .50), transparent 70%),
+    radial-gradient(60vw 45vh at 100% 38%, rgba(244, 114, 182, .32), transparent 70%),
+    radial-gradient(70vw 50vh at 15% 85%, rgba(45, 212, 191, .32), transparent 70%),
+    linear-gradient(160deg, #EEF2FF, #FDF4FF 50%, #ECFEFF);
+}
+[data-theme="dark"] body::before {
+  background:
+    radial-gradient(70vw 50vh at 8% 6%, rgba(79, 70, 229, .40), transparent 70%),
+    radial-gradient(60vw 45vh at 100% 38%, rgba(190, 24, 93, .22), transparent 70%),
+    radial-gradient(70vw 50vh at 15% 85%, rgba(13, 148, 136, .22), transparent 70%),
+    linear-gradient(160deg, #0B0F1A, #140F26 50%, #071A1E);
+}
+.topbar { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.profile-card, .class-card, .settings-card, .settings-group, .form-card, .form, .cal-card, .search-box, .glance, .att-tools, .att-row, .pd-row, .icon-btn, .now-clock {
+  border-color: var(--glass-line) !important;
+  box-shadow: var(--glass-shadow);
+}
+.profile-card, .settings-group, .settings-card, .form-card, .cal-card, .search-box, .glance, .icon-btn {
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+/* ওপরে ভেসে ওঠা পাতা আর বার্তা প্রায় নিরেট কাচ, যাতে পেছনের লেখা না মেশে */
+.sheet, .dialog, .save-bar, .nt-ed-cols {
+  background: var(--glass-solid) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+}
+.week-grid tbody th { background: var(--glass-solid); }
+
+/* ---------- ভাসমান কাচের মেনু, খাঁজ আর গোল বল ---------- */
+.bottom-nav {
+  left: 12px; right: 12px; bottom: calc(var(--nav-gap) + var(--safe-bottom));
+  height: var(--nav-h); padding: 0;
+  background: transparent; border: 0; box-shadow: none; overflow: visible;
+}
+.nav-shape { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: -2; overflow: visible; pointer-events: none; }
+.nav-shape .nav-plate {
+  fill: rgba(255, 255, 255, .97); stroke: rgba(255, 255, 255, 1); stroke-width: 1.2;
+  filter: drop-shadow(0 12px 18px rgba(30, 27, 75, .18));
+}
+[data-theme="dark"] .nav-shape .nav-plate { fill: rgba(22, 28, 46, .97); stroke: rgba(148, 163, 255, .22); filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .5)); }
+.nav-ball {
+  position: absolute; top: -27px; left: 0; width: 54px; height: 54px; margin-left: -27px; z-index: 2;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none;
+  background: radial-gradient(circle at 30% 25%, #818CF8, #4F46E5 60%, #3730A3);
+  box-shadow: 0 10px 22px rgba(79, 70, 229, .55), 0 0 0 4px rgba(255, 255, 255, .75);
+}
+[data-theme="dark"] .nav-ball { box-shadow: 0 10px 22px rgba(0, 0, 0, .55), 0 0 0 4px rgba(22, 28, 46, .95); }
+.nav-ball svg { width: 26px; height: 26px; fill: #fff; }
+.nav-ball svg.cal-icon, .nav-ball svg.nt-icon { width: 28px; height: 28px; filter: none; }
+.nav-ball.pop svg { animation: ballIcon .5s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes ballIcon { 0% { transform: scale(.3) rotate(-90deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.bottom-nav .nav-btn { min-height: 0; }
+.bottom-nav .nav-btn.active::before { display: none !important; }
+.bottom-nav .nav-btn.active > svg, .bottom-nav .nav-btn.active .nav-add-circle { opacity: 0; }
+.bottom-nav .nav-btn.active > span[data-i18n] { color: var(--primary); font-weight: 600; transform: translateY(10px); }
+.bottom-nav .nav-btn > span[data-i18n] { transition: transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+.bottom-nav .nav-btn > svg, .nav-add-circle { transition: opacity .2s, transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+.nav-btn:active > svg { transform: scale(.82); }
+
+/* ---------- আইকনে চাপলে ছোট লাফ ---------- */
+.icon-btn svg, .btn svg, .set-item svg, .chip-btn svg { transition: transform .25s cubic-bezier(.34, 1.56, .64, 1); }
+.icon-btn:active svg, .btn:active svg, .set-item:active svg, .chip-btn:active svg { transform: scale(.8) rotate(-8deg); }
+.tap-pop { animation: tapPop .45s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes tapPop { 0% { transform: scale(.7); } 60% { transform: scale(1.18); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .nav-ball.pop svg, .tap-pop { animation: none; } }
