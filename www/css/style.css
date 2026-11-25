@@ -2045,3 +2045,11 @@ body::before {
   color: var(--today-ink) !important; font-weight: 800; font-size: .86rem;
 }
 .glance-grid tr.is-today .g-cell.is-past { opacity: .5; }
+
+/* শব্দ বাছাই: প্লে বোতাম কাচের বৃত্ত, লাইটে কালো বৃত্তে সাদা আইকন, ডার্কে সাদা বৃত্তে কালো আইকন */
+.tone-play { width: 40px; height: 40px; background: var(--lg-pill) !important; box-shadow: var(--lg-pill-shadow) !important; }
+.tone-play svg { fill: var(--lg-pill-text) !important; width: 17px; height: 17px; }
+.tone.on { border-color: var(--text) !important; }
+.lgnav-add .lgi .lgi-b, .lgnav-add .lgi .lgi-h { display: none; }
+.lgnav-add .lgi .lgi-s { stroke-width: 2.1; }
+.lgnav-add svg.lgi { filter: none !important; }
