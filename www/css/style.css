@@ -1892,3 +1892,75 @@ body::before {
 .cal-day::before { display: none !important; }
 .cal-day { background: var(--lg-fill) !important; border: 1px solid var(--lg-edge) !important; box-shadow: var(--lg-shadow) !important; border-radius: 24px !important;
   backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
+
+/* ================= নিচের মেনু: রেফারেন্স ভিডিওর ২য় নকশা (২০২৬-১১-২৫) =================
+   কাচের লম্বা পাত + ডানে আলাদা গোল কাচের বোতাম। বাছাই করা ট্যাবে সবুজাভ কাচের পিল,
+   ভেতরে ভরা আইকন আর নাম; পিল গড়িয়ে আর টেনে-লম্বা হয়ে নতুন ট্যাবে যায়। */
+:root { --nav-h: 62px; --lgnav-ease: cubic-bezier(.34, 1.28, .52, 1); --lgnav-dur: .52s; }
+.lgnav {
+  position: fixed; z-index: 30; left: 12px; right: 12px; bottom: calc(10px + var(--safe-bottom));
+  height: var(--nav-h); display: flex; gap: 10px; align-items: stretch;
+}
+.lgnav-bar, .lgnav-add {
+  background: var(--lg-fill); border: 1px solid var(--lg-edge);
+  box-shadow: var(--lg-shadow), 0 14px 30px -12px rgba(0, 0, 0, .35);
+  backdrop-filter: blur(22px) saturate(150%); -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+.lgnav-bar { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; padding: 0 6px; border-radius: 999px; overflow: hidden; }
+[data-theme="dark"] .lgnav-bar, [data-theme="dark"] .lgnav-add { background: linear-gradient(180deg, rgba(60, 60, 64, .62), rgba(24, 24, 27, .70)); border-color: rgba(255, 255, 255, .30); }
+.lgnav-pill {
+  position: absolute; left: 0; top: 6px; bottom: 6px; width: 0; border-radius: 999px; opacity: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(104, 170, 150, .92), rgba(50, 118, 100, .90));
+  border: 1px solid rgba(190, 240, 222, .55);
+  box-shadow: 0 6px 16px -6px rgba(20, 80, 64, .7), inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -6px 12px -8px rgba(0, 40, 30, .55);
+  transition: transform var(--lgnav-dur) var(--lgnav-ease), width var(--lgnav-dur) var(--lgnav-ease), opacity .25s;
+}
+.lgnav-pill.on { opacity: 1; }
+.lg-tab {
+  position: relative; z-index: 1; flex: none; height: 100%; min-width: 0; padding: 0; border: 0; background: none;
+  display: flex; align-items: center; justify-content: center; gap: 0; color: var(--text); font: inherit;
+  transition: width var(--lgnav-dur) var(--lgnav-ease);
+}
+.lg-tab svg { width: 23px; height: 23px; flex: none; fill: url(#lgIcon); filter: var(--ic-filter); transition: transform .3s var(--lgnav-ease), fill .2s; }
+.lg-tab:active svg { transform: scale(.82); }
+.lg-label {
+  display: inline-block; max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0;
+  font-size: .9rem; font-weight: 700; color: #fff; letter-spacing: .01em;
+  transition: max-width var(--lgnav-dur) var(--lgnav-ease), opacity .18s, margin .3s;
+}
+.lg-tab.active .lg-label { max-width: 140px; opacity: 1; margin-left: 8px; transition: max-width var(--lgnav-dur) var(--lgnav-ease), opacity .3s .16s, margin .3s; }
+.lg-tab.active svg { fill: #fff; filter: drop-shadow(0 1px 1px rgba(0, 40, 30, .35)); }
+.lg-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.lgnav-add { flex: none; width: var(--nav-h); border-radius: 50%; transition: transform .2s; }
+.lgnav-add svg { width: 26px; height: 26px; }
+.lgnav-add:active { transform: scale(.92); }
+.lgnav-add.active {
+  background: linear-gradient(180deg, rgba(104, 170, 150, .92), rgba(50, 118, 100, .90)) !important; border-color: rgba(190, 240, 222, .55);
+  box-shadow: 0 8px 18px -6px rgba(20, 80, 64, .75), inset 0 1px 0 rgba(255, 255, 255, .45) !important;
+}
+@media (prefers-reduced-motion: reduce) { .lgnav-pill, .lg-tab, .lg-label { transition: none !important; } }
+
+/* ================= এক নজরে রুটিন: ক্লাসের বৃত্ত নিজ নিজ রঙে, আজকের দিনের নিচে দাগ ================= */
+.glance .glance-grid .g-cell, [data-theme="dark"] .glance .glance-grid .g-cell {
+  background: radial-gradient(circle at 32% 22%, color-mix(in srgb, var(--c) 40%, #fff), var(--c) 62%, color-mix(in srgb, var(--c) 78%, #000)) !important;
+  border: 1px solid rgba(255, 255, 255, .55) !important;
+  box-shadow: 0 6px 12px -6px rgba(var(--c-rgb), .75), inset 0 1.5px 1px rgba(255, 255, 255, .6), inset 0 -4px 8px rgba(0, 0, 0, .14) !important;
+}
+.glance .glance-grid .g-cell b, .glance .glance-grid .g-cell span, .glance .glance-grid .g-cell i { color: #fff !important; text-shadow: 0 1px 2px rgba(0, 0, 0, .28); }
+.glance .glance-grid .g-cell em { background: rgba(255, 255, 255, .95) !important; color: var(--c) !important; }
+.glance-grid tr.is-today .g-cell:not(.is-live), [data-theme="dark"] .glance-grid tr.is-today .g-cell:not(.is-live) {
+  box-shadow: 0 6px 12px -6px rgba(var(--c-rgb), .75), inset 0 1.5px 1px rgba(255, 255, 255, .6), inset 0 -4px 8px rgba(0, 0, 0, .14) !important;
+}
+.gv-b tr.is-today td.g-empty { background: radial-gradient(circle closest-side, transparent calc(100% - 3px), color-mix(in srgb, var(--text) 13%, transparent) calc(100% - 2px), color-mix(in srgb, var(--text) 13%, transparent) calc(100% - 1px), transparent 100%) !important; }
+.glance .glance-grid .g-cell.is-past { opacity: .42; }
+/* চলমান ক্লাস: বড়, জ্বলজ্বলে, সাদা কিনারা আর সময়ের আংটি */
+.glance .glance-grid .g-cell.is-live {
+  transform: scale(1.14);
+  border: 2px solid #fff !important;
+  box-shadow: 0 0 0 0 transparent, 0 0 20px 4px rgba(var(--c-rgb), .65), inset 0 1.5px 1px rgba(255, 255, 255, .7) !important;
+}
+/* আজকের বার: চারপাশের সাদা ছায়া নয়, নিচে একটা দাগ */
+.glance-grid tr.is-today .g-day span, [data-theme="dark"] .glance-grid tr.is-today .g-day span {
+  background: linear-gradient(currentColor, currentColor) left bottom / 100% 2.5px no-repeat !important;
+  color: var(--text) !important; box-shadow: none !important; border-radius: 0; padding: 0 0 3px !important;
+}
