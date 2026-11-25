@@ -1964,3 +1964,58 @@ body::before {
   background: linear-gradient(currentColor, currentColor) left bottom / 100% 2.5px no-repeat !important;
   color: var(--text) !important; box-shadow: none !important; border-radius: 0; padding: 0 0 3px !important;
 }
+
+/* ================= সংশোধনী ৩ (২০২৬-১১-২৫ সন্ধ্যা) ================= */
+/* সেটিংস: সংরক্ষণের পর নিচের বার সাথে সাথে মিলিয়ে যায়; কিছু বদলালে তবেই দেখা যায় */
+.save-bar:not(.is-dirty) { display: none !important; }
+.save-bar.is-dirty { animation: lgBarIn .25s ease both; }
+@keyframes lgBarIn { from { opacity: 0; transform: translateY(10px); } }
+
+/* নতুন কাচের আইকন: স্বচ্ছ দেহ + ঝকঝকে কিনারা + আলোর ঝিলিক */
+.lg-tab svg.lgi { fill: none !important; filter: var(--ic-filter); overflow: visible; }
+.lgi .lgi-b { fill: url(#lgIcon); fill-opacity: .26; stroke: none; }
+.lgi .lgi-s { fill: none; stroke: url(#lgIcon); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.lgi .lgi-h { fill: none; stroke: rgba(255, 255, 255, .95); stroke-width: 1.5; stroke-linecap: round; }
+[data-theme="dark"] .lgi .lgi-b { fill-opacity: .2; }
+[data-theme="dark"] .lgi .lgi-h { stroke: rgba(255, 255, 255, .8); }
+.lg-tab.active svg.lgi { fill: none !important; }
+.lg-tab.active .lgi .lgi-s { stroke: var(--lgp-ink); }
+.lg-tab.active .lgi .lgi-b { fill: var(--lgp-ink); fill-opacity: .2; }
+.lgnav-add svg.lgi { width: 28px; height: 28px; }
+
+/* বাছাই করা ট্যাবের পিল: লাইটে কালো স্বচ্ছ কাচ, ডার্কে সাদা স্বচ্ছ কাচ */
+:root { --lgp-ink: #FFFFFF;
+  --lgp-bg: linear-gradient(180deg, rgba(58, 58, 62, .78), rgba(14, 14, 16, .72));
+  --lgp-edge: rgba(255, 255, 255, .55);
+  --lgp-shadow: 0 8px 18px -6px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .38), inset 0 -6px 12px -8px rgba(0, 0, 0, .7); }
+[data-theme="dark"] { --lgp-ink: #FFFFFF;
+  --lgp-bg: linear-gradient(180deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .12));
+  --lgp-edge: rgba(255, 255, 255, .5);
+  --lgp-shadow: 0 8px 20px -6px rgba(0, 0, 0, .85), inset 0 1px 0 rgba(255, 255, 255, .6), inset 0 -6px 12px -8px rgba(255, 255, 255, .15); }
+.lgnav-pill, .lgnav-add.active {
+  background: var(--lgp-bg) !important; border: 1px solid var(--lgp-edge) !important; box-shadow: var(--lgp-shadow) !important;
+  backdrop-filter: blur(10px) saturate(160%); -webkit-backdrop-filter: blur(10px) saturate(160%);
+}
+.lg-label { color: var(--lgp-ink); }
+.lg-tab.active svg { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35)); }
+.lgnav-add.active .lgi .lgi-s { stroke: var(--lgp-ink); }
+
+/* দিনশেষের স্ক্রল লেখা: লাইটে কালো, ডার্কে সাদা, পেছনে তরল কাচ */
+.de-marquee {
+  background: var(--lg-fill) !important; border: 1px solid var(--lg-edge) !important; box-shadow: var(--lg-shadow) !important;
+  border-radius: 999px !important; padding: 11px 0 !important;
+  backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+.de-marquee .mq-track { color: var(--text) !important; }
+
+/* দিনশেষের ফ্লিপ ঘড়ি আর উপরের ছোট ঘড়ি (ক্লাস না চললে): কাচের কার্ড */
+#dayEnd .de-clock, .now-clock:not(.is-live) { --bh-card: rgba(255, 255, 255, .9) !important; --bh-ink: #111113 !important; }
+[data-theme="dark"] #dayEnd .de-clock, [data-theme="dark"] .now-clock:not(.is-live) { --bh-card: rgba(56, 56, 60, .94) !important; --bh-ink: #FFFFFF !important; }
+#dayEnd .de-clock .fc, .now-clock:not(.is-live) .fc { box-shadow: 0 10px 20px -8px rgba(0, 0, 0, .35), 0 0 0 1px var(--lg-edge), inset 0 1px 0 #fff !important; }
+[data-theme="dark"] #dayEnd .de-clock .fc, [data-theme="dark"] .now-clock:not(.is-live) .fc { box-shadow: 0 10px 20px -8px rgba(0, 0, 0, .9), 0 0 0 1px rgba(255, 255, 255, .22) !important; }
+#dayEnd .de-clock .fc-t, #dayEnd .de-clock .fc-ft, .now-clock:not(.is-live) .fc-t, .now-clock:not(.is-live) .fc-ft { background-image: linear-gradient(180deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, .08)); }
+[data-theme="dark"] #dayEnd .de-clock .fc-t, [data-theme="dark"] #dayEnd .de-clock .fc-ft, [data-theme="dark"] .now-clock:not(.is-live) .fc-t, [data-theme="dark"] .now-clock:not(.is-live) .fc-ft { background-image: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .02)); }
+#dayEnd .de-clock .fc::after, .now-clock:not(.is-live) .fc::after { background: rgba(0, 0, 0, .18); height: 1.5px; }
+[data-theme="dark"] #dayEnd .de-clock .fc::after, [data-theme="dark"] .now-clock:not(.is-live) .fc::after { background: rgba(0, 0, 0, .6); }
+#dayEnd .de-ap, .now-clock:not(.is-live) .nc-ap { border: 1px solid var(--lg-edge); box-shadow: 0 6px 12px -6px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .7); }
+#dayEnd .de-colon i { box-shadow: 0 0 0 1px var(--lg-edge), 0 2px 4px rgba(0, 0, 0, .2); }
