@@ -1607,3 +1607,288 @@ body::before {
 .tap-pop { animation: tapPop .45s cubic-bezier(.34, 1.56, .64, 1); }
 @keyframes tapPop { 0% { transform: scale(.7); } 60% { transform: scale(1.18); } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .nav-ball.pop svg, .tap-pop { animation: none; } }
+
+/* ================= লিকুইড গ্লাস নকশা (Palash, ২০২৬-১১-২৫) =================
+   সাদা-কালো (monochrome) তরল কাচ। লাইট মোডে আইকন কালো স্বচ্ছ কাচ,
+   ডার্ক মোডে আইকন সাদা স্বচ্ছ কাচ। ক্লাসের নিজের রং শুধু ছোট দাগে আর চলমান ক্লাসে। */
+:root {
+  --primary: #1C1C1E;
+  --primary-rgb: 28, 28, 30;
+  --on-primary: #FFFFFF;
+  --accent: rgba(0, 0, 0, .06);
+  --accent-strong: rgba(0, 0, 0, .14);
+  --bg: #E9EAEE;
+  --surface: rgba(255, 255, 255, .55);
+  --surface-2: rgba(0, 0, 0, .045);
+  --text: #111113;
+  --text-2: #4A4A50;
+  --text-3: #8A8A90;
+  --border: rgba(0, 0, 0, .08);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 8px 22px rgba(0, 0, 0, .07);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, .22);
+  --lg-fill: linear-gradient(180deg, rgba(255, 255, 255, .86) 0%, rgba(255, 255, 255, .52) 55%, rgba(255, 255, 255, .64) 100%);
+  --lg-fill-2: linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .7));
+  --lg-edge: rgba(255, 255, 255, .95);
+  --lg-shadow: 0 18px 38px -16px rgba(0, 0, 0, .28), 0 2px 6px rgba(0, 0, 0, .05), inset 0 1px 0 #fff, inset 0 -12px 22px -16px rgba(0, 0, 0, .16);
+  --lg-pill: linear-gradient(180deg, rgba(40, 40, 44, .92), rgba(10, 10, 12, .78));
+  --lg-pill-text: #FFFFFF;
+  --lg-pill-shadow: 0 8px 18px -6px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .28), inset 0 -6px 12px -8px rgba(0, 0, 0, .6);
+  --ic-a: rgba(0, 0, 0, .9);
+  --ic-b: rgba(0, 0, 0, .45);
+  --ic-filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .95)) drop-shadow(0 2px 2px rgba(0, 0, 0, .18));
+  --glass-line: var(--lg-edge);
+  --glass-shadow: var(--lg-shadow);
+  --glass-solid: rgba(246, 246, 248, .94);
+}
+[data-theme="dark"] {
+  --primary: #F2F2F5;
+  --primary-rgb: 242, 242, 245;
+  --on-primary: #111113;
+  --accent: rgba(255, 255, 255, .08);
+  --accent-strong: rgba(255, 255, 255, .18);
+  --bg: #0B0B0C;
+  --surface: rgba(255, 255, 255, .07);
+  --surface-2: rgba(255, 255, 255, .06);
+  --text: #F5F5F7;
+  --text-2: #B0B0B6;
+  --text-3: #75757C;
+  --border: rgba(255, 255, 255, .09);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px rgba(0, 0, 0, .35);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, .7);
+  --lg-fill: linear-gradient(180deg, rgba(255, 255, 255, .15) 0%, rgba(255, 255, 255, .05) 55%, rgba(255, 255, 255, .08) 100%);
+  --lg-fill-2: linear-gradient(180deg, rgba(255, 255, 255, .24), rgba(255, 255, 255, .10));
+  --lg-edge: rgba(255, 255, 255, .20);
+  --lg-shadow: 0 20px 44px -18px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .26), inset 0 -12px 22px -16px rgba(255, 255, 255, .10);
+  --lg-pill: linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .74));
+  --lg-pill-text: #111113;
+  --lg-pill-shadow: 0 8px 20px -6px rgba(0, 0, 0, .7), inset 0 1px 0 #fff, inset 0 -6px 12px -8px rgba(0, 0, 0, .25);
+  --ic-a: rgba(255, 255, 255, 1);
+  --ic-b: rgba(255, 255, 255, .5);
+  --ic-filter: drop-shadow(0 0 5px rgba(255, 255, 255, .28)) drop-shadow(0 1px 1px rgba(0, 0, 0, .6));
+  --glass-solid: rgba(28, 28, 31, .94);
+}
+html, body { background: var(--bg); }
+body { background: transparent; }
+body::before {
+  background:
+    radial-gradient(60vw 30vh at 50% -4%, rgba(255, 255, 255, .95), transparent 70%),
+    radial-gradient(80vw 40vh at 0% 100%, rgba(255, 255, 255, .55), transparent 70%),
+    linear-gradient(180deg, #F3F3F5 0%, #E4E5E9 55%, #D9DADF 100%) !important;
+}
+[data-theme="dark"] body::before {
+  background:
+    radial-gradient(55vw 32vh at 50% -6%, rgba(255, 255, 255, .20), transparent 70%),
+    radial-gradient(70vw 40vh at 100% 100%, rgba(255, 255, 255, .05), transparent 70%),
+    linear-gradient(180deg, #1C1C1F 0%, #111113 45%, #070708 100%) !important;
+}
+
+/* কাচের তল */
+.profile-card, .class-card, .status-card, .settings-card, .form-card, .form, .cal-card, .search-box, .glance,
+.icon-btn, .seg, .nt-row, .nt-sort, .nt-ib, .nt-search, .att-tools, .att-row, .pd-row, .empty-card, .banner {
+  background: var(--lg-fill) !important;
+  border: 1px solid var(--lg-edge) !important;
+  box-shadow: var(--lg-shadow) !important;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+.settings-card, .glance, .profile-card { border-radius: 26px !important; }
+.icon-btn { border-radius: 50% !important; color: var(--text); }
+.icon-btn.small { width: 40px; height: 40px; }
+.top-back { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+
+/* আইকন: তরল কাচের মতো রং (উপরে গাঢ়, নিচে স্বচ্ছ) আর ঝকঝকে কিনারা */
+.lg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.lg-defs stop.a { stop-color: var(--ic-a); }
+.lg-defs stop.b { stop-color: var(--ic-b); }
+.bottom-nav .nav-btn > svg, .nav-ball svg, .nav-add-circle svg, .icon-btn svg, .seg svg, .set-ic svg, .search-box > svg,
+.nt-sort svg, .nt-ib svg, .nt-search > svg, .chip-soft svg, .set-item .set-ic svg, .topbar-actions svg {
+  fill: url(#lgIcon) !important;
+  filter: var(--ic-filter);
+}
+.bottom-nav .nav-btn .cal-icon, .bottom-nav .nav-btn .nt-icon { filter: var(--ic-filter) !important; }
+
+/* সেটিংসের রঙিন খোপ এখন কাচের বোতাম */
+.set-ic {
+  background: var(--lg-fill-2) !important; border: 1px solid var(--lg-edge);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .9) !important;
+  border-radius: 50% !important;
+}
+[data-theme="dark"] .set-ic { box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .3) !important; }
+.settings-group h2 { color: var(--text-3); text-transform: none; }
+
+/* বোতাম */
+.btn-primary, .chip-btn.on, .att-btn {
+  background: var(--lg-pill) !important; color: var(--lg-pill-text) !important;
+  box-shadow: var(--lg-pill-shadow) !important; border-color: transparent !important;
+}
+.att-btn-ic { background: rgba(255, 255, 255, .18); }
+[data-theme="dark"] .att-btn-ic { background: rgba(0, 0, 0, .08); }
+.att-btn .att-btn-ic svg { fill: var(--lg-pill-text) !important; }
+.btn-primary svg { fill: currentColor !important; }
+.btn-tonal, .btn-small, .chip-btn:not(.on) {
+  background: var(--lg-fill-2) !important; color: var(--text) !important;
+  border: 1px solid var(--lg-edge) !important;
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .8) !important;
+}
+[data-theme="dark"] .btn-tonal, [data-theme="dark"] .btn-small, [data-theme="dark"] .chip-btn:not(.on) { box-shadow: 0 4px 12px -6px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .22) !important; }
+.btn, .chip-btn { border-radius: 999px !important; }
+.btn-text { color: var(--text); }
+
+/* বাছাই বোতাম (segmented): বাছাই করা ঘর ভাসমান কাচের বুদবুদ */
+.seg { border-radius: 999px !important; padding: 4px; }
+.seg button { border-radius: 999px; color: var(--text-2); }
+.seg button.on {
+  background: var(--lg-fill-2) !important; color: var(--text) !important;
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .35), inset 0 1px 0 #fff, 0 0 0 1px var(--lg-edge) !important;
+}
+[data-theme="dark"] .seg button.on { box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .35), 0 0 0 1px var(--lg-edge) !important; }
+.seg-theme button { gap: 6px; }
+.seg-theme button svg { width: 18px; height: 18px; flex: none; }
+
+/* সুইচ: কাচের নব */
+.switch span { background: rgba(0, 0, 0, .14); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .18); }
+[data-theme="dark"] .switch span { background: rgba(255, 255, 255, .14); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .6); }
+.switch input:checked + span { background: var(--lg-pill); }
+.switch span::before { background: radial-gradient(circle at 35% 30%, #fff, rgba(255, 255, 255, .78) 70%, rgba(220, 220, 226, .9)); box-shadow: 0 3px 8px rgba(0, 0, 0, .3), inset 0 -2px 4px rgba(0, 0, 0, .08); }
+[data-theme="dark"] .switch input:checked + span::before { background: radial-gradient(circle at 35% 30%, #4a4a50, #1c1c1f 75%); }
+
+/* টোস্ট, শিট, ডায়ালগ */
+.toast { background: var(--lg-pill) !important; color: var(--lg-pill-text) !important; box-shadow: var(--lg-pill-shadow), 0 16px 30px -10px rgba(0, 0, 0, .4) !important; border-radius: 22px !important;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+.toast-action { color: inherit; text-decoration: underline; }
+.sheet, .dialog { border: 1px solid var(--lg-edge); box-shadow: var(--lg-shadow), var(--shadow-lg) !important; }
+.scrim { background: rgba(0, 0, 0, .35); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+
+/* ক্লাস কার্ড: কাচ, ক্লাসের রং শুধু বাম পাশের দাগ আর বিষয়ের নামে */
+.class-card { border-style: solid !important; border-radius: 24px !important; }
+.class-card.is-now { box-shadow: var(--lg-shadow), 0 0 0 2px rgba(var(--c-rgb), .55) !important; }
+.status-row + .status-row { border-top: 1px solid var(--border); }
+.status-now { background: rgba(var(--c-rgb), .10); }
+
+/* ---------- নিচের মেনু: তরল কাচের পাত আর বুদবুদ ---------- */
+.nav-shape .nav-plate { fill: url(#lgPlate) !important; stroke: var(--lg-edge) !important; stroke-width: 1 !important; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .22)) !important; }
+[data-theme="dark"] .nav-shape .nav-plate { filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .7)) !important; }
+.lg-defs stop.p1 { stop-color: rgba(255, 255, 255, .97); }
+.lg-defs stop.p2 { stop-color: rgba(236, 236, 240, .92); }
+[data-theme="dark"] .lg-defs stop.p1 { stop-color: rgba(58, 58, 62, .95); }
+[data-theme="dark"] .lg-defs stop.p2 { stop-color: rgba(24, 24, 27, .96); }
+.nav-ball {
+  background: radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 1), rgba(255, 255, 255, .62) 58%, rgba(222, 222, 228, .85)) !important;
+  border: 1px solid rgba(255, 255, 255, .95);
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, .35), inset 0 -5px 10px rgba(0, 0, 0, .08), inset 0 2px 3px #fff !important;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+[data-theme="dark"] .nav-ball {
+  background: radial-gradient(circle at 34% 24%, rgba(255, 255, 255, .34), rgba(255, 255, 255, .10) 60%, rgba(255, 255, 255, .16)) !important;
+  border-color: rgba(255, 255, 255, .32);
+  box-shadow: 0 12px 26px -6px rgba(0, 0, 0, .8), inset 0 -5px 10px rgba(255, 255, 255, .06), inset 0 1px 2px rgba(255, 255, 255, .5) !important;
+}
+.nav-add-circle {
+  background: var(--lg-fill-2) !important; border: 1px solid var(--lg-edge);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .9) !important;
+}
+[data-theme="dark"] .nav-add-circle { box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .3) !important; }
+.bottom-nav .nav-btn { color: var(--text-2); }
+.bottom-nav .nav-btn.active > span[data-i18n] { color: var(--text); font-weight: 700; }
+.nt-fab { background: var(--lg-pill) !important; color: var(--lg-pill-text) !important; box-shadow: var(--lg-pill-shadow), 0 12px 24px -8px rgba(0, 0, 0, .45) !important; border-radius: 50% !important; }
+
+/* ---------- এক নজরে রুটিন: গোল ঘর, পুরোটা সাদা-কালো, শুধু চলমান ক্লাস রঙিন ---------- */
+.glance.gv-b { padding: 12px 8px 10px; }
+.glance-grid { border-spacing: 3px 4px; }
+.glance-grid td { text-align: center; }
+.glance-grid thead th b {
+  color: var(--text); background: var(--lg-fill-2); border: 1px solid var(--lg-edge);
+  box-shadow: 0 3px 8px -4px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+[data-theme="dark"] .glance-grid thead th b { box-shadow: 0 3px 8px -4px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .25); }
+.glance-grid thead th small { color: var(--text-3); }
+.glance-grid thead th.is-live-col { background: transparent; }
+.glance-grid thead th.is-live-col b { background: var(--lg-pill); color: var(--lg-pill-text); box-shadow: var(--lg-pill-shadow); border-color: transparent; }
+.glance-grid thead th.is-live-col small { color: var(--text); }
+.glance-grid tr.is-holiday .g-day span { color: var(--text-3); }
+.glance-grid tr.is-today .g-day span { background: var(--lg-pill) !important; color: var(--lg-pill-text) !important; box-shadow: var(--lg-pill-shadow) !important; border-radius: 999px; padding: 3px 7px; }
+
+/* খালি ঘর: হালকা কাচের ছোট বৃত্তরেখা */
+.gv-b td.g-empty, .gv-b tr.is-today td.g-empty {
+  border: 0 !important; border-radius: 0;
+  background: radial-gradient(circle closest-side, transparent calc(100% - 3px), color-mix(in srgb, var(--text) 13%, transparent) calc(100% - 2px), color-mix(in srgb, var(--text) 13%, transparent) calc(100% - 1px), transparent 100%) !important;
+}
+.gv-b tr.is-today td.g-empty { background: radial-gradient(circle closest-side, color-mix(in srgb, var(--text) 5%, transparent) calc(100% - 2px), color-mix(in srgb, var(--text) 28%, transparent) calc(100% - 1.5px), transparent 100%) !important; }
+
+/* ছুটির সারি: কাচের লম্বা পিল, সাদা-কালো */
+.gv-b td.g-off {
+  background: var(--lg-fill-2) !important; border: 1px solid var(--lg-edge);
+  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .8) !important; border-radius: 999px !important;
+}
+[data-theme="dark"] .gv-b td.g-off { box-shadow: 0 6px 14px -8px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .25) !important; }
+.gv-b td.g-off span, .gv-b tr.is-today td.g-off span { color: var(--text-2) !important; }
+.gv-b .g-off-ic { fill: url(#lgIcon); filter: var(--ic-filter); }
+
+/* ক্লাসের ঘর: নিখুঁত বৃত্ত */
+.glance .glance-grid .g-cell {
+  width: min(100%, var(--gh, 70px)) !important; height: auto !important; aspect-ratio: 1 / 1; margin: 0 auto;
+  border-radius: 50% !important; padding: 0 !important; overflow: visible; gap: 0;
+  color: var(--text) !important;
+  background: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 1), rgba(255, 255, 255, .62) 55%, rgba(236, 236, 240, .78)) !important;
+  border: 1px solid rgba(255, 255, 255, .95) !important;
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, .35), inset 0 -4px 8px rgba(0, 0, 0, .07), inset 0 1.5px 1px #fff !important;
+  animation: none; transform: none;
+}
+[data-theme="dark"] .glance .glance-grid .g-cell {
+  background: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, .30), rgba(255, 255, 255, .08) 60%, rgba(255, 255, 255, .13)) !important;
+  border-color: rgba(255, 255, 255, .24) !important;
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .9), inset 0 -4px 8px rgba(255, 255, 255, .04), inset 0 1px 1px rgba(255, 255, 255, .45) !important;
+}
+.glance .g-cell + .g-cell { margin-top: 3px; }
+.glance .glance-grid .g-cell b { font-size: min(.58rem, 2.3vw) !important; line-height: 1.02; margin-top: 1px; color: var(--text) !important; font-weight: 700; }
+.glance .glance-grid .g-cell span { font-size: min(.52rem, 2.05vw) !important; line-height: 1.02; color: var(--text-2) !important; opacity: 1; }
+.glance .glance-grid .g-cell.en b { font-size: min(.56rem, 2.2vw) !important; }
+.glance .glance-grid .g-cell.en span { font-size: min(.5rem, 1.95vw) !important; }
+.glance .glance-grid .g-cell i { font-size: .48rem; color: var(--text-3) !important; }
+.glance .glance-grid .g-cell em {
+  margin-top: 1px; width: 13px; height: 13px; min-width: 0; padding: 0; border-radius: 50%; font-size: .5rem; line-height: 13px;
+  background: var(--lg-pill) !important; color: var(--lg-pill-text) !important; box-shadow: 0 2px 4px rgba(0, 0, 0, .25);
+}
+.glance .glance-grid .g-cell .g-prog { display: none !important; }
+.glance .glance-grid .g-cell::before, .glance .glance-grid .g-cell::after { display: none; }
+.glance-grid tr.is-today .g-cell:not(.is-live) { box-shadow: 0 6px 12px -6px rgba(0, 0, 0, .35), inset 0 1.5px 1px #fff, 0 0 0 1.5px color-mix(in srgb, var(--text) 45%, transparent) !important; }
+[data-theme="dark"] .glance-grid tr.is-today .g-cell:not(.is-live) { box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .9), inset 0 1px 1px rgba(255, 255, 255, .45), 0 0 0 1.5px rgba(255, 255, 255, .5) !important; }
+.glance .glance-grid .g-cell.is-past { opacity: .38; }
+
+/* চলমান ক্লাস: একমাত্র রঙিন ঘর, চারপাশে সময়ের আংটি ঘোরে */
+.glance .glance-grid .g-cell.is-live {
+  z-index: 2; transform: scale(1.1);
+  background: radial-gradient(circle at 32% 22%, color-mix(in srgb, var(--c) 45%, #fff), var(--c) 62%, color-mix(in srgb, var(--c) 80%, #000)) !important;
+  border-color: rgba(255, 255, 255, .7) !important;
+  box-shadow: 0 0 18px 2px rgba(var(--c-rgb), .55), 0 8px 16px -6px rgba(var(--c-rgb), .8), inset 0 1.5px 1px rgba(255, 255, 255, .7), inset 0 -5px 10px rgba(0, 0, 0, .15) !important;
+  animation: lgLive 1.8s ease-in-out infinite;
+}
+.glance .glance-grid .g-cell.is-live b, .glance .glance-grid .g-cell.is-live span, .glance .glance-grid .g-cell.is-live i { color: #fff !important; text-shadow: 0 1px 2px rgba(0, 0, 0, .25); }
+.glance .glance-grid .g-cell.is-live em { background: #fff !important; color: var(--c) !important; }
+.glance .glance-grid .g-cell.is-live::before {
+  display: block; content: ''; position: absolute; inset: -5px; border-radius: 50%; left: -5px; right: -5px; top: -5px; bottom: auto; height: auto; aspect-ratio: 1 / 1;
+  background: conic-gradient(var(--c) calc(var(--p) * 360deg), rgba(var(--c-rgb), .22) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+}
+@keyframes lgLive { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.12); } }
+@media (prefers-reduced-motion: reduce) { .glance .glance-grid .g-cell.is-live { animation: none; } }
+.settings-group { background: transparent !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+/* ফর্মের বাইরের খোলস কাচ নয়, ভেতরের কার্ডগুলোই কাচ */
+.form { background: transparent !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+/* ক্যালেন্ডার: মাসের রঙের বদলে সাদা-কালো তরল কাচ */
+.cal-head { background: var(--lg-pill) !important; color: var(--lg-pill-text) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
+.cal-nav { background: rgba(255, 255, 255, .16) !important; color: inherit !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
+[data-theme="dark"] .cal-nav { background: rgba(0, 0, 0, .08) !important; }
+.cal-card { box-shadow: var(--lg-shadow) !important; }
+.cal-cell.is-today { background: var(--accent); box-shadow: inset 0 0 0 1.5px var(--text); }
+.cal-cell.is-sel { background: var(--lg-pill) !important; color: var(--lg-pill-text) !important; box-shadow: var(--lg-pill-shadow) !important; border-radius: 50%; }
+.cal-cell.is-sel .cal-num { color: var(--lg-pill-text) !important; }
+.cal-add { background: var(--lg-pill) !important; color: var(--lg-pill-text) !important; box-shadow: var(--lg-pill-shadow) !important; }
+.cal-add svg { fill: currentColor !important; }
+.cal-day { border-top-color: var(--lg-edge) !important; }
+.cal-day::before { display: none !important; }
+.cal-day { background: var(--lg-fill) !important; border: 1px solid var(--lg-edge) !important; box-shadow: var(--lg-shadow) !important; border-radius: 24px !important;
+  backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
