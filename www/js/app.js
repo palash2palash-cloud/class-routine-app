@@ -405,75 +405,46 @@
 
   function highlightNav() {
     const active = state.view === 'form' ? (state.editId ? state.prevView : 'add') : state.view;
-    $$('.nav-btn').forEach(function (b) {
+    $$('.lg-tab').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-nav') === active);
     });
     navBall.update();
   }
 
-  /* নিচের মেনু: কাচের পাতে খাঁজ, বাছাই করা আইকন গোল বলে উঠে খাঁজে বসে।
-     অন্য ট্যাবে চাপলে বল লাফিয়ে গড়িয়ে নতুন জায়গায় যায়, খাঁজও সাথে সরে। */
+  /* নিচের মেনু (Palash-এর রেফারেন্স ভিডিওর ২য় নকশা): কাচের লম্বা পাতে আইকনগুলো।
+     বাছাই করা ট্যাব চওড়া হয়ে আইকনের পাশে নাম দেখায়, তার পেছনে কাচের পিল।
+     অন্য ট্যাবে চাপলে পিল গড়িয়ে সেখানে যায় আর নামের মাপে লম্বা/ছোট হয়; পুরোনো নাম মিলিয়ে যায়। */
   const navBall = (function () {
-    const NS = 'http://www.w3.org/2000/svg';
-    let nav, svg, plate, hole, ball, cx = null, key = '', raf = 0;
-    function setup() {
-      if (svg) return true;
-      nav = $('#bottomNav');
-      if (!nav) return false;
-      svg = document.createElementNS(NS, 'svg');
-      svg.setAttribute('class', 'nav-shape');
-      svg.setAttribute('aria-hidden', 'true');
-      svg.innerHTML = '<defs><mask id="navNotch" maskUnits="userSpaceOnUse"><rect x="-50" y="-60" width="2000" height="300" fill="#fff"/><circle r="34" cy="0" fill="#000"/></mask></defs>' +
-        '<rect class="nav-plate" x="0.6" y="0.6" rx="24" mask="url(#navNotch)"/>';
-      plate = svg.querySelector('.nav-plate');
-      hole = svg.querySelector('circle');
-      nav.insertBefore(svg, nav.firstChild);
-      ball = document.createElement('div');
-      ball.className = 'nav-ball';
-      nav.appendChild(ball);
-      if (window.ResizeObserver) new ResizeObserver(function () { cx = null; update(); }).observe(nav);
-      return true;
-    }
-    function target() {
-      const a = nav.querySelector('.nav-btn.active');
-      if (!a || !nav.clientWidth) return null;
-      const r = a.getBoundingClientRect(), n = nav.getBoundingClientRect();
-      return { a: a, x: r.left - n.left + r.width / 2 };
-    }
-    function place(x, lift) {
-      if (x == null || !nav.clientWidth) return;
-      const W = nav.clientWidth, H = nav.clientHeight;
-      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-      plate.setAttribute('width', W - 1.2);
-      plate.setAttribute('height', H - 1.2);
-      hole.setAttribute('cx', x);
-      ball.style.transform = 'translate(' + x + 'px,' + (-lift) + 'px)';
-    }
+    let bar = null, pill = null, watching = false;
+    const PAD = 6, ICON_W = 46, SIDE = 18, GAP = 8;
     function update() {
-      if (!setup()) return;
-      const t = target();
-      if (!t) { ball.style.display = 'none'; return; }
-      ball.style.display = '';
-      const k = t.a.getAttribute('data-nav');
-      if (k !== key) {
-        const ic = t.a.querySelector('.nav-add-circle svg') || t.a.querySelector('svg');
-        ball.innerHTML = ic ? ic.outerHTML : '';
-        ball.classList.toggle('pop', false);
-        void ball.offsetWidth;
-        ball.classList.toggle('pop', true);
+      bar = bar || $('.lgnav-bar');
+      if (!bar) return;
+      pill = pill || $('.lgnav-pill', bar);
+      if (!watching) { watching = true; if (window.ResizeObserver) new ResizeObserver(function () { update(); }).observe(bar); if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { update(); }); }
+      const tabs = Array.prototype.slice.call(bar.querySelectorAll('.lg-tab'));
+      const W = bar.clientWidth - PAD * 2;
+      if (!W || !tabs.length) return;
+      const active = tabs.filter(function (b) { return b.classList.contains('active'); })[0];
+      let aw = 0, ow = W / tabs.length;
+      if (active) {
+        const lab = active.querySelector('.lg-label');
+        const want = SIDE * 2 + 22 + GAP + (lab ? lab.scrollWidth : 0);
+        aw = Math.min(want, W - (tabs.length - 1) * ICON_W);
+        ow = (W - aw) / (tabs.length - 1);
       }
-      const from = cx, to = t.x;
-      key = k; cx = to;
-      cancelAnimationFrame(raf);
-      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (from == null || reduce || Math.abs(from - to) < 1) { place(to, 0); return; }
-      const t0 = performance.now(), dur = 460;
-      (function step(now) {
-        const u = Math.min(1, Math.max(0, (now - t0) / dur));
-        const e = 1 - Math.pow(1 - u, 3) + Math.sin(u * Math.PI) * 0.06; // শেষে সামান্য ছিটকে পড়া
-        place(from + (to - from) * e, Math.sin(u * Math.PI) * 14);
-        if (u < 1) raf = requestAnimationFrame(step);
-      })(t0);
+      let x = PAD, px = PAD;
+      tabs.forEach(function (b) {
+        const w = b === active ? aw : ow;
+        if (b === active) px = x;
+        b.style.width = w + 'px';
+        x += w;
+      });
+      if (active) {
+        pill.style.width = aw + 'px';
+        pill.style.transform = 'translateX(' + px + 'px)';
+      }
+      pill.classList.toggle('on', !!active);
     }
     return { update: update };
   })();
@@ -3524,7 +3495,7 @@
 
   function bindGlobal() {
     $('#bottomNav').addEventListener('click', async function (e) {
-      const b = e.target.closest('.nav-btn');
+      const b = e.target.closest('.lg-tab');
       if (!b) return;
       const v = b.getAttribute('data-nav');
       if (v === 'settings' && state.view === 'settings') return;
