@@ -54,6 +54,13 @@
 
   /* ---------------- থিম ---------------- */
 
+  // থিম বাছাইয়ের বোতামে সূর্য, চাঁদ আর আধা-গোল (ফোনের মতো) আইকন
+  const THEME_IC = {
+    light: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm-.9-5h1.8v3h-1.8V2Zm0 17h1.8v3h-1.8v-3ZM2 11.1h3v1.8H2v-1.8Zm17 0h3v1.8h-3v-1.8ZM4.3 5.6l1.3-1.3 2.1 2.1-1.3 1.3-2.1-2.1Zm12 12 1.3-1.3 2.1 2.1-1.3 1.3-2.1-2.1ZM16.3 6.4l2.1-2.1 1.3 1.3-2.1 2.1-1.3-1.3ZM4.3 18.4l2.1-2.1 1.3 1.3-2.1 2.1-1.3-1.3Z"/></svg>',
+    dark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 2.5a9.5 9.5 0 1 0 7 15.9A8 8 0 0 1 14.5 2.5Z"/></svg>',
+    system: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2v16a8 8 0 0 1 0-16Z"/></svg>'
+  };
+
   const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
   function applyTheme() {
@@ -61,7 +68,7 @@
     const dark = pref === 'dark' || (pref === 'system' && darkQuery && darkQuery.matches);
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', dark ? '#111827' : '#4F46E5');
+    if (meta) meta.setAttribute('content', dark ? '#111113' : '#E9EAEE');
   }
 
   /* ---------------- টোস্ট ---------------- */
@@ -2368,8 +2375,8 @@
         '<button type="button" data-val="bn" class="' + (st.lang === 'bn' ? 'on' : '') + '">বাংলা</button>' +
         '<button type="button" data-val="en" class="' + (st.lang === 'en' ? 'on' : '') + '">English</button></div>') +
       row(t('settings.theme'), null,
-        '<div class="seg" data-setting="theme">' +
-        ['system', 'light', 'dark'].map(function (v) { return '<button type="button" data-val="' + v + '" class="' + (st.theme === v ? 'on' : '') + '">' + esc(t('settings.theme_' + v)) + '</button>'; }).join('') + '</div>') +
+        '<div class="seg seg-theme" data-setting="theme">' +
+        ['system', 'light', 'dark'].map(function (v) { return '<button type="button" data-val="' + v + '" class="' + (st.theme === v ? 'on' : '') + '">' + THEME_IC[v] + esc(t('settings.theme_' + v)) + '</button>'; }).join('') + '</div>') +
       row(t('settings.timeFormat'), null,
         '<div class="seg" data-setting="timeFormat">' +
         '<button type="button" data-val="12" class="' + (st.timeFormat === '12' ? 'on' : '') + '">' + esc(t('settings.h12')) + '</button>' +
