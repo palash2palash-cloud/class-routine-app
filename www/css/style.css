@@ -2019,3 +2019,29 @@ body::before {
 [data-theme="dark"] #dayEnd .de-clock .fc::after, [data-theme="dark"] .now-clock:not(.is-live) .fc::after { background: rgba(0, 0, 0, .6); }
 #dayEnd .de-ap, .now-clock:not(.is-live) .nc-ap { border: 1px solid var(--lg-edge); box-shadow: 0 6px 12px -6px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .7); }
 #dayEnd .de-colon i { box-shadow: 0 0 0 1px var(--lg-edge), 0 2px 4px rgba(0, 0, 0, .2); }
+
+/* ================= এক নজরে রুটিন, সংশোধনী ৪: শুধু আজকের দিন রঙিন =================
+   আজকের বারের নাম মোটা ও রঙিন (নিচে দাগ নেই), আজকের ক্লাসের বৃত্তগুলো নিজ নিজ রঙে।
+   অন্য সব দিনের বৃত্ত আগের মতো সাদা-কালো কাচ। */
+.glance .glance-grid tr:not(.is-today) .g-cell {
+  background: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 1), rgba(255, 255, 255, .62) 55%, rgba(236, 236, 240, .78)) !important;
+  border: 1px solid rgba(255, 255, 255, .95) !important;
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, .35), inset 0 -4px 8px rgba(0, 0, 0, .07), inset 0 1.5px 1px #fff !important;
+}
+[data-theme="dark"] .glance .glance-grid tr:not(.is-today) .g-cell {
+  background: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, .30), rgba(255, 255, 255, .08) 60%, rgba(255, 255, 255, .13)) !important;
+  border-color: rgba(255, 255, 255, .24) !important;
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .9), inset 0 -4px 8px rgba(255, 255, 255, .04), inset 0 1px 1px rgba(255, 255, 255, .45) !important;
+}
+.glance .glance-grid tr:not(.is-today) .g-cell b { color: var(--text) !important; text-shadow: none; }
+.glance .glance-grid tr:not(.is-today) .g-cell span, .glance .glance-grid tr:not(.is-today) .g-cell i { color: var(--text-2) !important; text-shadow: none; }
+.glance .glance-grid tr:not(.is-today) .g-cell em { background: var(--lg-pill) !important; color: var(--lg-pill-text) !important; }
+
+/* আজকের বার: দাগ নয়, মোটা রঙিন লেখা */
+:root { --today-ink: #4F46E5; }
+[data-theme="dark"] { --today-ink: #A5B4FC; }
+.glance-grid tr.is-today .g-day span, [data-theme="dark"] .glance-grid tr.is-today .g-day span {
+  background: none !important; padding: 0 !important; box-shadow: none !important;
+  color: var(--today-ink) !important; font-weight: 800; font-size: .86rem;
+}
+.glance-grid tr.is-today .g-cell.is-past { opacity: .5; }
